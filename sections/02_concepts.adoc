@@ -335,3 +335,6 @@ In the example of MyGourmet 1, we have already made extensive use of value expre
 image::images/unified-el-value-expression.jpg[]
 ====
 
+A value expression is only resolved when the value is actually read or set. Therefore, the value expression itself is stored in the component, not the value. A closer look at why this is necessary follows in the section [lifecycle of an HTTP request in JSF] over the lifecycle of JSF.
+
+The data is already properly read when the page is displayed and written when the form is submitted. It lacks the ability to call custom code when editing the submitted page - for example, to save the user's input in the database. This is where Method Expressions come into play. If the user press save button on editCustomer.jsf page,  the server should call the save method of the bean. For command components, there is the attribute action, which can contain a method expression. In our example, this is the expression # {customer.save} . The referenced method is called when all data entered by the user has been validated and valid. The returned string is used for navigation and determines which page is displayed. Figure Method Expression in Command Component shows the component's tag and the way to call the method associated with the component.
