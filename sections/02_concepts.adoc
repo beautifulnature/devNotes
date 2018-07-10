@@ -422,7 +422,34 @@ The new version of the Unified EL is part of Java EE 6 and comes automatically w
 From an HTTP request, some processing must be done in JSF to restore the state of the application and to prepare for the application logic to be called. These steps include the restoration of the component tree, the reading of the user-modified data from the HTTP request and the validation of that data, as well as the transfer of that validated data to the model objects. After calling up actions in the business logic, the last step remains - the output of the response to the HTTP request (the so-called "rendering"). This process is in the JavaServer Faces Specifically defined and forms an essential basis for any application based on the JSF technology. In Figure The lifecycle of an HTTP request, the process is shown.
 
 ====
-.Method Expression in Command Component
+.The life cycle (lifecycle) of an HTTP request
 image::images/lifecycle-complete.jpg[]
 ====
 
+We will now take a closer look at the individual processing steps. In order to make the whole thing more exciting, we will immediately discuss the practical usability of the processes in the individual phases.
+
+*Phase 1: Restore View ( Restore View )* +
+Each view of a JSF application consists of components organized in the form of a component tree. The processing of a request begins in the first phase of the life cycle with the structure of the component tree. 
+
+If the first request is for a view, the component tree does not exist yet and JSF rebuilds it from the page declaration. If the page-declaration language JSP is used, JSF forwards the request to the JSP page located behind the view. This is processed and each time a new tag not yet associated with an initialized component is encountered, a new component is created and initialized with the attribute values ​​from the JSP page. Facelets follows a similar strategy and builds the tree parsing the underlying XHTML document.
+
+In a second pass through the component tree, the page is then rendered. An initial request for a view only goes through the first and the last phase of the lifecycle. Illustration Initiation of the life cycle shows this process.
+
+====
+.Initiation of the life cycle
+image::images/lifecycle-initial.jpg[]
+====
+
+When a request requests the same page the second time, in JSF versions prior to 2.0, the component tree is completely restored from the state previously stored on the server or client. Of course, not only the components themselves are part of the component tree, but also validators, converters and the "old" values ​​as well as all the other properties of the components.
+
+Starting with JSF 2.0, there is a crucial difference between JSP and facelets at this point. JSP reconstructs the complete component tree from the page state. By contrast, when using facelets, JSF first rebuilds the view from the page declaration and only then processes the saved state. This new approach - also called partial state saving - offers some advantages in terms of performance and size of the page state. First tests show that with the partial state saving enabled, the size of the page state is reduced by a factor of about 3.
+
+*Phase 2: Apply Request Parameters ( Apply Request Values )*
+
+In this phase, the entire component tree is edited and the values ​​entered by the user are assigned to the individual components. This is done by calling the processDecodes() method at the root node - the root node then calls the same method on its child node and recursively calls it on its child node. 
+
+In addition, when processing the method, each component (or more specifically the renderers associated with the component) will look for the HTTP request, namely the HTTP headers and cookies parameters, the values ​​that affect that component, and stores them as a "Submitted Value". This process will "decode" (English decoding) called. However, the submitted value is not yet the value that is later actually written into the model - it first has to be converted into a format suitable for the data model and validated. In addition, writeback can still be prevented by the conversion failing or validating. 
+
+The conversion and validation will then be done in the next phase, but this phase can also be brought forward: setting the immediate attribute instructs the component to perform the conversion and validation already in phase 2. Why this is desirable in some cases and how it works is described in section [Section: Changing the Life Cycle - Immediate Attribute] explained in more detail.
+
+The submited value is also important in the rendering phase, especially for writing custom components. If the validation or conversion of components of the page is unsuccessful, the submitting value must be used when rendering the components - it would not be correct to use the "old" component value stored in the value property because otherwise information of the user would be lost.
