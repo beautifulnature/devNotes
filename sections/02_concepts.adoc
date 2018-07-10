@@ -23,7 +23,7 @@ Due to the strict separation of the layers of the application within the meaning
 
 === JavaServer Faces in Keywords
 
-*Component (also Component , UIComponent or Control)* +
+*Component (also Component, UIComponent or Control)* +
 A component is a stand-alone and reusable building block used with other components to build a page in a JSF application. JSF offers a good selection of predefined components. The palette ranges from simple output components for text or images to components for capturing user input, to complex components for displaying tables.
 
 *View and component tree* +
@@ -49,7 +49,7 @@ The Unified Expression Language is the link between the components of a view and
 *Events and event handling* +
 Events are one of the key elements of JavaServer Faces technology. For example, an event occurs in a JSF application when a button is pressed or a value is changed. Each component can trigger events and each managed bean can be registered as an interested party for such events. In addition to the events already defined for the default components, new events (for custom components) can be included in JSF event handling.
 
-*Navigation and actions ( navigation-rules , action )* +
+*Navigation and actions ( navigation-rules, action )* +
 Navigation in a JSF application was defined before JSF 2.0 exclusively via so-called navigation rules in faces-config.xml. JSF uses the return value of special methods, called "action" methods (which are called when an Action event is handled), to cause a redirect from one page to the next. This return value can be the name of a navigation rule or directly from JSF 2.0 the name of the next page.
 
 *Messages* +
@@ -96,3 +96,242 @@ The last section briefly explained the most important basic terms of JavaServer 
 If a user wants to view this page in the browser, they must type editCustomer.jsf in the address bar. However, we have always created XHTML files with the extension .xhtml. Where does this difference come from and why does an output appear in the browser window at all? This question is answered easily. Outwardly, only the JSF view editCustomer.jsf is visible, which is internally built on a so-called page declaration. In "standard" JSF, this is an XHTML file for facelets or a JSP file with the same name as the corresponding JSF view. The JSF implementation knows how the path of the associated page declaration looks relative to the context of the web application - in our case /editCustomer.xhtml, This path of the page declaration is also called a view identifier.
 
 The page declaration determines the content and structure of the component tree, and thus the view. The tags of the XHTML page are translated from facelets into components and arranged in the component tree. Figure MyGourmet 1: From the page declaration to the component, this implementation shows an example on the tag of the input component for the first name.
+
+====
+.MyGourmet 1: From the page declaration to the component
+image::images/mygourmet01-template2component.jpg[]
+====
+
+In the same way all other tags of the page are converted into components and inserted into the tree. The finished component tree of the editCustomer.jsf view looks like MyGourmet 1: Component Tree in Figure . The names of the nodes in the figure are the names of the component classes used.
+
+====
+.MyGourmet 1: component tree
+image::images/mygourmet01-componenttree.jpg[]
+====
+
+The ready-built component tree can now be converted from a renderer to an output language and displayed to the user. In most cases, the output will be HTML pages, but replacing the renderer will allow almost any output technology to be used. However, for the moment we want to limit ourselves to HTML. The renderer thus takes the data stored in the component instance and outputs the corresponding HTML code for the respective component. Figure MyGourmet 1: From the component to the HTML output, for example, shows how the input component for the first name is converted to HTML.
+
+====
+.MyGourmet 1: From component to HTML output
+image::images/mygourmet01-component2html.jpg[]
+====
+
+The representation of the completely rendered page in the browser can be seen in the browser in Figure MyGourmet 1: editCustomer.xhtml.
+
+====
+.MyGourmet 1: editCustomer.xhtml in the browser
+image::images/mygourmet01-screenshot.jpg[]
+====
+
+The relationships between page declaration, component tree and rendered output should therefore be clarified. However, we have left out the concrete process of the entire process in the form of the JSF life cycle. These temporal relationships and processes are discussed in section [Section: Life Cycle of an HTTP Request in JSF]. But before we throw in section [Section: Managed beans] yet a closer look at Managed beans and Section [Section: The Unified Expression Language] on the connection between the model and view with the Unified Expression Language.
+
+=== Managed Beans
+
+The managed beans are a central component of the JavaServer Faces. They form the model or the connection to the model and the business logic in an application. With regard to a strict separation of presentation and logic they play a very important role. In practice, the business logic calls in an application are completely encapsulated in the managed beans. The connection to the properties and methods of a managed bean is realized with unified expression expressions.
+
+The remainder of this section discusses the basics and details of managed beans. For more detailed information about the Unified Expression Language, the link between view and model in JSF, see section [Section: The Unified Expression Language].
+
+==== Managed Beans - The Basics
+
+What must a managed bean look like in JSF so that it can be used? The requirements are minimal: managed beans are simple Java classes, also known as plain old Java objects ( POJOs ), which must comply with the JavaBeans standard. For the class itself, this just means that it must have a constructor without parameters with visibility public.
+
+As mentioned earlier, JSF accesses the properties of the managed beans to read and write data. A property has a name, a type, and methods for reading and writing the value. The names of these methods must conform to the following convention: getPropertyName is the name of the method for read access and setPropertyName is the name of the write access method. Whether the method accesses a private variable of the class, or whether it involves a complex operation of business logic, is transparent and ultimately irrelevant. Outwardly, only the property of the bean is visible in both cases. 
+
+Listing Managed Bean class Customer from MyGourmet 1 once again shows the class Customer from our example MyGourmet 1. This bean has the properties firstName and lastName of the type String, which are defined by the respective getter and setter methods. The access in the view is done with the expressions # {customer.firstName} and # {customer.lastName}. Depending on whether the value in the accessing component is read or written, the corresponding getter or setter is used. The names of the properties are derived from the getter and setter names. The private fields in the background have no effect on the name - they only record the value of the property.
+
+The save method fulfills another purpose. It is used to handle events and is not associated with any property - more detailed information on this topic can be found in the section [Events and Event Handling].
+
+.Customer.java
+[source,java]
+----
+import javax.faces.bean.ManagedBean;
+import javax.faces.bean.SessionScoped;
+
+@ManagedBean
+@SessionScoped
+public class Customer {
+  private String firstName;
+  private String lastName;
+  public String getFirstName() {
+    return firstName;
+  }
+  public void setFirstName(String firstName) {
+    this.firstName = firstName;
+  }
+  public String getLastName() {
+    return lastName;
+  }
+  public void setLastName(String lastName) {
+    this.lastName = lastName;
+  }
+  public String save() {
+    return "/showCustomer.xhtml";
+  }
+}
+----
+
+Bean properties do not necessarily have to have both a getter and a setter method. Depending on which of the two is present, then it is a property that can only be read or written.
+
+In fact, in the last few paragraphs, we talked only about JavaBeans. They become managed beans only when they are actually managed by JSF. How it works is shown in the next section.
+
+==== Configuration of managed beans
+
+One of the cornerstones of JSF is the central point for managing managed beans - the Managed Bean Creation Facility. The following tasks are performed with this instrument:
+
+* Declaration of all managed beans
+* Defining the lifetime of the managed beans
+* Automatic generation, initialization, use and deletion of the managed bean instances
+* Provision of Managed Beans via the Expression Language (EL). For example, value expressions and method expressions can be referenced to business objects.
+To be able to use managed beans in the view, the JSF environment must know under which name and under which class the respective JavaBean can be found. Since JSF 2.0 there are two variants to perform this registration. In the introductory example, we have already seen how a managed bean is declared via annotations. Listing configuration of the bean customer from MyGourmet 1 via annotations again shows the relevant part of the class. Alternatively, managed beans can also be declared in faces-config.xml - in JSF versions prior to 2.0 this was the only option.
+
+----
+@ManagedBean
+@SessionScoped
+public class Customer {
+  ...
+}
+----
+
+Listing configuration of the bean customer from MyGourmet 1 in faces-config.xml shows how the configuration of the bean customer from MyGourmet 1 looks in the faces-config.xml file.
+
+.faces-config.xml
+[source,xml]
+----
+<managed-bean>
+  <managed-bean-name>customer</managed-bean-name>
+  <managed-bean-class>
+    at.irian.jsfatwork.gui.page.Customer
+  </managed-bean-class>
+  <managed-bean-scope>session</managed-bean-scope>
+</managed-bean>
+----
+
+The two variants presented in the Listings configuration of the bean customer from MyGourmet 1 via annotations and configuration of the bean customer from MyGourmet 1 in faces-config.xml lead to the same result: The managed bean with the name customer is defined. Which of the two you use in your project is partly also a matter of taste. We chose annotations in MyGourmet to avoid bloated configuration files.
+
+In faces-config.xml, the declaration of a bean takes place in an element called managed-bean. Nested in it follows the managed-bean-name element first the name under which the bean is referenced in EL expressions - in our example, customer. The class of the bean is specified in the managed-bean-class element. Finally, in the managed-bean-scope element with session, the lifetime of the bean is specified.
+
+When declared with the annotation @ManagedBean, the name of the managed bean is conventionally the same as the class name with a small initial letter. For example, in our case, the customer class becomes the bean customer. If you want to use a different name, you can set it in the element name of the annotation. listing Configuration of the bean customer with an alternative name shows the already known bean with the explicit name customerBean. Access in the view is now with the expression # {customerBean.firstName}.
+
+----
+@ManagedBean(name = "customerBean")
+@SessionScoped
+public class Customer {
+  ...
+}
+----
+
+Default JSF defines scopes for beans (in brackets is the configuration value in faces-config.xml and annotation):
+
+* None scope ( none, @NoneScoped ): +
+The managed bean is recreated each time it is called.
+* Request scope ( request, @RequestScoped ): +
+The managed bean survives for the duration of an HTTP request.
+* View Scope ( view, @ViewScoped ): +
+The lifetime of the managed bean is linked to the view in which it is used.
+* Session Scope ( session, @SessionScoped ): + 
+The managed bean lives for the duration of a session in which the user is connected to the application.
+* Application scope ( application, @ApplicationScoped ): + 
+For the lifetime of the application, only one instance of this managed bean exists for all users.
+
+Picture comparing the life of different scopes compares the life of the scopes provided by default JSF.
+
+====
+.Comparison of the lifetime of different scopes
+image::images/managed-bean-scopes.jpg[]
+====
+
+Now that you understand how managed beans are declared, we do not want to deny you how JSF manages them. The internal process for accessing a bean is as follows:
+
+. When the bean is first accessed, it is automatically instantiated by the Managed Bean Creation Facility. If the instance of the bean already exists, it will be returned. The instantiation can only occur if a constructor without arguments is available.
+. After creating the bean, all managed properties are initialized. More details can be found in section [Section: Managed Properties] .
+. Finally, the managed bean is stored under the specified lifetime.
+
+In our example, this is done in the session scope, i.e., as long as there is a logical connection between the user and the application in the form of a session. Only use the session scope if absolutely necessary. With the new view scope, it is now relatively easy to take data across multiple requests. At least until you navigate to a new page.
+
+==== Managed properties
+
+The Managed Bean Creation Facility provides the ability to initialize properties of managed beans after creation (so-called managed properties). In addition to fixed values, Dependency Injection also provides the ability to use dependencies on other beans for initialization.
+
+As with the configuration of the beans themselves, there are also two variants for the declaration of the managed properties. The @ManagedProperty annotation directly annotates the fields of the property in the bean. The initial value for this method is in the value element. Alternatively, the same declaration can be made in the faces-config.xml. Added to this is the element managed-property is used, where the name of the property and the value to be set are in the property-name and value elements.
+
+Listing Managed Properties Annotation shows the Java code of an annotated managed bean with managed properties. Listing managed properties in the configuration show the equivalent configuration in faces-config.xml . Of course, the annotations in the class login are not necessary in this case.
+
+.Login.java
+[source,java]
+----
+@ManagedBean
+@SessionScoped
+public class Login {
+  @ManagedProperty(value = "3")
+  private int loginRetries;
+  @ManagedProperty(
+    value = "#{roleResolver.defaultResolver}")
+  private RoleResolver roleResolver;
+  ...
+}
+----
+
+.faces-config.xml
+[source,xml]
+----
+<faces-config>
+  ...
+  <managed-bean>
+    <managed-bean-name>login</managed-bean-name>
+    <managed-bean-class>
+        at.company.webapp.model.Login
+    </managed-bean-class>
+    <managed-bean-scope>session</managed-bean-scope>
+    <managed-property>
+      <property-name>loginRetries</property-name>
+      <value>3</value>
+    </managed-property>
+    <managed-property>
+      <property-name>roleResolver</property-name>
+      <value>#{roleResolver.defaultResolver}</value>
+    </managed-property>
+  </managed-bean>
+  ...
+</faces-config>
+----
+
+After initializing the login, its loginRetries attribute has the value 3. The roleResolver attribute shows that the value can be a reference to another managed bean - via a value expression. All other attributes have their default values.
+
+The use of managed beans to initialize managed properties is limited in JSF. A managed property can not be initialized with a managed bean that has a shorter lifetime. For example, it is not allowed to inject a bean in the request scope into a bean in the session scope. The explanation for this is simple: Since a session runs longer than a request, the injected bean is out of date after the first request. Beans in the None Scope, on the other hand, can always be used because they are not stored in any scope.
+
+Initialization with dependency injection references offers some advantages over bean resolution in the code. On the one hand, static calls in the code can be avoided, and on the other hand, maintainability and clarity increase due to the central configuration.
+
+The Managed Bean Creation Facility is JSF's ability to create beans - but by far not the only one possible. With CDI and Spring, there are alternatives that are clearly superior in configuration scope and extensibility, but without unnecessarily increasing the complexity of the application. In the Section: Beans and Dependency Injection with CDI section, we show how managed beans are managed with CDI and the benefits of doing so.
+
+==== The role of managed beans
+
+So far, we've assumed that the managed beans are the model of the application according to the MVC design pattern. It does not necessarily have to be that way - in most cases it's even better if the managed beans are not directly the model, but only a mediator between view and actual model.
+
+How can you imagine that? A simple example, based on MyGourmet 1, helps clarify this issue. In MyGourmet 1, the managed bean is the model of the application; accessing the customer's first name looks like this: # {customer.firstName}, In addition to the model properties of the customer, the bean also contains the action methods for event handling. The disadvantage of this variant is the close coupling of GUI logic and model, which has a negative impact especially when it comes to changes.
+
+A more elegant solution is to completely free the model class Customer from JSF code and introduce a customer bean managed bean that has a Customer property in addition to the GUI logic. Access to the customer's first name looks like this: # {customerBean.customer.firstName}, In this variant, the model class can be created independently of the presentation layer in a lower layer of the application. The two variants are shown in Figure The Role of Managed Beans.
+
+====
+.The role of managed beans
+image::images/managed-beans-modell.jpg[]
+====
+
+For the time being, in MyGourmet we will stick to using the class Customer as a managed bean. Only in the more extensive examples from MyGourmet 5 in section [Section:  MyGourmet 5 : Conversion] is a separate class used.
+
+=== The Unified Expression Language
+
+A basic element of the JSF specification is the Unified Expression Language (abbreviated to Unified EL), which makes it possible to dynamically connect components of the user interface and the business data behind it. We want to read data from the model, but also write user input back to the model.
+
+Furthermore, it has to be defined which methods treat which events. Value expressions bind component attributes to managed beans and their properties, and method expressions reference methods. As in MyGourmet 1 , we'll take a closer look at section [Unified EL Section in MyGourmet 1].
+
+For the definition of an EL expression, a rhombus and a curly bracket precede the expression, and a curly bracket limit the expression. What is allowed between these limiters? Between these delimiters you can specify the name of managed beans or "implicit" objects, properties of these objects (separated by parent elements) or operators. These include arithmetic operators such as "+" and "-" as well as comparison operators, even the "ternary" operator ( condition? If_true: if_failure ) is allowed.
+
+==== Unified EL in MyGourmet 1
+
+In the example of MyGourmet 1, we have already made extensive use of value expressions to display customer data and save user input. Take the customer's first name as an example: The expression # {customer.firstName} connects the value of the input component to the property firstName of the managed bean customer. Figure Value Expression in Input Component shows the relationship between tag, component, and managed bean in more detail.
+
+====
+.Value Expression in Input Component
+image::images/unified-el-value-expression.jpg[]
+====
+
