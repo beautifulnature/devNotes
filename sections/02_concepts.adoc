@@ -418,3 +418,11 @@ This value expression binds the return value of the getName() method to the comp
 The new version of the Unified EL is part of Java EE 6 and comes automatically with all servers that support Servlet 3.0 and JSP 2.2 (such as Tomcat 7 or Jetty 8). If you use an older server, you still do not have to do without the most important features of the new Unified EL. Subsec Configuration of the Unified EL section shows how to use JBoss' alternative EL implementation.
 
 === Life cycle of an HTTP request in JSF
+
+From an HTTP request, some processing must be done in JSF to restore the state of the application and to prepare for the application logic to be called. These steps include the restoration of the component tree, the reading of the user-modified data from the HTTP request and the validation of that data, as well as the transfer of that validated data to the model objects. After calling up actions in the business logic, the last step remains - the output of the response to the HTTP request (the so-called "rendering"). This process is in the JavaServer Faces Specifically defined and forms an essential basis for any application based on the JSF technology. In Figure The lifecycle of an HTTP request, the process is shown.
+
+====
+.Method Expression in Command Component
+image::images/lifecycle-complete.jpg[]
+====
+
