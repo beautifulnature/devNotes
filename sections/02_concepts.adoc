@@ -337,4 +337,84 @@ image::images/unified-el-value-expression.jpg[]
 
 A value expression is only resolved when the value is actually read or set. Therefore, the value expression itself is stored in the component, not the value. A closer look at why this is necessary follows in the section [lifecycle of an HTTP request in JSF] over the lifecycle of JSF.
 
-The data is already properly read when the page is displayed and written when the form is submitted. It lacks the ability to call custom code when editing the submitted page - for example, to save the user's input in the database. This is where Method Expressions come into play. If the user press save button on editCustomer.jsf page,  the server should call the save method of the bean. For command components, there is the attribute action, which can contain a method expression. In our example, this is the expression # {customer.save} . The referenced method is called when all data entered by the user has been validated and valid. The returned string is used for navigation and determines which page is displayed. Figure Method Expression in Command Component shows the component's tag and the way to call the method associated with the component.
+The data is already properly read when the page is displayed and written when the form is submitted. It lacks the ability to call custom code when editing the submitted page - for example, to save the user's input in the database. This is where Method Expressions come into play. If the user press save button on editCustomer.jsf page,  the server should call the save method of the bean. For command components, there is the attribute action, which can contain a method expression. In our example, this is the expression # {customer.save}. The referenced method is called when all data entered by the user has been validated and valid. The returned string is used for navigation and determines which page is displayed. Figure Method Expression in Command Component shows the component's tag and the way to call the method associated with the component.
+
+====
+.Method Expression in Command Component
+image::images/unified-el-method-expression.jpg[]
+====
+
+More detailed information about the Unified EL can be found in the next section. The navigation process is described in more detail in section [Section: Navigation].
+
+==== The unified EL in detail
+
+Below is a brief overview of the possibilities offered by the Unified EL.
+
+* value = "# {user.username}" +
+Binds a component attribute to the username property of the managed bean named user. This means that when the component is rendered, the value is retrieved from the bean by calling getUsername(), and the value is returned to the bean by the setUsername() call in the update phase.
+* rendered = "# {user.username! = null}" +
+Binds a Boolean value ( true or false ) to the attribute of the component. This can be used very well to show or hide the component by setting the rendered attribute. To avoid problems, using the rendered attribute is preferable to using JSTL <c: if /> tags: , Such an expression does not update the value (there is no setter), so a compound expression can not be used for the value attribute of JSF components.
+* value = "# {bill.sum * 13,7603}" +
+If the value of an h:outputText component is labeled with this expression, the component will always have the current value of the property sum of the managed bean bill multiplied by 13,7603rd. However, this form of EL expressions should be used sparingly. Calculations of any kind are better off in the business logic.
+* style = "# {grid.displayed? 'display: inline;' : 'display: none;'} " +
+Here, the style attribute of a component is displayed either on display: inline; or display: none; A very common trick used to hide or show areas of a page on the client for certain attribute values.
+* value = "Hello User # {user.username}" +
+The combination of strings and unified EL expressions is also possible. In this way it is very easy to generate dynamic expressions. However, this solution has a serious drawback: When combined with the string, the value is no longer converted but simply called toString () .
+* action = "# {user.storeUser}" +
+Here, the action storeUser is called via a method expression. The referenced method must have the signature String storeUser() and return the string that determines navigation to the next page.
+* value = "# {mapBean ['index']}" +
+To access values ​​in objects that implement the Map interface, the key can be enclosed in square brackets. This notation is in principle equivalent to the dot notation, so it can also be referenced with the dot notation on the contents of a map. Conversely, it is possible to access the properties of normal beans with the notation of the square brackets. Small puzzles: Why can the notation with square brackets in certain situations be beneficial?
+* value = "# {mapBean [user.username]}" +
+Here's the resolution of the task: You can also nest value expressions, and then use the key to access the map or the property name to access the bean property specify via a value expression.
+* value = "# {listBean [5]}" +
+One final example: Here, the value of the component references the sixth entry in a list. Again, this index can be a value expression again, as in the above example.
+
+Implicit Objects: The basis for resolving the EL expressions can be any managed bean or a list of implicit objects provided by JSF. The following list contains the most important implicit objects:
+
+* requestScope +
+Access to the request map of the external context.
+* viewScope +
+Access to the view map of the view root.
+* sessionScope +
+Access to the session map of the external context.
+* applicationScope +
+Access to the application map of the external context.
+* view +
+Access to the view root.
+* param +
+Access to the request parameter map of the external context.
+* paramValues +
+Access to the Request-Parameter-Values-Map of the external context (behaves the same as the Request-Parameter-Map, except that a string array is returned here).
+* header +
+Access to the request header map of the external context.
+* headerValues +
+Access to the request header value map of the external context (behaves the same as the request header map, except that a string array is returned here).
+* facesContext +
+Access to the faces context
+* initParam +
+Access to the init parameter map of the external context and thus to context parameters of the web application.
+* cookie +
+Access to the request cookie map of the external context.
+
+Example: A common example of implicit objects: The # {param.myParam} expression can be used to access the request parameter named myParam.
+
+==== Extensions of the Unified EL in Java EE 6
+
+Java EE 6 brings a new version of the Unified EL with some long-awaited innovations. With the new version methods with parameters can finally be used in EL expressions. Until now this was only possible for static methods via EL functions (see section Section: Definition of an EL function).
+
+The use of method expressions with parameters opens up a number of interesting possibilities in JSF. In the example MyGourmet 9 in Section Section: MyGourmet 9: UIData and detail view you can see how an action method with parameters for deleting an address from a list can be used.
+
+But that is not all. As another innovation, value expressions are no longer limited to bean properties. The new unified EL allows you to call any method whose return value is the value expression value. This allows the following unified EL expressions:
+
+* value = "# {bean.list.size ()}" +
+With this expression, it is finally possible to read the number of elements of a list without detours.
+* value = "# {bean.text.replaceAll (':', '_')}" +
+This expression invokes the replaceAll() method on the text property of type String to replace all colons with underscores, and returns the result back. 
+* value = "# {bean.findOrders (otherBean.customer)}" +
+The value of this expression is determined by a call to the findOrders() method on the bean bean. The parameter customer of the bean otherBean is used as a parameter - this is also possible without any problems.
+* value = "# {bean.getName ()}" +
+This value expression binds the return value of the getName() method to the component. In contrast to the expression, # {bean.getName ()} can only be read - even if the method setName() exists - and is therefore not suitable for input fields.
+
+The new version of the Unified EL is part of Java EE 6 and comes automatically with all servers that support Servlet 3.0 and JSP 2.2 (such as Tomcat 7 or Jetty 8). If you use an older server, you still do not have to do without the most important features of the new Unified EL. Subsec Configuration of the Unified EL section shows how to use JBoss' alternative EL implementation.
+
+=== Life cycle of an HTTP request in JSF
