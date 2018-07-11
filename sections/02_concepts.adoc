@@ -453,3 +453,80 @@ In addition, when processing the method, each component (or more specifically th
 The conversion and validation will then be done in the next phase, but this phase can also be brought forward: setting the immediate attribute instructs the component to perform the conversion and validation already in phase 2. Why this is desirable in some cases and how it works is described in section [Section: Changing the Life Cycle - Immediate Attribute] explained in more detail.
 
 The submited value is also important in the rendering phase, especially for writing custom components. If the validation or conversion of components of the page is unsuccessful, the submitting value must be used when rendering the components - it would not be correct to use the "old" component value stored in the value property because otherwise information of the user would be lost.
+
+*Phase 3: Conversion and Validation ( Process Validations )*
+
+*Phase 4: Update Model ( Update Model Values )*
+
+*Phase 5: Execute application ( Invoke Application )*
+
+*Phase 6: Render Response (Render Response)*
+
+===== Changing the life cycle - immediate attribute
+
+===== immediate attribute for command components
+
+==== MyGourmet 2: immediate attributes
+
+=== Navigation
+
+=== Events and Event Handling
+
+==== Value Change Events
+
+==== Action Events
+
+==== MyGourmet 3: Events
+
+==== System Events
+
+==== Phase Events
+
+==== MyGourmet 4: Phase Listener and System Events
+
+===== Life cycle analysis
+
+=== Page declaration languages
+
+==== Benefits of Facelets over JSP
+
+==== Page declaration languages ​​in use
+
+=== Using the ID attribute in JSF
+
+=== conversion
+
+==== Standard converter
+
+==== Custom converter
+
+==== MyGourmet 5: Conversion
+
+=== validation
+
+==== Bean validation according to JSR-303
+
+===== Custom Constraints with Bean Validation
+
+==== Standard Validators
+
+==== Custom validators
+
+==== MyGourmet 6: Validation
+
+=== Messages
+
+=== Internationalization
+
+==== Determination of the localization code
+
+==== Internationalization of JSF Messages
+
+===== Messages for bean validation
+
+==== Internationalization of application texts
+
+==== MyGourmet 7: Internationalization
+
+Test
+

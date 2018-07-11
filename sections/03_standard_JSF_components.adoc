@@ -1,0 +1,10 @@
+== standard JSF components
+
+=== Basic Functions of the Core Tag Library
+
+==== Reset components with f:resetValues
+
+=== Form Component
+
+=== Command components
+
