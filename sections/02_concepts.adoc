@@ -470,7 +470,130 @@ The submited value is also important in the rendering phase, especially for writ
 
 === Navigation
 
+An important part of any JSF application is the definition of navigation between views. In order for the user in the browser to ever be able to switch from one view of the application to another, the page declaration must contain a command component. This is a component that initiates the sending of the current page to the server and thus initiates the processing of the lifecycle on the server. Of these command components, there are two in JSF: h: commandButton and h: commandLink . As the name already suggests, they are output as a button or link in HTML. 
+
+The decisive factor for the use of navigation is the action attribute the command components. It will decide at the end of the Invoke Application phase which view will be rendered by JSF and returned to the user.
+
+As of JSF 2.0, the view ID of a view can be specified directly in the action attribute or returned by the action method - we call this implicit navigation. Let's take a closer look at the navigation in MyGourmet. Listing command components from MyGourmet shows the two command components in the view editCustomer.xhtml. The first button triggers navigation to the showCustomer.xhtml view because the action method is save returns this view id. When pressing the second button, the user ends up on the view named cancelled.xhtml in the action attribute.
+
+[source,xhtml]
+----
+<h:commandButton id="save" value="Save"
+    action="#{customer.save}"/>
+<h:commandButton id="cancel" value="Cancel"
+    action="/cancelled.xhtml" immediate="true"/>
+----
+
+The classic variant of navigation is based on navigation rules. You specify when which page of the application is called. JSF allows the definition of any number of navigation rules in faces-config.xml. In a rule, before the listing of the individual navigation cases, the element from-view-id appears. This element determines from which page the following navigation cases are valid.
+
+Listing navigation rule for MyGourmet shows a navigation rule for the page declaration with the view ID editCustomer.xhtml, the navigation in MyGourmet currently used with implicit navigation equivalent. The individual navigation cases can only become active if the user is on this view.
+
+.faces-config.xml
+[source,xml]
+----
+<navigation-rule>
+  <from-view-id>/editCustomer.xhtml</from-view-id>
+  <navigation-case>
+    <from-outcome>ok</from-outcome>
+    <to-view-id>/showCustomer.xhtml</to-view-id>
+  </navigation-case>
+  <navigation-case>
+    <from-outcome>cancel</from-outcome>
+    <to-view-id>/cancelled.xhtml</to-view-id>
+  </navigation-case>
+</navigation-rule>
+----
+
+In contrast to the previous example, the navigation rule in Listing Global Navigation Rule is global for all views of the application. The from-view-id element will contain an expression in such cases to define the appropriate view IDs. In the simplest case, the value * includes all views. But it is equally possible for example to restrict the rule to a directory within the application with /secure/*.
+
+.faces-config.xml
+[source,xml]
+----
+<navigation-rule>
+  <from-view-id>*</from-view-id>
+  <navigation-case>
+    <from-outcome>logout</from-outcome>
+    <to-view-id>/home.xhtml</to-view-id>
+  </navigation-case>
+</navigation-rule>
+----
+
+One or more navigation cases then follow in the detail area of ​​the navigation rules. These navigation cases define the page transitions via filter and target elements. The landing page is defined by the element. The filter elements are from-outcome and the less frequently used from-action.
+ 
+The string in the from-outcome element of the navigation rule must then match the return value of the action method. As an alternative, there can be a string directly in the action attribute, which must then correspond to the element from-outcome . 
+
+If there are several same return values, the navigation case may be using the from-action element be further restricted to calling a particular action method. Listing navigation case with from-action shows a corresponding navigation case.
+
+.faces-config.xml
+[source,xml]
+----
+<navigation-case>
+  <from-action>#{customer.save}</from-action>
+  <from-outcome>ok</from-outcome>
+  <to-view-id>/showCustomer.xhtml</to-view-id>
+</navigation-case>
+----
+
+We have not considered a case yet. What happens if the action method returns null ? The answer is simple (at least before JSF 2.0): The current page is displayed again. As of JSF 2.0, this behavior can be affected by conditional navigation, but more on that later.
+
+In some cases, it may be necessary to trigger the navigation explicitly through the JSF navigation handler, for example, to navigate from one action listener to another. This is not possible in direct form because the action listener does not return a string. To do this, first define a global navigation rule in the faces-config.xml, with the from-outcome on a string and to-view-id are set to the desired landing page. Listing Programmatic navigation shows the call that causes navigation to the destination page. As of JSF 2.0, it is of course also possible to specify a view ID directly instead of the global navigation rule.
+
+[source,java]
+----
+FacesContext ctx = FacesContext.getCurrentInstance();
+fc.getApplication().getNavigationHandler()
+    .handleNavigation(ctx, null, "cancel");
+----
+
+Since version 2.0 JSF also offers conditional navigation. With the if element, which takes a value expression that must evaluate to a Boolean value, navigation cases can be made dependent on the result of that expression. The element if can be used in combination with from-outcome or from-action or as the only condition for a navigation case. Either way, all specified conditions must be met for the navigation case to occur.
+
+Listing Conditional navigation in action shows a version of the already known navigation rule from MyGourmet with conditional navigation. The navigation after pressing the Cancel button depends on the customer.registered property in the example. If the user is already registered and only changes his data, he will return to the overview page /showCustomer.xhtml when the button is clicked. If it terminates before the registration is completed, it will arrive at the view /cancelled.xhtml
+
+.faces-config.xml
+[source,xml]
+----
+<navigation-rule>
+  <from-view-id>/editCustomer.xhtml</from-view-id>
+  <navigation-case>
+    <from-outcome>ok</from-outcome>
+    <to-view-id>/showCustomer.xhtml</to-view-id>
+  </navigation-case>
+  <navigation-case>
+    <from-outcome>cancel</from-outcome>
+    <if>#{customer.registered}</if>
+    <to-view-id>/showCustomer.xhtml</to-view-id>
+  </navigation-case>
+  <navigation-case>
+    <from-outcome>cancel</from-outcome>
+    <if>#{not customer.registered}</if>
+    <to-view-id>/cancelled.xhtml</to-view-id>
+  </navigation-case>
+</navigation-rule>
+----
+
+The introduction of conditional navigation also affects navigation behavior when the action method returns null. In JSF versions before 2.0, the current page was always displayed again. As of version 2.0, JSF checks all navigation cases that have an if element without from-outcome or from-action.
+
 === Events and Event Handling
+
+An essential part of any web application is the handling of user input at the client. For example, if the user clicks a button or selects an entry from a list, a corresponding action must be taken. In JavaServer Faces events (events) are used. These events are then handled by event listeners previously registered with a component for a particular event type. As an example, the button to save from MyGourmet 2 in Listing MyGourmet 2: The page `editCustomer.xhtml`. 
+
+For this button component, the method expression in the attribute `action` registered an event handling method. If the user clicks on the button in the browser, an event is generated when the lifecycle is processed, and the registered method is called. 
+
+The handling of the events and the call of the event listeners is done in JSF on the server side. When the lifecycle is run, events can be generated and inserted into an event queue when the phases are processed as of the `Apply Request Values ​​phase`. When the phase is finished, the registered event listeners are called for the events in the queue. This must not happen earlier, so that each event listener sees the same status of the component tree. Illustration The lifecycle of an HTTP request provides an overview of the lifecycle and the possible places for dealing with events. From the figure, it can be seen that there is the possibility of influencing the life cycle when executing the events. Event listeners can with the method FacesContext.renderResponse() can jump directly to the Render Response phase or with the method FacesContext.responseComplete() completely abort the life cycle. As it stands in an example, MyGourmet 3 shows in section [Section:  MyGourmet 3 : Events].
+
+JSF defines several types of events (and matching event listeners) that are triggered by user actions or by the system. The following events are triggered by user actions:
+
+* Value change events are triggered when the value of an input component changes. For details, refer to section [Value Change Events Section].
+
+* Action events are fired by command components when they are activated. Details can be found in section [Action Events].
+
+The following events are triggered by the system:
+
+* System events are triggered by the system at certain times in the life cycle. Details can be found in section [System Events].
+
+* Phase events are routinely triggered by the system during the life cycle before and after each phase. Details can be found in section [Section: Phase Events] .
+
+A more detailed description of each event type follows in the next sections.
 
 ==== Value Change Events
 
@@ -488,11 +611,115 @@ The submited value is also important in the rendering phase, especially for writ
 
 === Page declaration languages
 
+A View Declaration Language (VDL) is a syntax for declaring views or pages for JSF. This concept was introduced in JSF 2.0 as part of the integration of facelets to abstract from the technology used. The standard supports as of version 2.0 with facelets and JSP two concrete implementations of a VDL. 
+
+Before version 2.0 of JavaServer Faces JSP was the primary page declaration language of the specification. Developers should be made as easy as possible by using a standardized and widely used technology to move to JSF. A noble approach - but unfortunately the JSF and JSP team is a suboptimal solution, mainly because the two technologies were designed for different purposes. 
+
+Let's take a closer look at this discrepancy between JSP and JSF. As you already know, a request in JSF will be processed in several phases. The structure of the component tree from the page declaration and the output of the view take place in different phases. And that's exactly where the problem lies: JavaServer Pages were designed for a much simpler life cycle. 
+
+A request is processed with JSPs in a single phase - which also returns the response in the background. In the background, each JSP file is compiled into a servlet with a more or less complex set of out.println ("...") statements. This is particularly problematic when combined with JSF if the JSP file contains component content as well as simple content such as HTML elements and text. These are output directly while the file is being processed, while the component tags are used to build the component tree, which is not rendered until the end of the lifecycle. This and other reasons make the construction of the component tree from JSP page declarations relatively expensive.
+
+This is where facelets come in - an alternative technology for declaring views that is perfectly integrated into the JSF lifecycle. The main task of facelets is to build component trees from XHTML documents. Facelets does the job brilliantly and, compared to JSP, also has some other benefits that we will discuss in the next section. 
+
+In JavaServer Faces 2.0, Facelets took the place of JSP as the primary page declaration language. JSP is supported in the standard only for compatibility reasons. New features are available from JSF 2.0 only with facelets.
+
 ==== Benefits of Facelets over JSP
+
+The use of facelets in a JSF project offers a number of practical advantages over the use of JavaServer Pages. 
+This is not surprising since Facelets was developed specifically for JSF. 
+The resulting seamless integration into the lifecycle does not entail many JSP-inherent problems in building the views.
+
+Opting for the JSF life cycle makes the creation and delivery of views with facelets more efficient. 
+This affects on the one hand in a higher speed when processing the pages compared to JSP. 
+On the other hand, there are also some benefits for page authors. 
+Problems with the combination of components and standard HTML content are a thing of the past with facelets. 
+The use of `f: verbatim` is therefore unnecessary, as is the need to use `f: view`. 
+
+Facelets provides the ability to build pages and content on templates. 
+For more information, see section Section: Templating. 
+The reuse of content is generally capitalized, which facilitates the modularization of your projects and thus increases the maintainability. 
+Page fragments can be stored centrally and integrated into multiple pages. 
+It even goes so far that you can create components without writing a line of Java code. 
+You can find out how this works in Chapter Chapter: Custom JSF component.
+
+After this brief overview of the benefits of facelets, let's take a closer look at the practical aspects of page declarations in the next section.
 
 ==== Page declaration languages ​​in use
 
+JSF 2.0 was a big step forward in terms of supporting page declaration languages. 
+In older versions, the view handler had to be replaced to use facelets in their own projects. 
+With version 2.0 this step became obsolete. JSP and facelets work right now without further configuration. 
+
+When integrating facelets into the JSF standard, special emphasis was placed on backward compatibility with the previous version before JSF 2.0. 
+Outwardly, nothing has changed for developers who use facelets as VDL. 
+Only the implementation was adapted to JSF 2.0. 
+So if you have classes from the com.sun.facelets package in your project or using a subpackage, you must adapt your project to the new classes. 
+In all other cases, the use of facelets is even easier, since the inclusion of the jar files and the facelets view handler is eliminated. 
+
+So far we have used facelets in all the examples. 
+It's time to take a closer look at such a declaration. 
+<<.showCustomer.xhtml,List page declaration in facelets>>  shows again showCustomer.xhtml from MyGourmet 1 in a slightly shortened version.
+
+.showCustomer.xhtml
+[source,xhml]
+----
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:f="http://xmlns.jcp.org/jsf/core"
+    xmlns:h="http://xmlns.jcp.org/jsf/html">
+<head><title>Show Customer</title></head>
+<body>
+  <h1><h:outputText value="Show Customer"/></h1>
+  <h:panelGrid id="grid" columns="2">
+    <h:outputText value="First Name:"/>
+    <h:outputText value="#{customer.firstName}"/>
+    <h:outputText value="Last Name:"/>
+    <h:outputText value="#{customer.lastName}"/>
+  </h:panelGrid>
+  <h:outputText value="Customer saved!"/>
+</body>
+</html>
+----
+
+Technically speaking, a facelet declaration is nothing more than an XHTML document with the Doctype XHTML Transitional. 
+The integration of the tag libraries used is realized via namespaces in the root element of the document. 
+In the Listing Page Declaration in Facelets example, all core tag library tags are prefixed with f: and the HTML tag library tags are prefixed with h : . The rest of the document consists only of component tags and pure HTML. 
+
+JSF decides according to some rules whether a page declaration is interpreted as JSP or facelets. This behavior can be controlled by the following context parameters in the web.xml:
+
+* javax.faces.DEFAULT_SUFFIX defines a space-separated list of view identifier extensions that JSF should interpret as JSP. The default is .jsp.
+* javax.faces.FACELETS_SUFFIX defines a space-separated list of view identifier extensions that JSF should interpret as JSF. The default is .xhtml.
+* javax.faces.FACELETS_VIEW_MAPPINGS defines a semicolon-separated list of view identifiers that JSF should interpret as facelets. 
+This list may also contain wildcard entries such as /secure/*.
+
 === Using the ID attribute in JSF
+
+In addition to the value attribute, JSF probably uses the id attribute most often. This attribute allows the developer to set a unique ID for the component. However, the ID does not have to be unique for the entire page, but only within the current naming container in which the component is embedded. Naming containers in JSF are some components that restrict large areas of the page, such as h: form , h: dataTable, or all composite components.
+
+To help the developer keep the component IDs of a web page unique, JSF does not directly write the user-supplied ID in the rendered output. Instead, the so-called client ID of the component is used. The client ID is composed of colons separated by the ID of the component and the IDs of all parent components that are naming containers. 
+
+For example, in Figure <<.Client IDs in MyGourmet 3, Client IDs in MyGourmet 3>>, the client IDs from the example MyGourmet 3 can be found. All input components and the buttons are located inside the form with the ID form, which can also be recognized by the client IDs.
+
+====
+.Client IDs in MyGourmet 3
+image::images/client-ids-mygourmet03.jpg[]
+====
+
+Changing the page structure, adding or dropping naming containers as parents, also changes the client ID of the embedded component. 
+As of JSF 1.2, this behavior can be affected for form components. 
+The prependId attribute of the h: form tag controls whether the ID of the form precedes the identifiers of its components (value is true ) or not (value is false ). The default value is true. 
+Figure <<.Client IDs in MyGourmet 3 with prependId set to false, Client IDs in MyGourmet 3 with prependId to false>> again shows the client IDs from the example MyGourmet 3 - this time, however, the attribute prependId of the h: form tags set to false.
+
+====
+.Client IDs in MyGourmet 3 with prependId set to false
+image::images/client-ids-mygourmet03-prependid.jpg[]
+====
+
+Of course, the client ID is also needed within the source code - for example, to render the ID of a component. 
+The full ID is accessed through the `getClientId(FacesContext fc)` method defined in UIComponent. 
+If no ID is set for the component when this method is first called, the component is assigned an automatic ID. 
+These automatic IDs are distinguishable from manually assigned identifiers through the prefix `j_id`.
 
 === conversion
 
@@ -527,6 +754,4 @@ The submited value is also important in the rendering phase, especially for writ
 ==== Internationalization of application texts
 
 ==== MyGourmet 7: Internationalization
-
-Test
 

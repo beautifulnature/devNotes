@@ -1,10 +1,164 @@
 == standard JSF components
 
+JSF offers a good selection of predefined components that provide a lot of functionality for creating user interfaces. 
+For most use cases, these standard components have the desired behavior, from simple entry buttons to text boxes, to the presentation of data in tabular form. 
+
+All standard JSF UI component classes extend the class javax.faces.component.UIComponentBase, which defines the basic behavior of a UI component. 
+
+The inclusion of a JSF component in a page declaration occurs in facelets and JSP through its tag. 
+The tags for the standard JSF components and their appearance as HTML output are in the HTML custom tag library, The core tag library has additional tags that provide base actions independent of a special render kit. 
+JSF 2.2: In JSF 2.2, all tag libraries have new namespaces starting with http://xmlns.jcp.org instead of http://java.sun.com, as shown in table: standard-taglibs. 
+JSF 2.2 supports both new and old namespaces. However, we recommend switching to the new namespaces for optimum future security. 
+In addition, the table shows the prefixes with which the namespaces are usually included in the page declaration.
+
+[options="header",cols="1,1,1"]
+|===
+|Tag Library   |namespace   |prefix   
+//----------------------
+|HTML custom tag library   |http://xmlns.jcp.org/jsf/html (from 2.2)   |h   
+|   |http://java.sun.com/jsf/html (before 2.2)   |h   
+|Core tag library   |http://xmlns.jcp.org/jsf/core (from 2.2)   |f   
+|   |http://java.sun.com/jsf/core (before 2.2)   |f   
+|===
+
+We have already explained in section Section: Page Declaration Languages ​​in Action how the tag libraries in the Facelets and JSP-based pages look like . 
+
+Hierarchical structure - child components: In order to nest components in one another and thus to build a component tree, the child components are inserted directly into the parent components in a page declaration. Each component manages a list to access these child components. 
+
+Hierarchical structure - Facets: If a child component is to play a special role for the parent component, can - as an alternative to direct embedding as a child element - called Facets be used. 
+This can be used to define a specific type or behavior of children elements - for example, a header or footer is included in a table. 
+This effect is achieved with the f: facet tag. 
+In JSF versions prior to 2.0, if a second component is taken over the facet, this second component will not be displayed - a stumbling block for many JSF users. Facets are identified by name, so they are stored as a map in the parent component.
+
+[options="header",cols="1,1,1"]
+|===
+|attribute   |Type   |Description  
+//----------------------
+|id   |string   |Unique identifier of the component; if `id` is not specified, an identifier is generated   
+|immediate   |boolean   |If this property is set to `true`, `input and command components` are already processed in phase 2 of the lifecycle.   
+|value   |Object   |The value of the component directly as text or as value expression   
+|rendered   |boolean   |Determines the visibility of the component   
+|converter   |Converter   |Determines the converter for the display   
+|validator   |Method expression   |References a validation method   
+|styleClass   |string   |CSS class names of the component (separated by spaces) 
+|style   |string   |CSS properties for rendered HTML element 
+|label   |string   |Description of Error Messages for Input Components (JSF 1.2)
+|binding   |string   |Binds the instance of the component to a property of a backing bean   
+|===
+
+This relationship show the code examples in section [Section:  MyGourmet 9 : UIData and detailed view] , a table with about Facets describe integrated headers and footers. The columns of the table are executed as child elements. 
+
+Component attributes: The behavior of a component's attributes is adjusted. Attributes such as id or value occur in most standard components. Table fig: component-common-props describes the most common of these attributes. All these attributes (except id and var) can contain a value expression and dynamically access values ​​in the backing beans.
+
+Examples of standard JSF components: The following HTML custom tag library examples are built on MyGourmet. For reasons of clarity, only the changes and expansions relevant to the component just described are depicted in the individual sections. The example MyGourmet 8 in section [Section:  MyGourmet 8 : Standard Components] summarizes all changes to the standard JSF components. The UIData component will be released with MyGourmet 9 in section [Section:  MyGourmet 9 : UIData and detail view] dedicated to a separate example. 
+
 === Basic Functions of the Core Tag Library
+
+The tags in the core tag library are responsible for the basic functionality independent of special renderers; the functionality is usually provided purely by the tags (possibly together with framework classes of JSF), no custom components are created, but attributes of existing components are set or changed. The following list lists the most important JSF core tags in alphabetical order. The descriptions of each tag are deliberately kept short because many of them are only used in combination with other tags.
+
+* f: actionListener +
+Adds an action listener to a component. Details can be found in Section Section: Action Events.
+* f: ajax +
+Adds Ajax functionality to the view (see chapter Chapter: Ajax and JSF).
+* f: attribute, f: attributes + 
+Adds an attribute to a component.
+* f: convertDateTime +
+Adds a DateTime converter to a component. Details can be found in Section Section: Standard Converters.
+* f: converter +
+Adds a freely selectable converter to a component. Details can be found in Section Section: Custom Converters.
+* f: convertNumber +
+Adds a Number converter to a component. Details can be found in Section Section: Standard Converters.
+* f: event + 
+Registers a system event listener on the enclosing component (see section : System Events).
+* f: facet +
+Adds a component with a specific, named relationship to the parent component. The component nested within the f: facet tag is displayed. Used in more complex components such as h: panelGrid or h: dataTable .
+* f: loadBundle +
+This localization tag should no longer be used. Alternatives can be found in section Subsec Internationalization of Application Texts .
+* f: metadata + 
+Defines an area for inserting view parameters with `f:viewParam` and view actions with `f:viewAction`. Must be a child day of `f:view`. Details can be found in Section Section: Bookmarks and GET Requests in JSF .
+* f: param +
+Adds a parameter to components like h: outputFormat , h: commandLink or h: link .
+* f: passThroughAttribute , f: passThroughAttributes + 
+Adds single or multiple pass-through attributes to a component (see section Section: HTML5 Pass-Through Attributes).
+* f: phaseListener +
+Adds a phase listener to the `UIViewRoot`.
+* f: resetValues +
+Allows you to reset input components (details will follow later in this section).
+* f: selectItem, f: selectItems +
+Defines single or multiple selection object selections, such as `h:selectOneListbox` or `h:selectManyCheckbox`.
+* f: setPropertyActionListener + 
+Adds an action listener to a component that sets a managed bean property when submitting the page.
+* f: validateBean +
+Controls the behavior of the bean validation framework. For more details see Section Section: Bean Validation to JSR-303 .
+* f: validateDoubleRange +
+Adds a validator to a component that checks a floating-point number for a specific value range (see section Section: Standard Validators).
+* f: validateLength +
+Adds a validator to a component that validates the length of a string (see section Section: Standard Validators).
+* f: validateLongRange +
+Adds a validator to a component that checks an integer for a value range (see section Section: Default Validators).
+* f: validateRegex + 
+Adds a validator to a component that compares a string to a regular expression (see section Section: Default Validators).
+* f: validateRequired +
+Adds a validator to a component. This checks whether the user has specified a value (see section Section: Standard validators).
+* f: validator +
+Adds a custom validator registered to the system to a component (see section Section: Custom Validators).
+* f: valueChangeListener +
+Adds a value change listener to a component. Details can be found in Section Section: Value Change Events.
+* f: view +
+Defines the root node of the component tree of a page. This tag is necessary for the initialization of the Faces context, but must only be mandatory in JSP pages.
+* f: viewActionInserts + 
+a view action into the component tree. Must be a child of f: metadata (see section Section: View Actions).
+* f: viewParamInserts + 
+a view parameter in the component tree. Must be a child of f: metadata (see section Section: View Parameters).
 
 ==== Reset components with f:resetValues
 
+JSF 2.2: With the `f:resetValues` ​​tag, JSF 2.2 can elegantly solve a problem that has already been known for some time. In some cases, JSF can not update the value of input components unless explicitly previously reset. f: resetValues adds an action listener to command components that resets all input components whose client IDs are specified in the render attribute. Be sure to use the complete client ID of the components in render.
+
+Listing <<.Example of `f:resetValues`, Example of `f:resetValues`>> shows an example of `f:resetValues`. The action method reset resets the value of the value1 property to 0.
+
+.Example of `f:resetValues`
+[source,xhtml]
+----
+<h:form id="form">
+  <h:inputText id="v1" value="#{bean.value1}">
+    <f:validateLongRange minimum="10"/>
+  </h:inputText>
+  <h:commandButton value="Save"/>
+  <h:commandButton value="Reset" action="#{bean.reset}"
+      immediate="true">
+    <f:resetValues render="form:v1"/>
+  </h:commandButton>
+</h:form>
+----
+
+This example works without `f:resetValues`, but only until the user presses the save button with an invalid value for the input field. In this case, the local value of the component remains set and the value updated in the action method is not displayed. With `f:resetValues` that the local value is deleted before JSF performs the action method ensures. In section Section: Reset input fields, this problem is further analyzed for Ajax requests.
+
 === Form Component
+
+The component `UIForm` with the tag `h:form` is analogous to the form element in HTML and must enclose all input and command components that return data to the application and trigger actions. 
+
+The component itself is rendered as a form element and is not displayed in the browser. A page can contain several `UIForm` components. Listing <<.Example of `h:form`, Example of `h:form`>> shows once again the form from MyGourmet 1 for demonstration.
+
+.Example of `h:form`
+[source,xhtml]
+----
+<h:form id="form">
+  <h:panelGrid id="grid" columns="2">
+    <h:outputLabel value="First Name:" for="firstName"/>
+    <h:inputText id="firstName"
+      value="#{customer.firstName}"/>
+    <h:outputLabel value="Last Name:" for="lastName"/>
+    <h:inputText id="lastName"
+      value="#{customer.lastName}"/>
+    <h:commandButton id="save" value="Save"
+        action="#{customer.save}"/>
+  </h:panelGrid>
+</h:form>
+----
+
+*Hyperlinks:* +
+In contrast to the HTML standard, a `UIForm` is also required for the execution of hyperlinks that are inserted into the view with `h:commandLink`. Because Command Link components submit a form when activated, they do not work without enclosing `UIForm`. The link tags `h:outputLink` and `h:link` work without problems even outside a `UIForm`.
 
 === Command components
 
