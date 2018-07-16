@@ -637,11 +637,189 @@ public void setUseCreditCard(
 ----
 
 ==== Simple selection
+
+The `UISelectOne` component allows the selection of a single object from a selection list. 
+The `UISelectOne` class is also a subclass of `UIInput`. 
+For this component, there are standard tags for displaying the objects as a radio button (`h:selectOneRadio`), list box (`h:selectOneListbox`) or pop-up menu (`h:selectOneMenu`). 
+Examples of how the standard tags are displayed in the browser can be found in table: component-selectone.
+
+[options="header",cols="1,1"]
+|===
+|Standard tag   |example   
+//-------------
+|h:selectOneRadio
+a| image::images/comp-selectoneradio.jpg[]
+|h:selectOneListbox
+a| image::images/comp-selectonelistbox.jpg[]   
+|h:selectOneMenu
+a| image::images/comp-selectonemenu.jpg[]
+|===
+With the `value` attribute of the `UISelectOne` component, the selected value is linked to the property of a bean via a value expression. 
+If the bound value does not have the data type `String`, a suitable converter must be selected.
+
+To demonstrate `UISelectOne`, the example is extended to include the `gender` property. 
+Listing <<.radio button in use, radio button in use>> shows the tag as a radio button.
+
+.radio button in use
+[source,xhtml]
+----
+<h:selectOneRadio id="gender" required="true"
+    value="#{customerBean.customer.gender}">
+  <f:selectItem itemLabel="Female" itemValue="f"/>
+  <f:selectItem itemLabel="Male" itemValue="m"/>
+</h:selectOneRadio>
+----
+
+Setting `required` = `true` forces you to choose one of these two options. 
+In Listing <<.property `gender`, property `gender`>> you will find the necessary changes to the class Customer.
+
+.property `gender`
+[source,java]
+----
+private Character gender;
+public Character getGender() {
+  return gender;
+}
+public void setGender(Character gender) {
+  this.gender = gender;
+}
+----
+
 ==== Multiple selection
+
+Now that we know what the `UISelectOne` component can do, the functionality of the `UISelectMany` component is not hard to guess. 
+This component allows the user to select none, one or more objects from a selection list. 
+The class `UISelectMany` is derived from the class `UIInput`. 
+Standard tags are available for selection as selection field (`h:selectManyCheckbox`), list (`h:selectManyListbox`) or selection menu (`h:selectManyMenu`) Some browsers can not handle the presentation as a selection menu reasonable. 
+Even if the presentation is possible, the user interaction is difficult - the representation is the same as in the `UISelectOne` component. 
+Examples of how the standard tags are displayed in the browser can be found in table: component-selectmany.
+
+[options="header",cols="1,1"]
+|===
+|Standard tag   |example   
+//-------------
+|h:selectManyCheckbox   a| image::images/comp-selectmanycheckbox.jpg[]  
+|h:selectManyListbox   a| image::images/comp-selectmanylistbox.jpg[]
+|h:selectManyMenu   a| image::images/comp-selectmanymenu.jpg[]
+|===
+
+For each object or object group for the selection list, an `f:selectItem` or `f:selectItems` tag is nested in the component's tag (see section [sec: simple selection]). 
+The `value` attribute binds the selected values ​​to a bean property using a value expression whose type is an array of primitive types or objects or a list of strings. 
+If it is an array of a type other than a `String`, a matching converter is selected.
+
 ===== Selection field `h:selectManyCheckbox`
+
+The `h:selectManyCheckbox` tag can be used to create a group of checkboxes, each representing a value that can be selected by the user. 
+The values ​​of the selection fields are specified by nested `f:selectItem` or `f:selectItems` tags. 
+The value of the checkboxes can be integrated in the `value` attribute via a unified-EL expression with the `enabledClass` and `disabledClass` attributes.
+
+CSS style classes can be included which determine the layout of the selected or unselected selection fields and the associated text. 
+With the attribute `layout` the arrangement of the individual items or selection fields can be determined: With the value `pageDirection` the selection fields are arranged vertically and with `lineDirection` horizontally. If the layout attribute is not specified, the display is horizontal. 
+
+As a demonstration, the `Customer` class in MyGourmet will be the `preferredCategories` property extended. 
+The user can thus select preferred categories from a list of values. 
+The tag for a selection as `h:selectManyCheckbox` with two fixed values ​​(horizontally arranged checkboxes) can be found in Listing <<.selection field in action, selection field in action>>.
+
+.selection field in action
+[source,xhtml]
+----
+<h:selectManyCheckbox id="prefCat"
+    value="#{customerBean.customer.preferredCategories}">
+  <f:selectItem itemValue="IT" itemLabel="Italian"/>
+  <f:selectItem itemValue="GR" itemLabel="Greek"/>
+</h:selectManyCheckbox>
+----
+
+The HTML output rendered from the tag in Listing <<.selection field in action, selection box>> is visible in the Listing <<.HTML output of the selection box, HTML output of the selection box>>.
+
+.HTML output of the selection box
+[source,html]
+----
+<table id="form:prefCat">
+  <tr>
+    <td>
+      <input id="form:prefCat:0" type="checkbox"
+          name="form:prefCat" value="IT"/>
+      <label for="form:prefCat:0"> Italian</label>
+    </td>
+    <td>
+      <input id="form:prefCat:1" type="checkbox"
+          name="form:prefCat" value="GR"/>
+      <label for="form:prefCat:1"> Greek</label>
+    </td>
+  </tr>
+</table>
+----
+
+The class Customer receives the property preferredCategories . For the corresponding code snippet, see the Listing <<.Bean property for a select box, Bean property for a select box>>.
+
+.Bean property for a select box
+[source,java]
+----
+private List<String> preferredCategories =
+    new ArrayList<String>();
+public List<String> getPreferredCategories() {
+  return preferredCategories;
+}
+public void setPreferredCategories(
+    List<String> preferredCategories) {
+  this.preferredCategories = preferredCategories;
+}
+----
+
 ===== List box `h:selectManyListbox`
+
+With a large number of selections, the display as a selection field is confusing and a list box in which the elements are displayed listed is more practicable. 
+Listing <<.list box in action, list box in action>> shows how the `preferredCategories` property is used with the `h:selectManyListbox` tag.
+
+.list box in action
+[source,xml]
+----
+<h:selectManyListbox id="prefCat"
+    value="#{customerBean.customer.preferredCategories}">
+  <f:selectItem itemValue="IT" itemLabel="Italian"/>
+  <f:selectItem itemValue="GR" itemLabel="Greek"/>
+</h:selectManyListbox>
+----
+
+The HTML output rendered from the tag in Listing <<.list box in action, list box>> displays Listing <<.HTML output of the list box, HTML output of the list box>>.
+
+[source,html]
+----
+<select id="form:prefCat" name="form:prefCat"
+    multiple="multiple" size="2">
+  <option value="IT">Italian</option>
+  <option value="GR">Greek</option>
+</select>
+----
+
 ===== Menu field `h:selectManyMenu`
-==== Menu field `h:selectManyMenu`
+
+Unlike the list box, only one item is displayed in a menu at a time. 
+In Internet Explorer you can scroll to the remaining elements via a scrollbar, in Mozilla (and its relatives) only one element is displayed at a time. The multiple choice is definitely difficult for the user to accomplish.
+
+The example with the preferred categories as menu can be found in Listing <<.menu box in action,menu box in action>>.
+
+[source,xhtml]
+----
+<h:selectManyMenu id="prefCat"
+    value="#{customerBean.customer.preferredCategories}">
+  <f:selectItem itemValue="IT" itemLabel="Italian"/>
+  <f:selectItem itemValue="GR" itemLabel="Greek"/>
+</h:selectManyMenu>
+----
+
+The HTML code can be seen in Listing <<.HTML output of the menu field, HTML output of the menu field>>.
+
+[source,html]
+----
+<select id="form:prefCat" name="form:prefCat"
+    multiple="multiple" size="1">
+  <option value="IT">Italian</option>
+  <option value="GR">Greek</option>
+</select>
+----
+
 ==== Definition of choices
 ===== Single choice with `f:selectItem`
 ===== Several options with `f:selectItems`

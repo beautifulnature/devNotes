@@ -1,0 +1,58 @@
+:sectnums:
+== Advanced JSF
+
+=== Project Stage
+
+=== Advanced Facelets
+
+==== Reuse of content with facelets
+
+==== Creating tag libraries with facelets
+
+===== Definition of an EL function
+
+===== Definition of a converter tag
+
+===== Definition of a validator tag
+
+==== MyGourmet 10: Advanced Facelets
+
+=== Templating
+
+==== Multi-level templating
+
+==== Several templates per page
+
+==== MyGourmet 11: Templating with facelets
+
+=== Bookmarks and GET requests in JSF
+
+==== Navigation with h: link and h: button
+
+==== View parameters
+
+===== Positioning of `f:metadata`
+
+===== Life cycle with `View-Parameters`
+
+==== `View-Actions`
+
+===== `View-Actions` compared to the `System-Event` `PreRenderViewEvent`
+
+==== MyGourmet 12: `GET` support
+
+=== The JSF Environment: `FacesContext` and `ExternalContext`
+
+=== Configuration of JavaServer Faces
+
+==== The web configuration file `web.xml`
+
+===== FacesServlet and Mapping
+
+===== Context parameters
+
+==== The JSF configuration file - `faces-config.xml`
+
+===== Application Settings - application
+
+==== Configuration of the Unified EL
