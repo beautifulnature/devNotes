@@ -34,4 +34,7 @@
 :example-caption: Figure
 
 include::sections/01_introduction.adoc[]
+
 include::sections/02_concepts.adoc[LevelOffset[+1]
+
+include::sections/03_standard_JSF_components.adoc[LevelOffset[+1]

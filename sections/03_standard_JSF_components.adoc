@@ -1,4 +1,5 @@
-== standard JSF components
+:sectnums:
+== Standard JSF components
 
 JSF offers a good selection of predefined components that provide a lot of functionality for creating user interfaces. 
 For most use cases, these standard components have the desired behavior, from simple entry buttons to text boxes, to the presentation of data in tabular form. 
@@ -161,4 +162,495 @@ The component itself is rendered as a form element and is not displayed in the b
 In contrast to the HTML standard, a `UIForm` is also required for the execution of hyperlinks that are inserted into the view with `h:commandLink`. Because Command Link components submit a form when activated, they do not work without enclosing `UIForm`. The link tags `h:outputLink` and `h:link` work without problems even outside a `UIForm`.
 
 === Command components
+
+`UICommand` is derived from the class `UIComponentBase` and represents a command element in the HTML page. If this command element is activated by the user in the browser, an application-specific action is triggered. The command element can, for example, be displayed as a button `h:commandButton`, menu item or hyperlink `h:commandLink`. Here is a code example of the button component from our example:
+
+[source,xhtml]
+----
+<h:commandButton action="#{customerBean.save}" value="Save"/>
+----
+
+As an example of Command Link component we add the view showCustomer.xhtml in MyGourmet a link to the page editCustomer.xhtml added:
+
+[source,xhtml]
+----
+<h:commandLink action="/editCustomer.xhtml"
+    value="Edit Customer"/>
+----
+
+For the link to work, it must be embedded in a `UIForm`. Here's another example of a Command Link component that uses the `rendered` attribute:
+
+[source,xhtml]
+----
+<h:commandLink id="check" rendered="{cart.numberOfItems > 0}">
+  <h:outputText value="#{managedBean.action}"/>
+</h:commandLink>
+----
+
+`rendered` attribute: In this example, the command link check is not displayed if there are no goods in the shopping cart, or more precisely, if the numberOfItems property of the managed bean cart has the value 0.
+
+=== DataTable component
+
+The `UIData` component with the tag `h:dataTable` iterates over items in a collection of data objects and creates a table in the HTML output. Each element of the referenced collection becomes a table row with a fixed number of columns in the rendered output. The columns themselves and their contents are added to the `UIData` component in the form of nested `UIColumn` components with the `h:column` tag. 
+
+See the listing example for `h:dataTable` for a first example of `h:dataTable` and `h:column` in which a list of persons is output in the form of a table with two columns.
+
+[source,xhtml]
+----
+<h:dataTable value="#{myBean.persons}" var="person">
+  <h:column>
+    <h:outputText value="#{person.name}"/>
+  </h:column>
+  <h:column>
+    <h:outputText value="#{person.email}"/>
+  </h:column>
+</h:dataTable>
+----
+
+The list of persons is referenced by a value expression in the value attribute of `h:dataTable`. It comes from the persons property of the managed bean myBean and contains instances of the Person class with the `name` and `email` properties. Listing property persons for `h:dataTable` shows the corresponding code.
+
+[source,java]
+----
+private List<Person> persons;
+public List<Person> getPersons() {
+  return persons;
+}
+----
+
+*JSF 2.2:* JSF supports only a limited set of types in the value attribute of `h:dataTable`. Prior to JSF 2.2, these were essentially arrays, `java.util.List` and the JSF type `javax.faces.model.DataModel`. As of JSF 2.2, `h:dataTable` can handle all types derived from `java.util.Collection`. For example, until version 2.2 it was not possible to work directly with `java.util.Set`. 
+
+During rendering (as in all other phases of the LifeCycle), the `UIData` component now goes through the bound list element by element and makes the current element available under the name defined in the `var` attribute. Each element outputs exactly one line whose contents are defined by the `UIColumn` components inserted with `h:column`. In our example from the listing example for `h:dataTable`, for example, we use the name `person` to access the current person. For each person, the property `name` is displayed in the first column and the property `email` is displayed in the second column. You can see the resulting representation in HTML in Listing Rendered `h:dataTable`.
+
+[source,html]
+----
+<table>
+  <tbody>
+    <tr>
+      <td>Anna Muster</td>
+      <td>anna@muster.at</td>
+    </tr>
+    <tr>
+      <td>Max Muster</td>
+      <td>max@muster.at</td>
+    </tr>
+  </tbody>
+</table>
+----
+
+Figure <<.Rendered output of `h:dataTable`, Rendered output of `h:dataTable`>> shows how the rendered output of the table looks in the browser.
+
+====
+.Rendered output of h: dataTable
+image::images/datatable-no-styling.jpg[]
+====
+
+*Stamping:* Although the list bound to the component has thousands of entries, only one component instance is inserted in the component tree for each column. When editing the component during its lifecycle - such as during rendering - JSF uses these instances for all rows with the current value. This procedure is called stamping and should guarantee a minimum memory consumption.
+
+The complete example of the `UIData` component is not in MyGourmet 8, but in MyGourmet 9 in section [Section:  MyGourmet 9 : UIData and Detail View]. There, the switching between list and detail view and the deletion and editing of individual addresses from the list will be explained.
+
+==== Extended concepts of h:dataTable
+
+With Facets may `UIData` component and each of its columns with a header and footer are provided. For this, a facet with a distinguished name - header for header and footer added as a child element of the respective component - for footers. In the example, we extend the person table with headings for the table itself and for all its columns. A simple exercise with Facets, as shown in Listing <<.Example for h: dataTable with Facets, Example for `h:dataTable` with Facets>>.
+
+.Example for h: dataTable with Facets
+[source,xhtml]
+----
+<h:dataTable value="#{myBean.persons}" var="person">
+  <f:facet name="header">Personen</f:facet>
+  <h:column>
+    <f:facet name="header">
+      <h:outputText value="Name"/>
+    </f:facet>
+    <h:outputText value="#{person.name}"/>
+  </h:column>
+  <h:column>
+    <f:facet name="header">
+      <h:outputText value="E-Mail"/>
+    </f:facet>
+    <h:outputText value="#{person.email}"/>
+  </h:column>
+</h:dataTable>
+----
+
+Let's take another look at the rendered HTML code. All headings are output as `th` elements in the newly added section `thead` of the table. Headers and footers of the table always span the entire width, which can be seen in the output of the `colspan` attribute set. Each column has its own th element. Otherwise, nothing has changed - as Listing <<.Rendered `h:dataTable` shows with facets, Rendered `h:dataTable` shows with facets>>.
+
+.Rendered `h:dataTable` shows with facets
+[source,html]
+----
+<table>
+  <thead>
+    <tr>
+      <th colspan="2" scope="colgroup">Persons</th>
+    </tr>
+    <tr>
+      <th scope="col">Name</th>
+      <th scope="col">E-Mail</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Anna Muster</td>
+      <td>anna@muster.at</td>
+    </tr>
+    <tr>
+      <td>Max Muster</td>
+      <td>max@muster.at</td>
+    </tr>
+  </tbody>
+</table>
+----
+
+*Pagination:* The `UIData` component basically supports displaying a section of a data collection. There are the attributes `first` and `rows`. The display then takes place from the line specified in the first attribute. The rows attribute is used to specify the number of rows. For example, to represent rows 2 through 10 of a table, set `first` to 2 and `rows` to 9. The default value of these two attributes is null, which corresponds to the display of all rows. 
+
+The practice value of the attributes `first` and `rows` is initially rather low, since the JSF standard lacks a Paginator component. For the page-by-page display of data, you must therefore refer to a component library such as PrimeFaces (Section Section: Selecting some PrimeFaces components shows the use of `p:dataTable`) or write your own component.
+
+==== Styling of h:dataTable
+
+Granted, the rendered output in Figure <<.Rendered output from `h:dataTable`, Rendered output from `h:dataTable`>> still looks a bit monotonous, despite the header and footer in its current form. The `DataTable` component provides various attributes to style the table with CSS. In addition to the `styleClass` attribute, which references a CSS class that is valid for displaying the entire table, there are some optional attributes for incorporating CSS classes for other parts of the component:
+
+* `rowClasses` (`h:dataTable`): +
+comma-separated names of the CSS style classes for the rows. If several style classes are specified, the attribute is set alternately for the rows. So if two CSS classes ( styleClass1 , styleClass2 ) have been defined, the first line is labeled styleClass1 , the second line is styleClass2 , the third line is styleClass1 again . In the rendered output, the style class is placed in the respective tr element of the line.
+
+* `columnClasses` (`h:dataTable`) : +
+Same as `rowClasses`, except that the CSS style class (s) apply to the columns. In the rendered output of the table, these style classes are placed in the individual `td` elements.
+
+* `footerClass` (`h:dataTable` and `h:column`): + 
+the CSS class name for the footer (defined by the `Facet` called `footer`). The style class is set in the rendered output for each `td` element of the footer.
+
+* `headerClass` (`h:dataTable` and `h:column`): + 
+Name of the CSS style class for the header (defined by the `Facet` named `header`). The style class is set in the rendered output for each th element of the header.
+
+With values ​​for `styleClass` and `headerClass`, the rendered output of the table in the browser could look like as shown in the figure <<.Rendered Output of `h:dataTable`, Rendered Output of `h:dataTable`>>.
+
+====
+.Rendered Output of `h:dataTable`
+image::images/datatable-styling.jpg[]
+====
+
+=== output components
+
+In this section, we focus on components for outputting information. To do this, section [Text output components] first displays components for outputting text-based content. Section [Image Output Component] then presents details on how to output images.
+
+==== Text output components
+
+The `UIOutput` component is used to display output text on a page. The value of this component may be tied to a model object and can not be changed by the user. The HTML tag library of the JSF standard includes the following tags for easy text output:
+
+* h:outputText
+* h:outputLabel
+* h:outputLink
+* h:outputFormat
+
+===== Tag for text output `h:outputText`
+
+`h:outputText` sets the value specified in the value attribute in the HTML-output is displayed. The text is rendered without formatting, unless the style or styleClass attributes refer to CSS styles or CSS classes that affect formatting. Normally, the text of the `UIOutput` component is rendered directly - without any special HTML markup. If HTML attributes such as `id`, `styleClass` or `style` are set, the text in the output is automatically surrounded by a `<span />` element. 
+
+*escape attribute:* HTML or XML formatting in value is lost on output; all special characters in texts are replaced by their HTML entities (eg \verb|>| replaced by \verb|>|). To allow direct output of HTML or XML tags, the `escape` attribute can be set to `false`. Listing <<.examples of `h:outputText`, examples of `h:outputText`>> shows three examples.
+
+.examples of `h:outputText`
+[source,xhtml]
+----
+<h:outputText escape="true"
+  value="Hallo liebe <em>Leser</em>"/>
+<h:outputText escape="false"
+  value="Hallo liebe <em>Leser</em>"/>
+<h:outputText escape="false"
+  value="<script>alert('Böse')</script>"/>
+----
+
+The texts on the first and second `tag` are identical. The `tags` differ only by the attribute `escape`, which is once set to `true` and once to `false`. How this affects the output is shown in Figure <<.Rendered output of `h:outputText`,Rendered output of `h:outputText`>>.
+
+====
+.Rendered output of `h:outputText`
+image::images/uioutputtext-screenshot.jpg[]
+====
+
+However, if you set escape to `false`, you should always keep in mind that you are dealing with a potential security vulnerability - especially if the user outputs editable data directly. Figure <<.Rendered output of `h:outputText`, Rendered output of `h:outputText`>> shows how a user executable code can smuggle into the text. This will allow cross-site scripting attacks.
+
+===== Label Output Component `h:outputLabel`
+
+The `h:outputLabel` component (label HTML element) allows labels to be linked to input fields. The components required to output the label are nested in the `h:outputLabel` tag. The component itself does not provide a text. The attribute `for` must be set and the attribute `id` to show the input field.
+
+Listing <<.`h:outputLabel` in use, `h:outputLabel` in use>> shows in two ways how `h:outputLabel` can be used. In the first variant, the `h:outputText` tag returns its `value` Attribute displays the text that appears as a label in the input field for the first name. As you can see in the second variant, the label for the input field can also be specified in the `value` attribute of the `h:outputLabel` tag itself. This variant is simpler but less flexible - which did not stop us from choosing this approach in MyGourmet.
+
+.`h:outputLabel` in use
+[source,xhtml]
+----
+<h:outputLabel for="firstName">
+  <h:outputText value="First Name:"/>
+</h:outputLabel>
+<h:inputText id="firstName" required="true"
+    value="#{customerBean.customer.firstName}"/>
+<h:outputLabel for="lastName" value="Last Name:"/>
+<h:inputText id="lastName" required="true"
+    value="#{customerBean.customer.lastName}"/>
+----
+
+===== Link component `h:outputLink`
+
+The `h:outputLink` tag creates a hyperlink to an external URL. The URL that is loaded when the user clicks on the link is defined in the `value` attribute. No action event is fired, and the state of the component tree stored by JSF rendering the current view is lost. 
+
+To set the displayed text and appearance of the link, any output component can be nested within the `h:outputLink` tag. For plain text, the `h:outputText` component or nested HTML elements suffice; for a graphical representation of the link, the `h:graphicImage` component can be used. By nesting `f:param` tags can be used to set URL parameters - both static and dynamic via a unified EL expression.
+
+Listing <<.`h:outputLink` with external link, `h:outputLink` with external link>> shows an `h:outputLink` component with an external link and parameters in use.
+
+.`h:outputLink` with external link
+[source,xhtml]
+----
+<h:outputLink value="http://wiki.apache.org/myfaces/">
+  <h:outputText value="MyFaces Wiki"/>
+  <f:param name="action" value="info"/>
+</h:outputLink>
+----
+
+Here is the rendered html output of the example from listing <<.`h:outputLink` with external link rendered html, `h:outputLink` with external link rendered html>>:
+
+.`h:outputLink` with external link rendered html
+[source,xhtml]
+----
+<a href="http://wiki.apache.org/myfaces/?action=info">
+MyFaces Wiki</a>
+----
+
+A widespread criticism of JSF is that `GET` requests are not fully supported. That's not true. As of JSF 2.0, there are extensive support for `GET` requests with `View-Parameters` and as of JSF 2.2 in addition to `View-Actions`. For details, see section Section: Bookmarks and GET Requests in JSF.
+
+===== Parameterizable text output field `h:outputFormat`
+
+The tag `h:outputFormat` is the same as the `h:outputText` tag used to output text. In addition, it is possible to interweave either statically predefined or dynamically integrated values via Unified-EL expressions into the output text. Specifically, for example, the user name or a date can be incorporated into a text template. 
+
+*Message-Format:* The output of text with dynamically integrated variables can be further simplified by the use of wildcard message format templates. A wildcard is a number within curly brackets that point to the index of an `f:param` child elements refers. The numbering of the parameters starts with the number 0 (typical for Java). The placeholder {0} is therefore replaced by the value of the first parameter `f:param` embedded in `h:outputFormat`, {1} by the value of the second parameter and so on, As an example, the message at the bottom of the `showCustomer.xhtml` view is expanded as shown in Listing <<.`h:outputFormat`, `h:outputFormat`>> in MyGourmet.
+
+.`h:outputFormat`
+[source,xhtml]
+----
+<h:outputFormat value="{0}, your profile is {1}.">
+  <f:param value="#{customerBean.customer.firstName}"/>
+  <f:param value="active"/>
+</h:outputFormat
+----
+
+For the placeholder {0} the result of the expression customerBean.customer.firstName is used and for {1} the value of the second parameter, namely "active". The complete edition is therefore:
+
+----
+Martin, your profile is active.
+----
+
+If the template string is also dynamically integrated for different languages, parameters can be output to other locations - this is important for internationalization, as has already been shown in section Section: Internationalization.
+
+==== Image output component
+
+The component `UIGraphic` with the tag `h:graphicImage` shows the user a non-manipulatable graphic. The url attribute specifies the path to the graphic in the form of a static string or value expression. 
+
+*Relative vs. Absolute addressing:* If a slash ( / ) is set at the beginning of the path, the path is understood as an absolute indication within the web application, otherwise the path is relatively understood. In web applications, an absolute addressing is generally recommended, because then the page structure can be changed arbitrarily without having to consider the integrated graphics and other resources. 
+
+`h:graphicImage` tag is rendered as an `img` tag in the HTML output. If the path passed in the url attribute of the component begins with a slash ( / ), the context path of the application precedes the rendering of the `src` attribute. 
+
+*`alt` attribute:* The attribute `alt` specifies the text to be displayed as an alternative to image display, the `Internet Explorer` shows the `ALT` -Text appropriate when the mouse is moved over the image. In the following example, the attribute `alt' references to a localized text (for details on localization, see section section: Internationalization).
+
+[source,xhtml]
+----
+<h:graphicImage id="Grafik" url="/images/Grafik.jpg"
+    alt="#{bundle.chooseLocale}" title="Grafikanzeige"
+    width="149" height="160"/>
+----
+
+As of JSF 2.0, images can also be integrated in the form of resources. Instead of the path to the image file, you specify the name of the resource in the new attribute name of the tag `h:graphicImage`. Details on handling resources as of JSF 2.0 can be found in Chapter: Resource Management.
+
+=== Input Components
+
+The `UIInput` component is a subclass of the `UIOutput` class. It accepts input data from the user, such as text from a text entry field, passwords from a password input field, or - new in JSF 2.2 - files from a file upload field. `Table: input-components` shows the tags of `UIInput`- derived input components with examples (except for `h:inputHidden`).
+
+[options="header",cols="1,1"]
+|===
+|Standard Tag   |Example   
+//-------------
+|h:inputText
+a| image::images/comp-inputtext.jpg[]
+
+|h:inputSecret
+a| image::images/comp-inputsecret.jpg[]
+
+|h:inputTextarea
+a| image::images/comp-inputtextarea.jpg[]
+
+|h:inputFile
+a| image::images/comp-inputfile.jpg[]
+|===
+
+To convert, validate, and then detect and handle the inputs of these components, the following tags from the core tag library can be used: `f:converter` (see Section: Conversion), `f:validator` (see Section: Validation) and `f:valueChangeListener` (see Section: Value Change Events). Input components are often associated with label output components to generate a label element in the HTML output. For details, see section [Text output components section].
+
+==== Text input field `h:inputText`
+
+This component makes it possible to create a text input field. In Listing <<.`h:inputText` in action, `h:inputText` in action>>, you will again see the entry field for the first name in MyGourmet.
+
+.`h:inputText` in action
+[source,xhtml]
+----
+<h:inputText id="firstName"
+  value="#{customerBean.customer.firstName}"
+  size="30" maxlength="40" required="true"/>
+----
+
+A value expression links the input field of the example to the `firstName` property of the customerBean.customer object. When rendering the view, the value from the bean is displayed in the input field - it can be changed by the user. After submitting the form, the new value is automatically written back to the bean's property - assuming the conversion and validation were successful. 
+
+If the required attribute is set to `true`, a validation error will be generated if the user does not enter a value. The size attribute sets the visible length of the input field to 30 characters, and maxlength it is determined that the user input may be a maximum of 40 characters.
+
+==== Password entry field `h:inputSecret`
+
+The `h:inputSecret` tag generates a password input field with hidden input. In the rendered output, the HTML tag becomes `<input type={"}password{"}>`. The user input in this input field is displayed in the form of dots. Setting the redisplay attribute to `false` prevents the entered password from being displayed in the source text of the HTML page when the page is rebuilt. Listing <<.`h:inputSecret` in use, `h:inputSecret`>> shows the component in use. Otherwise, this component works much like `h:inputText`.
+
+.`h:inputSecret` in use
+[source,xhtml]
+----
+<h:inputSecret redisplay="false"
+  value="#{loginBean.password}" />
+----
+
+==== Multi-line text input field `h:inputTextarea`
+
+The component `h:inputTextarea` is also used like the component `h:inputText`. However, instead of a field with only one line, it generates a larger, i.e., multi-line input field. The number of columns and rows is determined by the `rows` and `cols` attributes. For an example, see Listing <<.`h:inputTextarea` in use, `h:inputTextarea`>>.
+
+.`h:inputTextarea` in use
+[source,xhtml]
+----
+<h:inputTextarea id="textArea" rows="4" cols="7"
+  value="#{managedBean.textAreaData}" />
+----
+
+==== Hidden input field `h:inputHidden`
+
+The `h:inputHidden` component is invisible to the user and is used to transfer variables (and thus status) from page to page without having to save the status to the server. However, there are rarely any use cases where this behavior is desired in JSF. JSF manages the status of the pages of the application for us, and other data usually uses the user session. 
+
+Of course, since this component is not a visible output to the user, there are no display-specific attributes like `styleClass` or `size`. Listing <<.`h:inputHidden` in use, `h:inputHidden`>> shows the component in use.
+
+.`h:inputHidden` in use
+[source,xhtml]
+----
+<h:inputHidden id="hidden"
+  value="#{managedBean.hiddenField}"/>
+----
+
+==== File upload field `h:inputFile`
+
+JSF 2.2: With JSF 2.2 it has finally made the `file` `upload` component with the tag `h:inputFile` in the standard. The reason for this very long delay is that only with version 3.0 the prerequisites for the file upload were included in the servlet standard.
+
+`h:inputFile` allows you to upload a file to a bean property of type `javax.servlet.http.Part`. Like any other input component, this property is associated with the component through a value expression in the `value` attribute . In all other respects too, `h:inputFile` behaves like any other input component in JSF.
+
+For the file upload to work properly, the `enctype` attribute of the enclosing `h:form` tag must be set to the value `multipart/form-data`. This is the only way to ensure that the data is transferred correctly to the server. Listing <<.`h:inputFile` with `h:form`, `h:inputFile` with `h:form`>> shows a simple example of uploading a file when clicking on a button.
+
+.`h:inputFile` with `h:form`
+[source,xhtml]
+----
+<h:form id="form" enctype="multipart/form-data">
+  <h:inputFile id="file" value="#{bean.file}"/>
+  <h:commandButton value="Upload" action="#{bean.upload}"/>
+</h:form>
+----
+
+See the Managed Bean referenced in the last example in Listing <<.Managed Bean for File Upload, Managed Bean for File Upload>>. With a transmission (submit) the form JSF stores the uploaded file in the property named file type `javax.servlet.http.Part`.
+
+.Managed Bean for File Upload
+[source,java]
+----
+public class Bean {
+  private Part file;
+  private String fileContent;
+
+  public void upload() {
+    try {
+      fileContent = new Scanner(file.getInputStream())
+          .useDelimiter("A").next();
+    } catch (IOException e) {// Error handling}
+  }
+
+  public Part getFile() {
+    return file;
+  }
+
+  public void setFile(Part file) {
+    this.file = file;
+  }
+}
+----
+
+Via the interface `Part` all important information of the file like the `name`, the `mime-type`, the `size` and of course the `content` are available. In the `upload` action method, the file content is read from the provided input stream and written to the `String` field . There it stands ready for further use in the managed bean. 
+
+`h:inputFile`, like any other input `component`, supports the addition of `validators` to check the validity of the uploaded file:
+
+[source,xhtml]
+----
+<h:inputFile id="file" value="#{bean.file}"
+    validator="#{bean.validateFile}"/>
+----
+
+In the referenced validation method, for example, the size of the file can then be checked:
+
+[source,java]
+----
+public void validateFile(FacesContext ctx,
+    UIComponent comp, Object value) {
+  if (((Part)value).getSize() > 1024) {
+    new ValidatorException(new FacesMessage("file too big"));
+  }
+}
+----
+
+Incidentally, with `h:inputFile` you can also upload files via Ajax. The handling does not differ from other components and works as described in chapter Chapter:Ajax and JSF.
+
+=== Selection Components
+
+In this section, we'll show you several components for selecting values. Section [Section: Boolean Selection] starts with the simplest variant and shows the Boolean selection. Then it continues with components for selecting values ​​from a list: Section [Section: Simple Selection] shows components for selecting a value and Section [Section: Multiple Selection] Components for selecting multiple values. Finally, section [Section: Definition of choices] demonstrates how the choices are defined.
+
+==== Boolean selection
+
+With the selection component `UISelectBoolean`, which is available under the tag `h:selectBooleanCheckbox`, a Boolean value can be bound to a selection component. `UISelectBoolean` is a subclass of `UIInput` and is rendered as an HTML checkbox as shown in table: component-selectboolean.
+
+[options="header",cols="1,1"]
+|===
+|Standard tag   |example   
+//-------------
+|h:selectBooleanCheckbox
+a| image::images/comp-selectbooleancheckbox.jpg[]  
+|===
+
+In MyGourmet, `UISelectBoolean` is already used for the `useCreditCard` property. Listing <<.selection box in action, selection box in action>> shows the corresponding tag.
+
+.selection box in action
+[source,xhtml]
+----
+<h:selectBooleanCheckbox id="useCreditCard"
+    value="#{customerBean.customer.useCreditCard}"/>
+----
+
+*A little hint:* The getter for a boolean value can start with `is`, so for our example, `isUseCreditCard()`. For select `fields` that reference a `Boolean` value (i.e., not the primitive data type), the `getter` `getUseCreditCard()` must be mentioned. The code for the `useCreditCard` property is found in the listing <<.property of a bean for a selection box, property of a bean for a selection box>>.
+
+.property of a bean for a selection box
+[source,java]
+----
+private Boolean useCreditCard = Boolean.FALSE;
+public Boolean getUseCreditCard() {
+  return useCreditCard;
+}
+public void setUseCreditCard(
+    Boolean useCreditCard) {
+  this.useCreditCard = useCreditCard;
+}
+----
+
+==== Simple selection
+==== Multiple selection
+===== Selection field `h:selectManyCheckbox`
+===== List box `h:selectManyListbox`
+===== Menu field `h:selectManyMenu`
+==== Menu field `h:selectManyMenu`
+==== Definition of choices
+===== Single choice with `f:selectItem`
+===== Several options with `f:selectItems`
+=== Panel Components
+=== `UIViewRoot`
+=== message components
+=== Components for `GET` navigation
+=== Resource-related components
+=== Behavioral Interfaces
+=== MyGourmet 8: Standard Components
+=== MyGourmet 9: `UIData` and detail view
 
