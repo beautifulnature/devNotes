@@ -1,0 +1,11 @@
+== MyGourmet Fullstack - JSF, CDI and JPA combined with CODI
+
+=== Architecture of MyGourmet Fullstack
+
+==== Entities
+
+==== Data access layer
+
+==== Service layer
+
+==== Presentation Layer

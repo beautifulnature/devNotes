@@ -1,0 +1,21 @@
+== FacesFlows
+
+=== A first example
+
+=== Definition of flows
+
+==== Types of Flow Nodes
+
+==== Definition with XML
+
+==== Definition with Java
+
+=== Flow Scope
+
+==== Managed Beans in Flow Scope
+
+==== Direct access to the flow scope
+
+=== Faces flows in jar files
+
+=== Example Faces Flows

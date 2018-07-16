@@ -1,0 +1,35 @@
+== The Custom JSF component
+
+=== Composite components
+
+==== A first composite component
+
+==== The cc:interface area
+
+===== Attributes
+
+===== Facets
+
+===== Behavioral Definitions
+
+==== The cc:implementation area
+
+==== Resources in composite components
+
+==== The component `mc:panelBox`
+
+==== The component `mc:dataTable`
+
+==== The component `mc:collapsiblePanel`
+
+==== The component `mc:inputSpinner`
+
+==== Pitfalls in practice
+
+===== Composite components in the component tree
+
+===== Using Multiple Action Attributes
+
+===== Resolution of the type of attributes
+
+=== Classic components

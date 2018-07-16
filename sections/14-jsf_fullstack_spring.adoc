@@ -1,0 +1,17 @@
+== MyGourmet Fullstack Spring - JSF, Spring, Orchestra and JPA combined
+
+=== Architecture of MyGourmet Fullstack
+
+==== Entities
+
+==== Data access layer
+
+==== Service layer
+
+==== Presentation Layer
+
+=== Configuration of the application
+
+==== Configuration of JPA
+
+==== Configuring Orchestra

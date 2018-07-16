@@ -1,0 +1,45 @@
+== Ajax and JSF
+
+=== Introduction to Ajax - "Asynchronous JavaScript and XML"
+
+=== Ajax from JSF 2.0
+
+==== A first example with `f:ajax`
+
+==== `f:ajax` in use
+
+==== Events and Listeners in Ajax Requests
+
+==== JavaScript API
+
+===== Sending Ajax Requests
+
+===== Handling Status and Errors of Ajax Requests
+
+==== Partial JSF life cycle
+
+==== Check Ajax queue
+
+==== Reset input fields
+
+=== Ajax in composite components
+
+=== Custom Ajax components
+
+==== The composite component `mc:ajaxStatus`
+
+==== The composite component `mc:ajaxPoll`
+
+=== MyGourmet 14: Ajax
+
+=== Tools for the Ajax developer
+
+==== Firebug
+
+===== Analysis of the DOM Tree
+
+===== JavaScript debugging
+
+==== HTTP Debugger
+
+==== Web Developer Toolbar

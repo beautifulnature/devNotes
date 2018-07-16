@@ -1,0 +1,26 @@
+:sectnums:
+== Management of resources
+
+=== Identification of Resources - Part 1
+
+=== resources in use
+
+=== Positioning Resources
+
+=== Identification of Resources - Part 2
+
+=== Resources in MyGourmet 12
+
+=== Resource Library Contracts
+
+==== A first example
+
+===== Configuration of the Contracts Directory
+
+==== Resources from Resource Library Contracts
+
+==== Mapping Resource Library Contracts
+
+==== Resource Library Contracts in Jar Files
+
+==== MyGourmet 12 with Resource Library Contracts
