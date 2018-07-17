@@ -1,3 +1,4 @@
+:sectnums:
 == JSF and HTML5
 
 HTML5 is currently on everyone's lips and certainly one of the most widely used and abused buzzwords in the field of web development. 
@@ -143,6 +144,147 @@ This attribute has no special meaning and is not treated separately by JSF or th
 However, it can be used in the JavaScript code of the application, for example for client-side validation.
 
 === HTML5 pass-through elements
+
+Traditionally, JSF developers mostly build JSF tags on the pages of an application and only indirectly interact with the rendered HTML elements. 
+With the increased use of client-side technologies such as JavaScript, however, it is increasingly important to know the structure of the page in detail. 
+JSF 2.2 offers a solution to this problem with `pass-through` elements. 
+
+`Pass-through` elements are HTML elements that connect to matching JSF components in the component tree. 
+By definition, an HTML element becomes a pass-through element if and only if at least one of its attributes is defined in the namespace http://xmlns.jcp.org/jsf . 
+
+Listing <<.example with pass-through elements, example with pass-through elements>> shows again the example from listing example with pass-through attributes. 
+However, this version has replaced all JSF tags with pass-through elements. 
+This does not change the functionality and even the component tree on the server has not changed significantly.
+
+.example with pass-through elements
+[source,html]
+----
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:jsf="http://xmlns.jcp.org/jsf">
+<head jsf:id="head"><title>JSF 2.2 HTML5</title></head>
+<body jsf:id="body">
+  <form jsf:id="form">
+    <input type="text" placeholder="E-Mail eingeben"
+        jsf:id="email" jsf:value="#{bean.email}"/>
+    <button jsf:action="#{bean.save}">Save</button>
+  </form>
+</body>
+</html>
+----
+
+How does this work? If at least one attribute of an HTML element is defined in the namespace http://xmlns.jcp.org/jsf, JSF transforms that HTML element into a JSF tag and inserts the appropriate component into the component tree. 
+The decision of which JSF tag is used is made by JSF based on the element name. 
+If this does not result in a clear assignment, in some cases the value of an attribute is also included in the decision. 
+
+Let's take a closer look at this using the example from the listing example with pass-through elements. 
+Because the element head with id is an attribute in the namespace http://xmlns.jcp.org/jsf has, it is treated as a pass-through element. 
+JSF therefore transforms the head element into the JSF tag `h:head` and sets its `id` attribute to the specified `value`. Analogously, the element body is transformed into `h:body` and form in `h:form`.
+
+The input element can only be uniquely transformed taking the attribute type into consideration. 
+From the combination of `input` and type = "text", JSF makes the tag `h:inputText`. 
+Let's take another look at the attributes of input, both `id` and `value` have a prefix and are thus passed directly to the component. 
+However, after the HTML5 attribute has placeholder but no prefix, it is added as a `pass-through attribute` to `h:inputText`, not as a normal attribute. 
+Otherwise it would not be possible, since `h:inputText` does not define an attribute with the name placeholder. 
+This example makes it easy to see how `pass-through element` and `pass-through attributes` complement each other. 
+
+Table: html5-pte-mapping shows a complete list of assignments of element-attribute combinations to JSF tags defined in JSF 2.2. 
+Attributes with the prefix jsf in the second column indicate attributes in the namespace http://xmlns.jcp.org/jsf. 
+In turn, a star means that the value of the attribute is not relevant to the mapping.
+[options="header",cols="1,1,1"]
+|===
+|HTML-Element   |Selector attribute  |JSF-Tag   
+//----------------------
+|a   |jsf:action   |h:commandLink   
+|a   |jsf:actionListener   |h:commandLink   
+|a   |jsf:value   |h:outputLink   
+|a   |jsf:outcome   |h:link   
+|body   |   |h:body   
+|button   |   |h:commandButton   
+|button   |jsf:outcome   |h:button   
+|form   |   |h:form   
+|head   |   |h:head   
+|img   |   |h:graphicImage   
+|input   |type="button"   |h:commandButton
+|input   |type="checkbox"   |h:selectBooleanCheckbox
+|input   |type="color"   |h:inputText
+|input   |type="date"   |h:inputText
+|input   |type="datetime"   |h:inputText
+|input   |type="datetime-local"   |h:inputText
+|input   |type="email"   |h:inputText
+|input   |type="month"   |h:inputText
+|input   |type="number"   |h:inputText
+|input   |type="range"   |h:inputText
+|input   |type="search"   |h:inputText
+|input   |type="time"   |h:inputText
+|input   |type="url"   |h:inputText
+|input   |type="week"   |h:inputText
+|input   |type="file"   |h:inputFile
+|input   |type="hidden"   |h:inputHidden
+|input   |type="password"   |h:inputSecret
+|input   |type="reset"   |h:commandButton
+|input   |type="submit"   |h:commandButton
+|input   |type="*"   |h:inputText
+|label   |   |h:outputLabel
+|link   |   |h:outputStylesheet
+|script   |   |h:outputScript
+|select   |multiple="*"   |h:selectManyListbox
+|select   |   |h:selectOneListbox
+|textarea   |   |h:inputTextArea
+|===
+
+After `pass-through` elements are transformed into JSF tags, they can also be treated like JSF tags. 
+For example, in the following code snippet, a validator is added directly to the HTML element using `f:validateLength`. 
+Admittedly, this looks somewhat strange at first glance, but it works perfectly.
+
+[source,html]
+----
+<input type="text" jsf:value="#{bean.name}">
+  <f:validateLength minimum="3"/>
+</input>
+----
+
+In the next example, the element `a` is transformed into an `h:link` tag with the attribute `jsf:outcome`. 
+Therefore, it is also possible to define the `id` with `f:param` as the parameter for the rendered link.
+
+[source,html]
+----
+<a jsf:outcome="details" title="Show #{person.name}">
+  #{person.name}
+  <f:param name="id" value="#{person.id}"/>
+</a>
+----
+
+Be very careful about which attributes of `pass-through elements` you define in the namespace http://xmlns.jcp.org/jsf. 
+In the next example, the value attribute is defined without a namespace and will pass to the component as a `pass-through attribute` - a big difference, as we'll see shortly.
+
+[source,html]
+----
+<input jsf:id="name" type="text" value="#{bean.name}">
+  <f:validateLength minimum="3"/>
+</input>
+----
+
+At first glance, the example works without problems. 
+However, the rendered value is not managed by the component, but always written directly from the value expression to the rendered output. 
+In the case of a validation error, however, the user gets to see the old value again and not the submitted value.
+
+TIP: For pass-through elements, be sure to define all the attributes that belong to the component in the namespace http://xmlns.jcp.org/jsf.
+
+JSF can also handle `pass-through elements` that do not have a fixed assignment to a JSF tag. 
+In this case, a generic component is inserted in the component tree. 
+This also makes it possible to make HTML5 elements such as `progress pass-through elements` and even equip them with Ajax behavior, as the following example shows. 
+Each click on the `progress element` triggers an Ajax request and renders the component associated with it.
+
+[source,html]
+----
+<button jsf:action="#{bean.update}">
+  Aktualisieren
+  <f:ajax render="progress"/>
+</button>
+<progress jsf:id="progress" max="10" value="#{bean.progress}">
+  <f:ajax event="click" render="@this"/>
+</progress>
+----
 
 === MyGourmet 15: HTML5
 

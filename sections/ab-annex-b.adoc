@@ -2,8 +2,63 @@
 [appendix,obligation=informative]
 == Eclipse
 
+`Eclipse` is currently one of the most popular development environments for Java applications, which is also available under an open source license. 
+This triumphant success occurred Eclipse in 2001, when IBM published the sources. 
+Since 2004, the Eclipse Foundation has been responsible for the further development of Eclipse.
+It has grown into one of the largest Java open source communities besides the Apache Software Foundation.
+
+Since then Eclipse has become moving away from a pure development environment for Java to a platform for various programming languages ​​and rich client applications of all kinds - and with ever-growing success. 
+A variety of plug-ins have been developed, which can be used to extend the basic functionality by many aspects. 
+
+With version 3.2, published in 2006, the publication of the most important Eclipse projects was coordinated. 
+Since then, a new release of Eclipse appears once a year - currently known as the Juno 4.2 version is currently. 
+
+Eclipse itself already provides good support for the development of JSF applications with the Web Tools Platform (WTP) project.
+
 === Installing Eclipse with Maven support
+
+Since the consolidation of the individual projects in 2006, Eclipse is available in several versions for different purposes for download on http://www.eclipse.org. 
+For our purposes, the Eclipse IDE for Java EE Developers package is best. 
+In addition to the tools for developing Java applications, it also includes the previously mentioned Web Tools Platform (WTP). 
+
+The instructions described here apply to Eclipse in the version Juno (4.2) SR2. 
+The installation of Eclipse is very simple, the only requirement is a running Java Runtime in a version from 6.0. 
+After downloading the software package mentioned above, it must be unpacked into any directory. 
+You can then start the application. 
+
+Eclipse now has a great plug-in for integrating Maven with the name Maven Integration for Eclipse. 
+Unfortunately, this plug-in is not included in the chosen Eclipse IDE package by default. 
+
+However, the current version of the Maven integration can be easily obtained from the Eclipse Marketplace. 
+Go to Help | Eclipse Marketplace ... and simply enter the name of the plug-in in the search box. 
+After pressing the Enter key, a selection of available extensions should be displayed. 
+Figure <<.Eclipse Marketplace with Plug-in Maven Integration, Eclipse Marketplace with Plug-in Maven Integration>> displays the Eclipse Marketplace window with the appropriate choices.
+
+====
+.Eclipse Marketplace with Plug-in Maven Integration
+image::images/eclipse-marketplace.jpg[]
+====
+
+Now it's especially important that you install the Maven Integration for Eclipse WTP package rather than Maven Integration for Eclipse by clicking the Install button. 
+This is the only way to ensure optimal integration between Maven and the Web Tools Platform (WTP). 
+After rebooting Eclipse, Maven integration is available with the ability to directly import Maven projects.
 
 === Eclipse and MyGourmet
 
 === Setting up Apache Tomcat 7 in Eclipse
+
+If you have not previously configured a server, Eclipse will open a wizard to set up a new server the first time the web application is started. 
+For the book examples Apache Tomcat 7.0 is particularly good. 
+Figure <<.Create Debug Configuration in Eclipse WTP, Create Debug Configuration in Eclipse WTP>> shows the three steps to create a debug configuration with Tomcat 7.0.
+
+====
+.Create debug configuration in Eclipse WTP
+image::images/eclipse-wtp-run.jpg[]
+====
+
+In the first step, select Apache | Tomcat v7.0 Server as the server type and click Next. 
+The second step is to specify the path of a local installation of Tomcat 7.0. 
+If you have not already installed Tomcat 7.0, you can find the latest version at http://tomcat.apache.org. 
+After specifying the path, click Next again. 
+In the last step, you can still specify which projects are deployed to the server. 
+A final click on the Finish button finishes setting up and booting up the server.

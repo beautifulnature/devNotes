@@ -6,7 +6,7 @@
 :title-main-en: Specifications and test methods
 :title-part-en: Rice
 :toc:
-:sectnumlevels: 8
+:sectnumlevels: 9
 :stem:
 :xrefstyle: short
 :appendix-caption: Annex

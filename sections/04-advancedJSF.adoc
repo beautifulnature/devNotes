@@ -1,27 +1,553 @@
 :sectnums:
 == Advanced JSF
 
+After having focused on the basics of JSF in the previous chapters, let's turn to the slightly more advanced topics in this chapter. 
+
+After a brief presentation of the Project stage in Section [Project-Stage], section [Advanced Facelets] will introduce you to advanced aspects of facelets that are primarily about reusing content. 
+A central theme for almost every web project is templating. 
+Section [Templating] therefore shows in detail how templating works with facelets. 
+Section [Bookmarks and GET Requests in JSF] then presents the support of GET requests with View parameters and - new in JSF 2.2 - View Actions. 
+Finally, in section [The JSF Environment: `FacesContext` and `ExternalContext`] we'll take a closer look at the `FacesContext` and the `ExternalContext`, before going on to the chapter with some details of configuring JSF in Section [Configuring JavaServer Faces]. 
+
+So that the practice is not neglected, the presented concepts are implemented in the examples MyGourmet 10, MyGourmet 11 and MyGourmet 12.
+
 === Project Stage
+
+The Project Stage, introduced in JSF 2.0, is based on `RAILS_ENV` by Ruby on Rails and provides a way to provide the current phase of the project for development. 
+The possible `values` ​​are set in the `Enum` `javax.faces.application.ProjectStage` and are as follows:
+
+* Production (default value)
+* Development
+* SystemTest
+* UnitTest
+
+You can use the Project Stage wherever you want to execute code depending on the current project phase. 
+
+The project phase can be set to one of the above values ​​in the following ways:
+
+* via the context parameter `javax.faces.PROJECT_STAGE` in the `web.xml`
+* about the name `java:comp/env/jsf/ProjectStage` with `JNDI`
+
+For example, with the excerpt from the `web.xml` in the Listing <<.Project stage in `web.xml`, Project stage in `web.xml`>> , the project stage is set to the value `Development`.
+
+.Project stage in web.xml
+[source,html]
+----
+<context-param>
+  <param-name>javax.faces.PROJECT_STAGE</param-name>
+  <param-value>Development</param-value>
+</context-param>
+----
+
+At runtime, the current project stage is stored in the `Application` object and can be read from there using the `getProjectStage()` method. 
+Listing <<.Checking the Project Stage(Variant 1), Checking the Project Stage(Variant 1)>> shows a small code sample.
+
+.Checking the Project Stage(Variant 1)
+[source,java]
+----
+FacesContext fc = FacesContext.getCurrentInstance();
+Application a = fc.getApplication();
+if (a.getProjectStage() == ProjectStage.Development) {
+  // any Code
+}
+----
+
+The auxiliary method `isProjectStage(ProjectStage)` in `FacesContext` simplifies the previous code `snippet` even further. 
+See Listing <<.Review the Project Stage (Variant 2), Review the Project Stage (Variant 2)>> for an example.
+
+.Review the Project Stage (Variant 2)
+[source,java]
+----
+FacesContext fc = FacesContext.getCurrentInstance();
+if (fc.isProjectStage(ProjectStage.Development)) {
+  // any Code
+}
+----
+
+JSF already considers the project stage in the specification in some places and the potential for further areas of application is great.
+ 
+If the project stage is set to Development , a `h:messages` component is inserted in each page if it does not exist. 
+This prevents validation errors in forms from going unnoticed. 
+
+Another example can be found in resource management. JSF caches resources only when the project stage is set to Production. 
+Otherwise, they will be reloaded on every access.
+
+In MyFaces, the project stage also controls the checking of page declarations for changes. 
+Is the project stage open? Production no longer updates facelets page declarations after the first page call. 
+For all other project stages, changes are reflected after two seconds, which greatly simplifies development. 
+You can find out more about this topic in section [The web configuration file `web.xml`] in the description of the context parameter.
 
 === Advanced Facelets
 
+In all previous examples, we have used facelets only as page-declaration language and better alternative to JSP. 
+However, facelets can do much more and offer a wide range of features that make the life of a JSF developer easier. 
+In the course of this section we will introduce some of them. 
+
+Facelets provides its own tag library with the namespace http://xmlns.jcp.org/jsf/facelets. 
+This library is usually embedded in page declarations with the prefix `ui`. 
+The most important tags will be presented in the remainder of this section.
+
 ==== Reuse of content with facelets
+
+Facelets gives developers the ability to build views modularly and to redefine recurring content in a central location. 
+The basic concept for this is the so-called `compositions`, which group a part of a component tree. 
+
+Facelets can build a view from any number of `compositions`, each declared in its own XHTML document. 
+If facelets encounter a `ui:include` tag when building the component tree, the document is included in the view with the filename specified in the `src` attribute. 
+The path of the document may be absolute or relative to the current view. 
+
+Let's look at this in the context of MyGourmet. 
+Listing <<.fragment for a page header, fragment for a page header>> defines a composition for a page header stored in `/WEB-INF/includes/header.xhtml`.
+
+.fragment for a page header
+[source,xhtml]
+----
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:h="http://xmlns.jcp.org/jsf/html"
+    xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+<head><title>MyGourmet header</title></head>
+<body>
+  <ui:composition>
+    <h:panelGroup style="width: 100; height: 40px;"
+        layout="block">
+      <h:graphicImage value="/images/logo.png"
+          style="float: left;"/>
+      <h1 style="display: inline; margin-left: 5px;">
+        #{msgs.title_main}
+      </h1>
+    </h:panelGroup>
+    <h2>#{pageTitle}</h2>
+  </ui:composition>
+</body>
+</html>
+In Listing Inserting the page header with ui: include you see the section of the page declaration showCustomer.xhtml with the page header inserted via ui: include . The tag ui: param passes the text for the second order heading as a parameter to the inserted page fragment - but more on that later.
+ <html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+  <head>
+    <title>#{msgs.title_main}</title>
+  </head>
+  <body>
+    <ui:include src="/WEB-INF/includes/header.xhtml">
+      <ui:param name="pageTitle"
+          value="#{msgs.title_show_customer}"/>
+    </ui:include>
+    ...
+  </body>
+</html>
+----
+
+How does the composition of the declaration showCustomer.xhtml with the inserted fragment header.xhtml work in facelets? 
+As you may have noticed, both files are complete XHTML documents. 
+However, only a single document should be sent to the browser. 
+The solution to the puzzle lies in how facelets handle the tag `ui:composition` - it ignores all content outside the `ui:composition` tag when the page fragment is inserted.
+
+After facelets ignore the HTML framework of the page fragment in Listing <<.Fragment for a page header, Fragment for a page header>> anyway, it can also be removed. 
+The root element of the XHTML document is no longer html , but `ui:composition`. 
+Strictly speaking, it is no longer an XHTML document, but that does not mind facelets. 
+Listing <<.Fragment for a page header, Fragment for a page header>> shows the optimized variant of header.xhtml.
+
+.Fragment for a page header
+[source,xhtml]
+----
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:h="http://xmlns.jcp.org/jsf/html"
+    xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+  <h:panelGroup style="width: 100; height: 40px;"
+      layout="block">
+    <h:graphicImage value="/images/logo.png"
+        style="float: left;"/>
+    <h1 style="display: inline; margin-left: 5px;">
+      #{msgs.title_main}
+    </h1>
+  </h:panelGroup>
+  <h2>#{pageTitle}</h2>
+</ui:composition>
+----
+
+The `pageTitle` parameter allows individual definition of the header each time the fragment is inserted. 
+Take another look at Listing <<.Fragment for a page header, Fragment for a page header>>, then see the use of this parameter. 
+The EL expression #{pageTitle} evaluates the value directly in the `h2` element. 
+
+The `ui:component` tag provides the same functionality as the `ui:composition` tag, but adds a root component for the component group in the component tree.
+
+The approach shown here is the simplest way to build component trees into facelets from multiple compositions. 
+In the next few sections, we will show you further options for constructing page declarations modularly.
 
 ==== Creating tag libraries with facelets
 
+We've got to know three different tag libraries with the Core, HTML, and the Facelets tag library. 
+Each of them offers a wide variety of tags under a name space unique to the system to easily construct page declarations. 
+What if you could define custom tags for your own components, converters, and validators? That would greatly simplify the daily work with JSF. 
+Facelets also offers a simple solution.
+
+A custom tag library allows the definition of tags for custom components, converters, and validators. 
+Like the tag libraries of the standard components, each custom tag library has a unique namespace in the system so that it can be included in every page declaration. 
+In addition to tag definitions, a tag library can also contain so-called EL functions that expose static functions in EL expressions. 
+
+Since we have not yet created our own components, we will wait until the Chapter: The Custom component with the definition of an appropriate tag . 
+In Section: The Custom component library You will even find a brief guide to building your own component library. 
+We will begin the following section with the definition of an EL function, showing you how to create a tag library and register it in the system. 
+What we also do not want to withhold from you is the creation of a tag for a converter and a validator.
+
 ===== Definition of an EL function
+
+JavaServer Pages Version 2.1 and later facelets provide the ability to make static functions available in EL expressions - with any number of parameters. 
+Since the examples in the book use facelets as the page declarative language, we will limit ourselves here to the definition of an EL function with facelets. In JSP, however, the definition works very similar.
+
+TIP: EL functions are often no longer necessary with the new version of the Unified EL in Java EE 6 , as any methods - including parameters - can be called (see section Section: Extensions of the Unified EL in Java EE 6).
+
+As an example, we implement a function that calculates the age for a date of birth and returns it as a number. 
+The required Java code is limited to a few lines in the static method `getAge()` of the class `MyGourmetUtil`. This class can be seen in Listing <<.Java code of the EL function, Java code of the EL function>>.
+
+.Java code of the EL function
+[source,java]
+----
+public class MyGourmetUtil {
+  public static int getAge(Date birthday) {
+    Calendar birthCal = Calendar.getInstance();
+    birthCal.setTime(birthday);
+    Calendar today = Calendar.getInstance();
+    int age = today.get(Calendar.YEAR)
+        - birthCal.get(Calendar.YEAR);
+    if (today.get(Calendar.DAY_OF_YEAR) 
+        < birthCal.get(Calendar.DAY_OF_YEAR))
+      age--;
+    return age;
+  }
+----
+
+The method behind the EL function is now available, now it has to be made available in a tag library. 
+Listing <<.tag library with an EL function, tag library with an EL function>> shows the tag library `mygourmet.taglib.xml` with the definition of the EL function in a `function` element.
+
+.tag library with an EL function
+[source,xml]
+----
+<facelet-taglib version="2.2"
+    xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+      http://xmlns.jcp.org/xml/ns/javaee/
+      web-facelettaglibrary_2_2.xsd">
+  <namespace>http://at.irian/mygourmet</namespace>
+  <function>
+    <function-name>getAge</function-name>
+    <function-class>
+      at.irian.jsfatwork.gui.util.MyGourmetUtil
+    </function-class>
+    <function-signature>
+      int getAge(java.util.Date)
+    </function-signature>
+  </function>
+</facelet-taglib>
+----
+
+The name under which the function can later be used in EL expressions is specified in the `function-name` child element. 
+The `class` and the `method` to call are defined in the `function-class` and `function-signature` elements. 
+You must use qualified names in both values ​​to find each class. 
+
+The tag library is integrated into the application with the context parameter `javax.faces.FACELETS_LIBRARIES` in the `web.xml`. 
+Facelets interprets the value of this parameter as a `semicolon-separated` list of tag libraries. 
+After registering, the tag library is over in the namespace element defined URI http://at.irian/mygourmet available in the system. 
+Listing <<.Include Tag Library in the web.xml, Include Tag Library in the web.xml>> shows the section of the web.xml file.
+
+.Include Tag Library in the web.xml
+[source,xml]
+----
+<context-param>
+  <param-name>javax.faces.FACELETS_LIBRARIES</param-name>
+  <param-value>/WEB-INF/mygourmet.taglib.xml</param-value>
+</context-param>
+----
+
+Facelets automatically include tag libraries from `jar` files in classpath if they are in the `META-INF` directory and their file name ends with `.taglib.xml`.
+
+The use of the EL function is now nothing in the way. 
+The custom tag library `mygourmet.taglib.xml` is integrated similar to the existing tag libraries. 
+In Listing <<.EL function in action, EL function in action>> we see the issue of age using our function. 
+Please note that when calling the function, the prefix `mg:` must be specified.
+
+[source,xhtml]
+----
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:h="http://xmlns.jcp.org/jsf/html"
+    xmlns:mg="http://at.irian/mygourmet">
+  ...
+  <h:outputText value=
+      "#{mg:getAge(customerBean.customer.birthday)}"/>
+  ...
+</html>
+----
 
 ===== Definition of a converter tag
 
+In Section: Custom Converters, we have already defined a converter for the postal code and registered it under the identifier `at.irian.ZipCode`. 
+This converter was integrated with `f:converter`, specifying this identifier. It would be nice if a separate tag with a descriptive name and the ability to pass attributes to this converter would exist - nothing easier than that. 
+
+Adding the lines in Listing <<.Definition of a converter tag, Definition of a converter tag>> to our library is sufficient to get that Converters under the tag to provide `convertZipCode`. 
+When building the component tree, facelets then adds the name for each tag `convertZipCode` from our library the converter with the identifier `at.irian.ZipCode`.
+
+[source,xml]
+----
+<tag>
+  <tag-name>convertZipCode</tag-name>
+  <converter>
+    <converter-id>at.irian.ZipCode</converter-id>
+  </converter>
+</tag>
+----
+
+Listing <<.Using the custom converter tag, Using the custom converter tag>> shows the new tag in a page declaration. As a prerequisite, the tag library in the declaration is also known under the prefix `mg`.
+
+.Using the custom converter tag
+[source,xml]
+----
+<h:inputText id="zipCode" size="30"
+    value="#{addressBean.address.zipCode}">
+  <mg:convertZipCode/>
+</h:inputText>
+----
+
+In MyGourmet 12 (see section [MyGourmet 12: GET support] ) we will create another custom converter with its own tag for converting collections into strings. 
+In the next section on Validators, we'll show you how attributes can be passed.
+
 ===== Definition of a validator tag
+
+The process of defining a tag for a converter works in exactly the same way for validators. 
+Although validation is handled by bean validation in MyGourmet, we will register a validator for a person's age here. 
+The validator should be controllable via the two optional properties `minAge` and `maxAge`. 
+
+Listing <<.Definition of a validator tag, Definition of a validator tag>> shows the lines for the definition of the validator tag. 
+The interesting aspect of this validator are the two properties `minAge` and `maxAge`.
+
+.Definition of a validator tag
+[source,xml]
+----
+<tag>
+  <tag-name>validateAge</tag-name>
+  <validator>
+    <validator-id>at.irian.Age</validator-id>
+  </validator>
+</tag>
+----
+
+The values ​​of the two properties can be passed directly to the validator via attributes of the tag. 
+Facelets then automatically associate them with properties of the same name for the underlying Validator objects. 
+In Listing <<.Use of the Custom Validator Tag, Use of the Custom Validator Tag>>, you will see the tag `mg:validateAge` with the `minAge` attribute set in use.
+
+.Use of the Custom Validator Tag
+[source,xhtml]
+----
+<h:inputText id="birthday" size="30"
+    value="#{customerBean.customer.birthday}">
+  <f:convertDateTime pattern="dd.MM.yyyy"/>
+  <mg:validateAge minAge="18"/>
+</h:inputText>
+----
 
 ==== MyGourmet 10: Advanced Facelets
 
+The example MyGourmet 10 summarizes all changes from section [Advanced Facelets]. 
+Much of the change is directly or indirectly related to the new tag library `/WEB-INF/mygourmet.taglib.xml`, which is available under the namespace http://at.irian/mygourmet in the application. 
+
+All views now have a single page header embedded through `mg:pageHeader`. 
+It would also be possible to directly use the underlying page header `header.xhtml` from the directory `/WEB-INF/includes` via `ui:include`. 
+
+The converter for the postal code in `editAddress.xhtml` and the customer's age validator in `editCustomer.xhtml` are now directly integrated with tags from the new library. 
+In the `showCustomer.xhtml` view, the age of the person is also output via the EL function `mg:getAge`.
+
 === Templating
+
+Layout and design play an important role in the development of many web applications. 
+In addition to a sophisticated graphic design, consistent page structure is often the basic requirement for the success of an application. 
+A consistent page layout not only simplifies the usability for the user, but also enables the consistent implementation of a corporate identity on all pages. 
+These requirements can be implemented in development using templates.
+
+The use of templates not only reduces the redundancy of the created application, but also offers decisive advantages during the development. 
+Templates promote the reuse of code through the modular structure of the pages and facilitate the separation of design and content. 
+This decoupling supports consistent enforcement of the design throughout the project and mitigates the impact of subsequent changes. 
+Ideally, only the template or a centrally defined page fragment needs to be adjusted, which saves development and maintenance costs. 
+
+Facelets provides a very elegant templating solution that is perfectly integrated into the JSF lifecycle. 
+A template in facelets is primarily an XHTML file - just like any other page declaration. 
+The difference is the tag `ui:insert` from the facelets tag , which defines replaceable areas in the template. 
+A page declaration based on this template (the so-called template client) can replace these areas with the actual content. 
+The complete view then consists of the content defined in the template and the replaced areas of the template client.
+
+Let's take a look at a small example of how templating with facelets looks like in practice. 
+The pages in this example should have a header, a content area, and a footer. 
+We implement this requirement in the form of a template with the appropriate structure and three replaceable areas. 
+As a result, the layout is centrally defined and easily applicable to all pages. 
+The corresponding template with the name `template.xhtml` can be found in Listing <<.Example of a Template in Facelets, Example of a Template in Facelets>>.
+
+.Example of a Template in Facelets
+[source,html]
+----
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:h="http://xmlns.jcp.org/jsf/html"
+    xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+<head>
+  <title>MyGourmet</title>
+  <link rel="stylesheet" type="text/css" href="style.css"/>
+</head>
+<body>
+  <div id="header">
+    <ui:insert name="header">
+      <h1>MyGourmet</h1>
+    </ui:insert>
+  </div>
+  <div id="content">
+    <ui:insert name="content"/>
+  </div>
+  <div id="footer">
+    <ui:insert name="footer">
+      <h:outputText value="Copyright (c) 2012"/>
+    </ui:insert>
+  </div>
+</body>
+</html>
+----
+
+The template is a simple XHTML document that shows the basic page structure with `div` elements. 
+The three `ui:insert` tags named `header`, `content`, and `footer` define the replaceable areas. 
+In the `ui:insert` sections for the header and footer, we use the option to define default content. 
+If a template client does not override the appropriate area, Facelets inserts the content within the `ui:insert` tag into the output. 
+This approach is especially useful if the content remains the same throughout much of the application.
+
+The next step is to create the `showCustomer.xhtml` page. 
+It is based on our template and defines its own content area. 
+Facelets offers the tags `ui:composition` and `ui:define`. 
+`ui:composition` connects to the template with the name specified in the `template` attribute - in our case `template.xhtml`. 
+Within `ui:composition`, the target areas of the template can be overwritten with `ui:define` blocks. 
+Which area of ​​the template defined by `ui:insert` is replaced by the `ui:define` block, determines the attribute `name`. 
+
+Before we analyze in more detail how Facelets renders a view with a template, let's take a look at the complete template client `showCustomer.xhtml` in the Listing <<.example of a template client in facelets, example of a template client in facelets>>. 
+Again, we did without the XHTML framework and directly used the tag `ui:composition` as the root element.
+
+.example of a template client in facelets
+[source,xhtml]
+----
+<ui:composition template="template.xhtml"
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:h="http://xmlns.jcp.org/jsf/html"
+    xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+  <ui:define name="content">
+    <h2>Kundendaten</h2>
+    <h:panelGrid id="grid" columns="2">
+      <h:outputText value="Vorname:"/>
+      <h:outputText value="#{customer.firstName}"/>
+      <h:outputText value="Nachname:"/>
+      <h:outputText value="#{customer.lastName}"/>
+    </h:panelGrid>
+  </ui:define>
+</ui:composition>
+----
+
+How does Facelets build the view from `showCustomer.xhtml` with the template? 
+As with the use of `ui:include`, facelets also ignores all content outside `ui:composition` and the structure of the component tree starts with the referenced template. 
+During the page creation process, the areas defined with `ui:insert` are replaced in the template. 
+In our example, the content of the header and footer comes from the template, and the contents of the content area comes from the `ui:define` block in `showCustomer.xhtml`. 
+
+Figure <<.Replaceable sections of the templating example, Replaceable sections of the templating example>> shows the replaceable `ui:insert` areas of the template based on the rendered output of our example. 
+The framing with the names of the individual parts in the upper left corner are for better visualization only and have not been rendered by JSF.
+
+.Replaceable sections of the templating
+====
+image::images/templating-includes.jpg[]
+====
+
+Facelets offers a lot more templating than the basic functionality described in the last section. 
+After the presentation of multilevel templating in section [Multilevel Templating], we will take a look at the use of multiple templates in a template client in section [Multiple Templates per Page].
 
 ==== Multi-level templating
 
+Multi-level templating enables the creation of a hierarchy of templates.
+This is especially useful when an application is organized into multiple sections that share a common layout but different content. 
+In the case of MyGourmet for example, this would include a customer area for ordering food, an area for restaurants and vendors, and a general administration area. 
+The basic layout of the header, left sidebar, content area, and footer pages remains the same and is therefore built into the main template. 
+There will also be a default value for the contents of the header and footer. In the derived templates, the left sidebar is overwritten and filled with domain-specific content. 
+The content area remains empty and will only be overwritten in the concrete pages. 
+Figure <<.Templating hierarchy of MyGourmet, Templating hierarchy of MyGourmet>> shows the multi-stage templating hierarchy in MyGourmet including the already known side `showCustomer.xhtml` from the customer area.
+
+.Templating hierarchy of MyGourmet
+====
+image::images/templating-hierarchy.jpg[]
+====
+
+Building a multi-level templating hierarchy is easy because each template client can take the role of a template - in facelets, there is no strict separation between these two roles. 
+The application area templates mentioned above and shown in Figure <<..Templating hierarchy of MyGourmet, .Templating hierarchy of MyGourmet>> take both roles. 
+On the one hand, they are template clients because they reference the main template with the following code:
+
+[source,xhtml]
+----
+<ui:composition template="template.xhtml">
+----
+
+However, for the specific pages in the application area, they are templates that declare the contents of the left sidebar in addition to the inherited content from the main template. 
+In the page, the template is then referenced, for example, with the following code:
+
+[source,xhtml]
+----
+<ui:composition template="customerTemplate.xhtml">
+----
+
+A closer look at the multi-level templating in practice follows with example MyGourmet 11 in section [MyGourmet 11 : Templating with facelets].
+
 ==== Several templates per page
+
+In some cases, it makes sense to use additional templates for recurring areas of the page in addition to a template for the view itself. 
+For example, consider specially crafted areas in a sidebar or templates for different types of page content. 
+The already known method with `ui:composition` does not succeed in this case, because the content is truncated outside of the tag. 
+With two nested `ui:composition` tags with set template attribute always wins the inner - this approach is therefore not useful for our purposes. 
+
+Facelets also offers a solution for that. 
+With `ui:decorate` exists a variant of `ui:composition` that does not truncate off-code. 
+As the name implies, the content within `ui:decorate` is decorated with the content of the referenced template.
+
+Let's look at this with a small example. 
+Listing <<.Template client with multiple templates, Template client with multiple templates>> shows a section of the source text of a template client that contains a template for the page and one for a box in the sidebar.
+
+.Template client with multiple templates
+[source,xml]
+----
+<ui:composition template="template.xhtml">
+  ...
+  <ui:define name="left_sidebar">
+    <ui:decorate template="sideBox.xhtml">
+    	<ui:param name="title" value="Meldungen"/>
+      <h:outputText value="#{bean.msg}"/>
+    </ui:decorate>
+  </ui:define>
+  ...
+</ui:composition>
+----
+
+Within `ui:decorate`, the referenced template `sideBox.xhtml` is passed the parameter `named` `title` with the tag `ui:param`. 
+The rest of the content of `ui:decorate` forms the contents of the box. 
+
+The template for the box is an XHTML document with a small feature. 
+Since it is a template for part of the entire page, the HTML framework must not be rendered. 
+The tag `ui:composition` serves this purpose - but this time without the `template` attribute. 
+Used in this way, it defines a subcomponent tree consisting of its content. 
+All elements outside are truncated.
+
+The parameter `title` set in the template client is available in the template as a `variable` and is referenced via an EL expression. 
+The content of the box is directly in the `ui:decorate` tag. 
+By using `ui:insert` without the `name` attribute, facelets inserts the entire contents of `ui:decorate` when rendering. 
+The complete template `sideBox.xhtml` for the box can be found in Listing <<.Template sideBox.xhtml, Template sideBox.xhtml>>.
+
+.Template sideBox.xhtml
+[source,xhtml]
+----
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+  <div class="side_box">
+    <p class="header">#{title}</p>
+    <ui:insert>Default body</ui:insert>
+  </div>
+</ui:composition>
+----
+
+The example MyGourmet 11 in section [MyGourmet 11 : Templating with Facelets] also uses several templates per page to format boxes in the sidebar.
 
 ==== MyGourmet 11: Templating with facelets
 
