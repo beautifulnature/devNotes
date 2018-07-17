@@ -1,0 +1,33 @@
+== Marking
+
+=== Beans and Dependency Injection with CDI
+
+==== Managed beans with CDI
+
+==== Producer Methods
+
+=== Configuration of CDI
+
+=== MyGourmet 16: Integration of CDI
+
+=== Conversations with JSF
+
+=== Apache MyFaces CODI
+
+==== Conversations with CODI
+
+===== Conversation Scope
+
+===== View Access Scope
+
+===== Window Scope
+
+===== Window Context
+
+==== View Config and Page Beans
+
+===== View Config
+
+===== Page beans
+
+==== MyGourmet 17: Apache MyFaces CODI

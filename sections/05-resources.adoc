@@ -1,6 +1,14 @@
 :sectnums:
 == Management of resources
 
+In JSF, resources are artifacts, such as images, scripts, or stylesheets, that require a component to fully display on the client.
+
+The management of resources is a requirement that is relevant in one form or another for each application. Especially for component libraries, it is important to define the dependencies between components and resources such as scripts or stylesheets. In addition, these resources must be made transparent to the application developer. Before JSF 2.0, there was no standardized way for it. Many providers have therefore developed independent solutions that are, however, in most cases compatible with each other.
+
+As of JSF 2.0, there is a standardized way to manage resources and position them flexibly in the view. This benefits not only component libraries, but all applications with their own images, stylesheets or scripts. The sections [Resource Identification Section - Part 1] through [Resources Section in MyGourmet 12 ] detail how resource management works. 
+
+JSF 2.2 offers resource library contracts the ability to define interchangeable templates and resources, as shown in section [Resource-Library Contracts].
+
 === Identification of Resources - Part 1
 
 === resources in use

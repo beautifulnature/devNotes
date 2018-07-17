@@ -1,30 +1,12 @@
-= Rice model
-:docnumber: 17301
-:tc-docnumber: 17301
-:ref-docnumber: ISO 17301-1:2016(E)
-:partnumber: 1
-:edition: 2
+= JavaServer Faces
 :revdate: 2016-05-01
 :copyright-year: 2016
 :language: en
 :title-intro-en: Cereals and pulses
 :title-main-en: Specifications and test methods
 :title-part-en: Rice
-:title-intro-fr: Céréales et légumineuses
-:title-main-fr: Spécification et méthodes d'essai
-:title-part-fr: Riz
-:doctype: international-standard
-:docstage: 30
-:docsubstage: 92
-:draft:
-:technical-committee-number: 34
-:technical-committee: Food products
-:subcommittee-number: 4
-:subcommittee: Cereals and pulses
-:workgroup-number: 3
-:workgroup: Rice Group
 :toc:
-:sectnumlevels: 7
+:sectnumlevels: 8
 :stem:
 :xrefstyle: short
 :appendix-caption: Annex
@@ -33,17 +15,21 @@
 :table-caption: Table
 :example-caption: Figure
 
-include::sections/00-foreword.adoc[]
-include::sections/00-introduction.adoc[]
-include::sections/01-scope.adoc[]
-include::sections/02-normref.adoc[]
-include::sections/03-termdef.adoc[]
-include::sections/04-specifications.adoc[]
-include::sections/05-sampling.adoc[]
-include::sections/06-testmethods.adoc[]
-include::sections/07-testreport.adoc[]
-include::sections/08-packaging.adoc[]
-include::sections/09-marking.adoc[]
+include::sections/01-introduction.adoc[]
+include::sections/02-concepts.adoc[]
+include::sections/03-standardJSFcomponents.adoc[]
+include::sections/04-advancedJSF.adoc[]
+include::sections/05-resources.adoc[]
+include::sections/06-customcomponents.adoc[]
+include::sections/07-ajax.adoc[]
+include::sections/08-html5.adoc[]
+include::sections/09-cdi.adoc[]
+include::sections/10-primefaces.adoc[]
+include::sections/11-facesflows.adoc[]
+include::sections/12-jsf_fullstack_cdi.adoc[]
+include::sections/13-spring.adoc[]
+include::sections/14-jsf_fullstack_spring.adoc[]
+include::sections/15-tobago.adoc[]
 include::sections/aa-annex-a.adoc[]
 include::sections/ab-annex-b.adoc[]
 include::sections/ac-annex-c.adoc[]

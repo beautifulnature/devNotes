@@ -1,9 +1,164 @@
 == JSF and HTML5
 
+HTML5 is currently on everyone's lips and certainly one of the most widely used and abused buzzwords in the field of web development. 
+But behind the hype are a whole host of useful features and enhancements that make web developers' lives easier (and more exciting). 
+High time for JSF to jump on this fast-paced train. 
+
+Although there have already been some approaches to the integration of HTML5 into JSF in the past, the official version is only part of the specification since JSF 2.2. 
+Under the generic term "HTML5 Friendly Markup" JSF brings together two fundamentally new concepts: pass-through attributes and pass-through elements.
+
+However, we will start this chapter with a short detour to the different processing modes for facelets files in section [Facelets Processing Modes]. 
+After that, we will show you the pass-through attributes in section [HTML5 Pass-Through Attributes] and the pass-through elements in section [HTML5 Pass-Through Elements]. 
+Section [MyGourmet 15: HTML5] finally describes a variant of MyGourmet with the previously presented concepts.
+
 === Processing Modes for Facelets Files
 
+As a first and easiest way to support HTML5, JSF 2.2 handles Facelets files slightly differently than JSF 2.1. 
+Compared to the previous version, JSF 2.2 always renders the HTML5 doctype <! DOCTYPE html> - regardless of which doctype is specified in the XHTML file. 
+
+Since JSF 2.1 there is the possibility to process facelets files in different modes. 
+In JSF 2.2, this is the html5 mode by default. 
+If you do not want to use the HTML5 doctype, you can change the processing mode in the `faces-config.xml` in Listing <<.Mode xhtml for facelets files, Mode xhtml for facelets files>> mode set to the xhtml (default mode in JSF 2.1).
+
+.Mode xhtml for facelets files
+[source,xml]
+----
+<faces-config-extension>
+  <facelets-processing>
+    <file-extension>.xhtml</file-extension>
+    <process-as>xhtml</process-as>
+  </facelets-processing>
+</faces-config-extension>
+----
+
+In addition, JSF also defines the xml modes for handling facelets files in XML mode (XML declaration, doctype and comments are removed) and jspx for moving from JSP.
+
 === HTML5 pass-through attributes
+
+HTML5 defines a whole range of new attributes and attribute values ​​for existing HTML elements. JSF 2.2 provides the appropriate concept for supporting these attributes with pass-through attributes. The principle is simple: Each component can have any number of pass-through attributes in addition to the "normal" attributes. These attributes are passed unchanged to the element rendered by the component and are not further processed by the component itself.
+
+The advantage of this approach is obvious. 
+JSF can support new and changed HTML5 attributes without changing existing standard components. 
+The JSF specification is therefore also not dependent on the HTML5 specification. 
+An important point - especially considering that the work on HTML5 is still ongoing.
+
+JSF defines several variants for defining pass-through attributes. 
+The simplest way is to define the attribute in namespace http://xmlns.jcp.org/jsf/passthrough. 
+For this purpose, the attribute must be provided only with the prefix of the namespace. 
+The example in Listing <<.Example with pass-through attributes, Example with pass-through attributes>> shows an `h:inputTextComponent` with the two regular attributes `id` and `value` and the `pass-through attributes` `type` and `placeholder`.
+
+.Example with pass-through attributes
+[source,xhtml]
+----
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:h="http://xmlns.jcp.org/jsf/html"
+    xmlns:pt="http://xmlns.jcp.org/jsf/passthrough">
+<h:head><title>JSF 2.2 HTML5</title></h:head>
+<h:body>
+  <h:form id="form">
+    <h:inputText id="email" value="#{bean.email}"
+        pt:type="email" pt:placeholder="E-Mail eingeben"/>
+    <h:commandButton action="#{bean.save}" value="Save"/>
+  </h:form>
+</h:body>
+</html>
+----
+
+The pass-through attributes are HTML5 extensions for the input element that are not directly supported by `h:inputText`. 
+With placeholder text can be entered that will be displayed in the browser, as long as the user has entered anything yet. 
+In the attribute type, one of the new types for input fields is used with `email`. 
+The rendered HTML for the `h:inputText` tag contains all four attributes as expected:
+
+[source,html]
+----
+<input id="form:email" name="form:email" value=""
+    placeholder="E-Mail eingeben" type="email"/>
+----
+
+Table: html5-input-ex shows some examples of how to display the input element with the additional HTML5 attributes in the browser. 
+The validation of the e-mail address is carried out by the browser on the client side when submitting the form - JSF gets nothing from it. 
+But beware: Not all HTML5 features are supported by all browsers alike. 
+An up-to-date overview of which browser versions support HTML5 features can be found at http://caniuse.com.
+
+[options="header",cols="1,1"]
+|===
+|application   |example  
+//-------------
+|Empty input field	a|image::images/input-email-empty.jpg[]
+|Invalid e-mail (Chrome 28)	a|image::images/input-email-ch28w.jpg[]
+|Invalid e-mail (Firefox 23)	a|image::images/input-email-ff23w.jpg[]
+|===
+
+In addition to the variant with the namespace, you can also define pass-through attributes with the tag `f:passThroughAttribute`. 
+The name of the pass-through attribute is given in `name` and the value in `value`, as Listing shows <<.pass-through attributes over tags, pass-through attributes over tags>>. 
+The rendered output does not change as a result.
+
+.pass-through attributes over tags
+[source,xhtml]
+----
+<h:inputText id="email" value="#{bean.email}">
+  <f:passThroughAttribute name="type" value="email"/>
+  <f:passThroughAttribute name="placeholder"
+      value="E-Mail eingeben"/>
+</h:inputText>
+----
+
+If these two variants are not yet enough for you, you can also get pass-through attributes with the tag `f:passThroughAttributes` from a bean property with the type `Map<String, Object>`, such as Listing <<.pass-through attributes from Bean property, .pass-through attributes from Bean property>> shows.
+
+.pass-through attributes from Bean property
+[source,xhtml]
+----
+<h:inputText id="email" value="#{bean.email}">
+  <f:passThroughAttributes value="#{bean.attributes}"/>
+</h:inputText>
+----
+
+Listing <<.Bean property for pass-through attributes, .Bean property for pass-through attributes>> shows the bean property matching the listing <<.pass-through attributes from Bean property, pass-through attributes from Bean property>>.
+
+[source,java]
+----
+public Map<String, Object> getAttributes() {
+  Map<String, Object> attrs = new HashMap<String, Object>();
+  attrs.put("placeholder", "E-Mail eingeben");
+  attrs.put("type", "email");
+  return attrs;
+}
+----
+
+Pass-Through Attributes also allow use of HTML5 Custom Data Attributes. 
+For details on HTML5 Custom Data attributes, see http://html5doctor.com/html5-custom-data-attributes. 
+These attributes are intended to provide HTML elements with additional data. 
+You recognize them immediately by their name, which always starts with the prefix data-. 
+Custom data attributes are stored in the `DOM` and are available there for processing with `JavaScript`. 
+
+The following example shows an `h:inputText` tag with the custom data attribute `data-required` in the form of a pass-through attribute.
+
+[source,xhtml]
+----
+<h:inputText id="email" value="#{bean.email}"
+    pt:type="email" pt:data-required="true"/>
+----
+
+This attribute has no special meaning and is not treated separately by JSF or the browser. 
+However, it can be used in the JavaScript code of the application, for example for client-side validation.
 
 === HTML5 pass-through elements
 
 === MyGourmet 15: HTML5
+
+MyGourmet 15 is an extended version of MyGourmet 14 that has been extended in some places with pass-through attributes and pass-through elements. 
+
+For example, in `editAddress.xhtml`, all input fields got the HTML5 attribute placeholder via `f:passThroughAttribute`. 
+In `editProvider.xhtml`, on the other hand, placeholder was added directly as an attribute in the `pass-through` namespace. 
+Furthermore, the composite component `mc:inputSpinner` has been replaced by an input field with the new HTML5 type `number`, as the following example shows.
+
+[source,xml]
+----
+<h:inputText pt:type="number" pt:min="0" pt:step="1"
+    value="#{providerBean.provider.stars}"
+    pt:placeholder="#{msgs.enter_stars}"/>
+----
+
+If the browser supports this type, it will natively display a number entry field with buttons to increase and decrease the value. 
+
+In `editCustomer.xhtml`, as far as possible, all JSF tags have been replaced by `pass-through elements`. In addition, the input field for the e-mail address uses the HTML5 type `e-mail`.
