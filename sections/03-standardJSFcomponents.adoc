@@ -821,7 +821,36 @@ The HTML code can be seen in Listing <<.HTML output of the menu field, HTML outp
 ----
 
 ==== Definition of choices
+
+The list of possible values ​​of a selection component is defined in JSF with the tags `f:selectItem` and `f:selectItems`.
+
 ===== Single choice with `f:selectItem`
+
+The `f:selectItem` tag creates a single selection object and must be specified as the child tag of a selection component. 
+The `localizable` attribute `itemLabel` stores the short description that is displayed to the user for this selection object. 
+The `itemDescription` attribute specifies a description of the component, which is typically longer than itemLabel and is not represented by the default renderers. 
+In `itemValue` the server-side value of this object is. 
+It must be the same data type as the value of the parent component. 
+With the `Boolean` attribute `itemDisabled` the value in the selection list of the component can be deactivated. 
+It is then greyed out in the browser and can not be selected. 
+Internet Explorer interprets the attribute `disabled` on the HTML element `option` only as of version 8.
+
+As a variant to the use of these attributes, a `SelectItem` instance associated with this component can be referenced in the value attribute. 
+If this attribute is set then `itemLabel`, `itemValue` and `itemDescription` will not be used. 
+The example in Listing <<.`f:selectItem` in action, `f:selectItem` in action>> shows the use.
+
+.`f:selectItem` in action
+[source,xml]
+----
+<f:selectItem itemValue="IT" itemLabel="Italian"/>
+<f:selectItem itemValue="GR" itemLabel="Greek"
+    itemDisabled="#{user.numberOfVisits < 5}"/>
+<f:selectItem itemValue="AT" itemLabel="Austrian"/>
+<f:selectItem value="#{customerBean.selectMexican}"/>
+----
+
+In this example, `itemDisabled` is determined by a Unified-EL expression, which is true if the user has visited the page less than 5 times.
+
 ===== Several options with `f:selectItems`
 === Panel Components
 === `UIViewRoot`
