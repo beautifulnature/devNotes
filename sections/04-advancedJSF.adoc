@@ -6,7 +6,6 @@ After having focused on the basics of JSF in the previous chapters, let's turn t
 After a brief presentation of the Project stage in Section [Project-Stage], section [Advanced Facelets] will introduce you to advanced aspects of facelets that are primarily about reusing content. 
 A central theme for almost every web project is templating. 
 Section [Templating] therefore shows in detail how templating works with facelets. 
-Section [Bookmarks and GET Requests in JSF] then presents the support of GET requests with View parameters and - new in JSF 2.2 - View Actions. 
 Finally, in section [The JSF Environment: `FacesContext` and `ExternalContext`] we'll take a closer look at the `FacesContext` and the `ExternalContext`, before going on to the chapter with some details of configuring JSF in Section [Configuring JavaServer Faces]. 
 
 So that the practice is not neglected, the presented concepts are implemented in the examples MyGourmet 10, MyGourmet 11 and MyGourmet 12.
@@ -551,34 +550,781 @@ The example MyGourmet 11 in section [MyGourmet 11 : Templating with Facelets] al
 
 ==== MyGourmet 11: Templating with facelets
 
+After introducing the templating capabilities of facelets, it's time to apply them in our example. 
+MyGourmet 11 extends the predecessor example MyGourmet 10 with a simple, template-based layout. 
+Before we go into the details of the implementation, let's briefly present what the application looks like in the browser. Figure MyGourmet 11: Customer page in the browser shows the rendered output of the `showCustomer.xhtml` page.
+
+.MyGourmet 11: Customer page in the browser
+====
+image::images/mygourmet11-screenshot.jpg[]
+====
+
+In this example, the already briefly presented <<.Templating hierarchy of MyGourmet, Templating hierarchy of MyGourmet>> is used. 
+The main template named `template.xhtml` does not offer much new. 
+It defines the basic layout of the application with one `div` container each for the header, the left sidebar, the content area, and the footer. 
+Within each of these containers is a `ui:insert` tag with a unique name. 
+The design shown in Figure <<.MyGourmet 11: Customer page in the browser, MyGourmet 11: Customer page in the browser>> is defined in a linked CSS document. 
+
+Let us now turn to the template for the pages in the customer area (customerTemplate.xhtml). 
+It derives from the main template and defines the default content of the header, footer, and sidebar for the customer area. 
+A section shows Listing <<.MyGourmet 11: Template for customer pages, MyGourmet 11: Template for customer pages>>.
+
+.MyGourmet 11: Template for customer pages
+[source,xhtml]
+----
+<ui:composition template="template.xhtml">
+  <ui:define name="header">
+    <h:graphicImage value="/images/logo.png"/>
+    <h1>#{msgs.title_main}</h1>
+  </ui:define>
+  <ui:define name="left_sidebar">
+    <ui:include src="leftSideBar.xhtml"/>
+  </ui:define>
+  <ui:define name="footer">
+    <h:outputText value="#{msgs.footer_left_text}"
+        style="float: left;"/>
+    <h:outputText value="#{msgs.footer_right_text}"
+        style="float: right"/>
+  </ui:define>
+</ui:composition>
+----
+
+The definition of the header and footer is done directly in the template - the contents are relatively manageable. 
+For the sidebar, however, a different approach is used: Their content is defined in the separate XHTML document `leftSideBar.xhtml` and integrated into the template with the tag `ui:include`.
+
+The sidebar consists of a box with a small menu and a box with current messages. 
+The implementation corresponds to the example presented in section [Multiple Templates per Page] for the use of multiple templates with `ui:decorate`. 
+Listing <<.MyGourmet 11: left sidebar, MyGourmet 11: left sidebar>> shows a section of the `leftSideBar.xhtml` file.
+
+.MyGourmet 11: left sidebar
+[source,xhtml]
+----
+<ui:composition>
+  <ui:decorate template="/META-INF/templates/sideBox.xhtml">
+    <ui:param name="title" value="#{msgs.menu_title}"/>
+    <h:form id="menu">
+      <h:panelGrid columns="1">
+        <h:commandLink action="showCustomer">
+            #{msgs.menu_show_customer}
+        </h:commandLink>
+      </h:panelGrid>
+    </h:form>
+  </ui:decorate>
+  <ui:decorate template="/META-INF/templates/sideBox.xhtml">
+    <ui:param name="title" value="#{msgs.news_title}"/>
+    <p>MyGourmet - Now with Facelets and Templating</p>
+  </ui:decorate>
+</ui:composition>
+----
+
 === Bookmarks and GET requests in JSF
+
+JSF prior to version 2.0 is limited in its ability to create bookmarkable links and handle `GET` requests. 
+This is mainly due to the fact that every click on an `h:commandLink` or `h:commandButton` component triggers a `POST` request. 
+This circumstance will be addressed from version 2.0 of the specification with extended support for `GET` requests. 
+The basic package consisting of `GET` navigation (see section [Navigation with `h:link` and `h:button`] ) and view parameters (see section [View parameter section] ) is already included in JSF 2.0. 
+JSF 2.2 completes this package with `View-Actions` (see section [`View-Actions`]).
 
 ==== Navigation with h: link and h: button
 
+The basis of the `GET` support with `h:link` and `h:button` are two components, which are rendered as a link or button and issue a `GET` request. 
+The trick is that it nevertheless uses the navigation mechanism of JSF. 
+For this purpose, both components have the attribute `outcome`, whose value is passed to the `navigation handler` for resolving the URL. 
+This first tries to find a navigation case for which `from-outcome` matches the value of `outcome`. 
+If the search is unsuccessful, the `value` of `outcome` directly interpreted as a `View-ID`. 
+In contrast to classic navigation, the `View-ID` is already resolved when the view is rendered and not dynamically in the `Invoke-Application-Phase` during `postback`. 
+This concept is therefore also referred to as preemptive navigation. 
+MyGourmet has two new views to demonstrate its `GET` capabilities. 
+
+The first new page with the `View-ID` `providerList.xhtml` shows a list of providers that deliver food. 
+Each entry in this list refers to the `showProvider.xhtml` detail page with an `h:link` tag. 
+Listing <<.`h:link` in use, `h:link` in use>> shows a section of the page declaration `providerList.xhtml` with the link to the detail page.
+
+.`h:link` in use
+[source,xhtml]
+----
+<h:dataTable var="provider"
+    value="#{providerBean.providerList}">
+  <h:column>
+    <f:facet name="header">
+      <h:outputText value="#{msgs.provider_name}"/>
+    </f:facet>
+    <h:link outcome="showProvider" value="#{provider.name}">
+      <f:param name="id" value="#{provider.id}"/>
+    </h:link>
+  </h:column>
+</h:dataTable>
+----
+
+The value of the value attribute is rendered as link text. We use implicit navigation at this point and enter the view ID of the detail page directly in the attribute outcome . The unique identifier of the corresponding provider is provided with the f: param tag as the child of the link component. 
+Listing <<.Rendered output from `h:link`, Rendered output from `h:link`>> shows how JSF renders the links. 
+Here you can also see what the term preemptive navigation means in practice. 
+When rendering the view, the resulting URL for each `h:link` or `h:button` component depends on the attribute `outcome` certainly. 
+If the user activates one of the links or buttons, the browser sends a simple `GET` request to the server and there is no postback in this case. 
+Therefore, it is not necessary to embed `h:link` and `h:button` in an `h:form` tag.
+
+.Rendered output from `h:link`
+[source,xhtml]
+----
+<a href="/showProvider.jsf?id=1">Pizzeria Venezia</a>
+<a href="/showProvider.jsf?id=2">Rhodos</a>
+<a href="/showProvider.jsf?id=3">Frying Dutchman</a>
+----
+
+After the browser sends a `GET` request, the URL in the address bar also matches the actual rendered page. 
+The user can therefore also bookmark this view. 
+This sounds trivial, but is not always the case with classic navigation, since the command components `h:commandLink` and `h:commandButton` first postback to the current page before JSF executes the navigation and renders a new view. 
+Therefore, the address bar lags behind a view.
+
 ==== View parameters
+
+If the user activates the link rendered by `h:link`, JSF must process the passed parameter `id` and display the correct provider. 
+The so-called `view-Parameter` come into play, binding the request parameters directly to the model. 
+These parameters are basically nothing more than input components that are filled via `Request-Parameter`. 
+As with all input components, the values ​​are converted and validated first. 
+
+`View-Parameter` are specified in a page declaration within the `f:metadata` tag as `f:viewParam` components. 
+Listing <<.View-Parameter in use, View parameter in use>> shows the `f:metadata` area of ​​the view `showProvider.xhtml`. 
+The embedded `View-Parameter` directly associates the request parameter named `id` with the `providerBean.id` property in the backing bean.
+
+.View-Parameter in use
+[source,xhml]
+----
+<f:metadata>
+  <f:viewParam name="id" value="#{providerBean.id}"/>
+</f:metadata>
+----
+
+You can verify that the `View-Parameter` behaves like an input component (or more aptly): Invoke the page in the browser with a non-numeric value for the `id` parameter. 
+The result is an error message from the JSF Number converter because the property `providerBean.id` has the type long. 
+It is also readily possible to use a validator or to provide the property with bean validation metadata.
+
+After successfully passing the identifier to the bean, you must load the vendor's data before rendering the view. 
+JSF 2.2 offers the most elegant solution with the new `View-Actions`. 
+Alternatively - especially if you are still using JSF 2.0 or 2.1 - you can also load the data via the `System-Event` `PreRenderViewEvent`. 
+We show you both variants in section [`View-Actions`].
+
+If the destination page of an `h:link` or `h:button` element contains `View-Parameter`, they can be automatically applied. 
+All you need to do is to set the `includeViewParams` attribute of the `h:link` and `h:button` tags to the value `true`. 
+As an example, on `showProvider.xhtml`, we'll add the following link to the `editProvider.xhtml` page to edit the provider:
+
+[source,xhtml]
+----
+<h:link outcome="editProvider" includeViewParams="true"
+    value="#{msgs.edit_provider}"/>
+----
+
+When rendering the HTML output of this link, the view parameters are added to the landing page as parameters. 
+Assuming that `editProvider.xhtml` defines the same view parameter as `showProvider.xhtml`, the URL is: `/editProvider.xhtml?id=1`.
 
 ===== Positioning of `f:metadata`
 
+The tag `f:metadata` must always be a direct child of `f:view` and must not be swapped out to a template or a page fragment inserted with `ui:include`. 
+The combination of templating and view parameters can still be done very easily. 
+For this, the template must define a replaceable area for the view parameters, which is then replaced in the template client. 
+Listing <<.Template with `View-Parameter`, Template with `View-Parameter`>> shows an example of a template with the metadata replaceable section.
+
+.Template with `View-Parameter`
+[source,xhtml]
+----
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+    xmlns:f="http://xmlns.jcp.org/jsf/core">
+<body>
+  <f:view>
+    <ui:insert name="metadata"/>
+    <div id="content">
+      <ui:insert name="content"/>
+    </div>
+  </f:view>
+</body>
+</html>
+----
+
+Listing <<.Template Client with `View-Parameter`, Template Client with `View-Parameter`>> shows a template client that builds on the previously defined template and overwrites the `View-Parameter` area. 
+As you can see, the complete `f:metadata` tag must be declared in the template client.
+
+.Template Client with `View-Parameter`
+[source,xhtml]
+----
+<ui:composition template="template.xhtml"
+    xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+    xmlns:f="http://xmlns.jcp.org/jsf/core">
+  <ui:define name="metadata">
+    <f:metadata>
+      <f:viewParam name="id" value="#{bean.id}"/>
+    </f:metadata>
+  </ui:define>
+  <ui:define name="content">
+    Page content
+  </ui:define>
+</ui:composition>
+----
+
 ===== Life cycle with `View-Parameters`
+
+Now we are going to answer the question of how the execution of the life cycle changes when view parameters come into play. 
+An initial request for a view is always a `GET` request. 
+Prior to JSF 2.0, on such a request, the phase 1 lifecycle jumped to phase 6 immediately and the view was rendered.
+
+This behavior has changed: In Phase 1, it is first checked whether there is a metadata area and view parameters. 
+If so, a new view is created containing only the view parameters. 
+This will then go through the entire life cycle. 
+If there are any parameters in the request, the data is treated in the following phases as in a postback: First, they are mapped to each view parameter, then converted and validated, and written back to the model if no errors occurred. Finally, the view is rendered as before.
 
 ==== `View-Actions`
 
+So far, we have always used action methods in combination with `h:commandButton` or `h:commandLink`. 
+However, these classic action methods only run during the lifecycle when a user has triggered a submit by clicking on a button or link. 
+On the other hand, `View-Actions` enable JSF 2.2 to execute action methods when a page is initially loaded by a `GET` request. 
+
+`View-Actions` were originally planned for JSF 2.0 because they form an integral part of `GET` support. 
+Due to time constraints, however, they did not make it into the JSF specification until version 2.2.
+
+We now want to redeem our above promise and show loading the vendor data using a `View-Action`. 
+`View-Actions` are specified in a page declaration with the tag `f:viewAction`, which must be within `f:metadata` in the same way as `f:viewParam`. 
+The action-method is referenced as method-expression in the `action` attribute, as known from `h:commandButton`. 
+Listing <<.`View-Action` in action, `View-Action` in action>> shows the `f:metadata` area of ​​the `showProvider.xhtml` view with the `View-Action` and `View-Parameter` from the last section. 
+Of course, the rules for positioning `f:metadata` defined in section [Positioning of `f:metadata`] also apply when using `View-Actions`.
+
+.`View-Action` in action
+[source,xhtml]
+----
+<f:metadata>
+  <f:viewParam name="id" value="#{providerBean.id}"/>
+  <f:viewAction action="#{providerBean.loadProvider}"/>
+</f:metadata>
+----
+
+The referenced action method `loadProvider` loads the provider data for the `id` set by the `View-Parameter`. 
+By default, after JSF executes `View-Actions` in the `Invoke-Application-Phase`, we can easily access the value of `id`. 
+However, this also ensures that the method is not executed in the event of a conversion error (the execution of the life cycle jumps to the `Render-Response-Phase` in advance). 
+As with all action methods, the return value is used for navigation. 
+After we want to stay on the page, we just return `null` here. 
+Listing <<.Action method for `View-Action`, Action method for `View-Action`>> shows the action method.
+
+.Action method for `View-Action`
+[source,java]
+----
+public String loadProvider() {
+  provider = findProvider(id);
+  if (provider == null) {
+    GuiUtil.addErrorMessage("error_non_existing_provider", id);
+  }
+  return null;
+}
+----
+
+Navigation with `View-Actions` basically works the same as with normal action methods. 
+The only difference is that navigation initiated by `View-Actions` is always automatically redirected. 
+Listing <<.Action method for `View-Action` with navigation, Action method for `View-Action` with navigation>> shows a variant of the previous action method, which for non-existent provider data forwards to an error page with the `View-ID` `error.xhtml`. 
+In this way, for example, a simple login solution can be tinkered with `View-Actions`: As long as the user is not logged in, the action method always triggers a redirect to the login page.
+
+.Action method for `View-Action` with navigation
+[source,java]
+----
+public String loadProvider() {
+  provider = findProvider(id);
+  if (provider == null) {
+    return "error";
+  }
+  return null;
+}
+----
+
+As mentioned before, JSF executes `View-Actions` by default in the `Invoke-Application-Phase`. 
+If necessary, however, `View-Actions` can be performed at any stage from 2 to 5. 
+All you have to do is enter one of the following values in the phase attribute: `PROCESS_VALIDATIONS`, `UPDATE_MODEL_VALUES` or `INVOKE_APPLICATION`. 
+For our `View-Action` to be implemented in phase 2 of the lifecycle, we would need to modify `f:viewAction` as follows:
+
+[source,xhtml]
+----
+<f:viewAction action="#{providerBean.loadProvider}"
+    phase="APPLY_REQUEST_VALUES"/>
+----
+
+Note, however, that in this case the `id` field is not yet set - this will only be done in phase 4! 
+The `View-Action` is also already executed in phase 2 of the lifecycle if the `immediate` attribute is set to `true`. 
+
+By default, `View-Actions` are only called on initial page `GET` requests. 
+If the `View-Action` is also to be executed for postbacks, the `onPostback` attribute must be set to `true`.
+
 ===== `View-Actions` compared to the `System-Event` `PreRenderViewEvent`
+
+With JSF 2.0 or 2.1, you can use the `System-Event` `PreRenderViewEvent` as an alternative to `View-Actions`. 
+Of course, this still works with JSF 2.2, but `View-Actions` are much more flexible. 
+To do this, we use the tag `f:event` to register the method `preRenderView` of the managed bean as `listener` for this event directly in the page declaration. 
+Here is the registration in `showProvider.xhtml`:
+
+[source,xhtml]
+----
+<f:event type="preRenderView"
+    listener="#{providerBean.preRenderView}"/>
+----
+
+Listing <<.listener method for `PreRenderViewEvent`, listener method for `PreRenderViewEvent`>> shows the previously registered listener method in the `ProviderBean` class. 
+Here, the provider data is loaded if no error occurred while converting and validating the view parameter. 
+Since JSF 2.0, this query can be easily accomplished using the `isValidationFailed` method on the `Faces-Context`.
+If no provider exists with the specified identifier, we will generate a message.
+
+.listener method for `PreRenderViewEvent`
+[source,java]
+----
+public void preRenderView(ComponentSystemEvent ev) {
+  FacesContext ctx = FacesContext.getCurrentInstance();
+  if (!ctx.isValidationFailed()) {
+    this.provider = findProvider(id);
+    if (provider == null) {
+      GuiUtil.addErrorMessage("error_non_existing_provider", id);
+    }
+  }
+}
+----
+
+The example also shows the first difference between `View-Actions` and a listener for the `PreRenderViewEvent`. 
+The listener method is always executed at the beginning of phase 6 of the lifecycle - for both initial requests and postbacks. For our example, this would mean that the provider data is reloaded on every request. But since the managed bean is in view scope, that's not really necessary. With the `View-Action`, the data is only loaded on the first access to the page via a GET request. And that only if the conversion of the view parameter does not fail. 
+
+With `View-Actions`, you can also intervene without problems in the navigation if necessary.
+
+Another difference is not immediately apparent at first glance. 
+In contrast to calling the listener for the `PreRenderViewEvent`, the component tree is not yet established at the time the `View-Action` is called. 
+Thus, while it is not possible to access individual components, on the other hand, this results in a performance advantage.
 
 ==== MyGourmet 12: `GET` support
 
+The example MyGourmet 12 summarizes all changes around the topic `View-Parameters` and `View-Actions`. 
+The most obvious innovation is the new provider area in the application. 
+The entry point is the `providerList.xhtml` page with an overview of the providers. 
+This list is initialized with some values when the Backing Bean `ProviderBean` is created. 
+From this page, each vendor has an `h:link` component to `showProvider.xhtml`. 
+A provider's data is stored in instances of the `Provider` class. 
+
+When calling the `showProvider.xhtml` page the `id` of the provider sent as the `Request-Parameter` is stored in the managed bean with a `View-Parameter`. 
+A `View-Actions` then ensures that the provider data for this `id` is loaded.
+
+Since we use templating since MyGourmet 11, we had to customize the template (as described in section [Positioning of `f:metadata`]) for using `View-Parameters`. 
+
+Another small change concerns the left sidebar. 
+In order to reach the provider area, we have extended the menu with a link. 
+For better support of bookmarking we have changed the menu to `h:link` components. 
+As a pleasant side effect, can be saved by the `Form`. 
+
+Listing <<.MyGourmet 12: Using the List Converter, MyGourmet 12: Using the List Converter>> shows the use of a new converter that converts collections into strings. 
+With the `bundleName` attribute, the name of a resource bundle can be passed to it, from which the entries in the list are resolved. Now that the provider and the customer have a list of categories that contain only symbolic constants, this converter saves a lot of source code.
+
+.MyGourmet 12: Using the List Converter
+[source,xhtml]
+----
+<h:outputText value="#{providerBean.provider.categories}">
+  <mg:convertList separator=", " bundleName="msgs"/>
+</h:outputText>
+----
+
+Listing <<.MyGourmet 12: List Converter, MyGourmet 12: List Converter>> shows the `getAsString` method and the properties of the converter class `ListConverter`, which are set via the attributes of the custom tag `mg:convertList`. 
+This tag was defined in the tag library `mygourmet.taglib.xml` as shown in the last example.
+
+.MyGourmet 12: List Converter
+[source,java]
+----
+private String separator;
+private String bundleName;
+
+public String getAsString(FacesContext ctx,
+    UIComponent comp, Object value) {
+  StringBuilder builder = new StringBuilder();
+  if (value instanceof Collection) {
+    for (Object obj : (Collection)value) {
+      String item = obj.toString();
+      if (builder.length() > 0 && separator != null) {
+        builder.append(separator);
+      }
+      if (bundleName != null && bundleName.length() > 0) {
+        builder.append(GuiUtil.getResourceText(
+            ctx, bundleName, item));
+      } else {
+        builder.append(item);
+      }
+    }
+  }
+  return builder.toString();
+}
+----
+
 === The JSF Environment: `FacesContext` and `ExternalContext`
+
+So far, we have come across the `Faces-Context` again and again. 
+This context represents the central interface of a JSF application and is represented by the class `javax.faces.context.FacesContext`. 
+It is initialized by the `FacesServlet` at the very beginning of every `HTTP` request and is then available to the developer as a parameter of many methods, but also at any time via the `FacesContext.getCurrentInstance()` method . 
+
+The FacesContext allows direct access to the EL resolver. 
+This allows objects that are available via the Unified EL to be resolved directly in the Java code. 
+Listing <<.Access to a managed bean in Java code, Access to a managed bean in Java code>> shows, for example, how to access a managed bean named `personList`.
+
+[source,java]
+----
+FacesContext fc = FacesContext.getCurrentInstance();
+fc.getApplication().getELResolver().getValue(
+    fc.getELContext(), null, "personList");
+----
+
+An important use of the `FacesContext` is the addition of messages for display on the web page - and the ability to access the messages added so far. For this purpose, the following methods exist:
+
+* `addMessage(String clientId, FacesMessage message)`: + 
+Adds a message to the `FacesContext`. 
+If a `clientID` is specified, the message refers to the corresponding component, otherwise it is global.
+
+* `Iterator<FacesMessage> getMessages()`: +
+Returns an iterator of all messages in the `FacesContext`. 
+Also included are those associated with a component.
+
+* `Iterator<FacesMessage> getMessages(String clientId)`: + 
+Returns an iterator of all messages in the `FacesContext` for the component with the specified `clientID`.
+
+* `List<FacesMessage> getMessageList()`: +
+Returns a list of all messages in the `FacesContext` (as of JSF 2.0). 
+Also included are those associated with a component.
+
+* `List<FacesMessage> getMessageList(String clientId)`: + 
+Returns a list of all messages in the `FacesContext` for the component with the specified `clientID` (JSF 2.0 or higher).
+
+For more details about adding and managing messages, see Section: Messaging. 
+
+Creating `Application` objects: The `FacesContext` also takes you to the application, which helps you to create new components as well as method and value expressions (see Listing Creating Application Objects).
+
+.access to a managed bean in Java code
+[source,java]
+----
+fc.getApplication().getExpressionFactory().
+    createValueExpression(ELContext ctx,
+        String expression, Class expectedType);
+
+fc.getApplication().getExpressionFactory().
+    createMethodExpression(ELContext ctx, String expression,
+    Class expectedReturnType, Class[] params);
+
+fc.getApplication().createComponent(String componentType);
+----
+
+The `ELContext` is available as a property of the `FacesContext`, as shown in Listing <<.access to a managed bean in Java code, access to a managed bean in Java code>>. 
+Again, it pays to provide utility methods for creating new items. 
+
+Influencing LifeCycle: An important area in the `FacesContext` is the ability to influence the LifeCycle of an `HTTP` request. 
+There are the following methods that have already been used in event handling in Section: Events and Event Handling:
+
+* `renderResponse()`: +
+After completion of the currently running phase, the `HTTP` response is immediately rendered (execution of the lifecycle jumps to the `Render-Response-Phase` immediately).
+* `responseComplete()`: + 
+The processing of the life cycle is terminated when the current phase is over.
+
+*`ExternalContext`*: +
+Finally, the `FacesContext` still offers the possibility to access the `ExternalContext`. 
+The `ExternalContext` is the wrapper around the functionality underlying the web application environment; so in most cases, either the `ServletContext` or `PortletContext`. 
+Here is the code necessary for access:
+
+[source,java]
+----
+FacesContext fc = FacesContext.getCurrentInstance();
+ExternalContext ec = fc.getExternalContext();
+----
+
+The `ExternalContext` also offers some interesting methods, which result from the functionality of the basic context. Here is a selective selection:
+
+* `Map<String, Object> getRequestMap()` +
+returns a modifiable map with all the attributes of the request. 
+This includes, among other things, all instantiated `Managed-Beans` in the request scope, but not the `Request-Parameter`.
+
+* `Map<String, String> getRequestParameterMap()` +
+returns a non-modifiable map with all `Request-Parameter`. 
+The `name` of the parameter is the `key` of the map.
+
+* `Map<String, Object> getSessionMap() +
+returns a modifiable map with all the attributes of the session. 
+This includes, among other things, all instantiated `Managed-Beans` in the session scope.
+
+* `String getRemoteUser()` +
+returns the name of the user who issued the request if it has been previously authenticated.
+
+* `boolean isUserInRole(roleName)` +
+checks role permissions and returns `true` if the authenticated user is authorized for role `roleName`.
+
+The `ExternalContext` offers a few more methods, which are best taken from the API documentation.
 
 === Configuration of JavaServer Faces
 
+JSF uses a minimum of XML files to edit. 
+Apart from a possible use of additional libraries or portlets, there are only two configuration files for a JSF-based web application:
+
+* Web application configuration file `web.xml`: +
+As with all Java EE web applications, this deployment descriptor is used to set central settings in the application. 
+Here you can find definitions of context parameters, listeners, filters, the Faces-Servlet or the Servlet-Mapping. 
+Details can be found in section [The web configuration file web.xml].
+* JSF configuration file `faces-config.xml`: +
+This XML file is the central configuration file of JSF. 
+See section [subsec The JSF Configuration File - `faces-config.xml`] for details.
+
+Section [subsec Configuration of Unified EL ] shows the configuration for using the alternative EL implementation of JBoss. 
+This makes it possible to use the features of the new Unified EL on older servers (before Java EE 6).
+
 ==== The web configuration file `web.xml`
+
+Let's take a closer look at a typical `web.xml` file of a JSF application. 
+The most important part of the deployment descriptor is the specification of the `FacesServlet` that handles the requests to the JSF application and its mapping. 
+Another important aspect of the web application discussed in this section are configuration parameters.
 
 ===== FacesServlet and Mapping
 
+Each JSF application must configure a `FacesServlet`. 
+Listing <<.Deployment Descriptor of MyGourmet 1, Deployment Descriptor of MyGourmet 1>> again shows the `web.xml` file of the example MyGourmet 1, in which the servlet `javax.faces.webapp.FacesServlet` supplied by JSF is defined including the associated `Servlet-Mapping`.
+
+.Deployment Descriptor of MyGourmet 1
+[source,xml]
+----
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://java.sun.com/xml/ns/javaee
+      http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+    version="3.0">
+  <description>JSF 2.0 - MyGourmet 1</description>
+  <servlet>
+    <servlet-name>Faces Servlet</servlet-name>
+    <servlet-class>
+      javax.faces.webapp.FacesServlet
+    </servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>Faces Servlet</servlet-name>
+    <url-pattern>*.jsf</url-pattern>
+  </servlet-mapping>
+  <welcome-file-list>
+    <welcome-file>index.html</welcome-file>
+  </welcome-file-list>
+</web-app>
+----
+
+Which request is forwarded to which servlet is indicated by the `Servlet-Mapping` element. 
+The value of the `url-pattern` element defines a prefix or postfix of the request address assigned to the `FacesServlet`. 
+In the example MyGourmet 1 the postfix assignment (also called extension-mapping) `*.jsf` was chosen, whereby all requests with the extension `.jsf` are handled by the `FacesServlet`. 
+Internally, this address is then assigned to the `View-ID` of the page definition. 
+
+The second way to define a `Servlet-Mapping` is a prefix mapping `<url-pattern>/faces/*</url-pattern>`. 
+The `View-ID` of the page definition in this case results directly from the URL after the prefix has been removed.
+
+Let's take a quick look at the crucial difference between prefix and postfix mapping using an example. 
+We want to load the page with the page definition `/helloWorld.jsp` of the fictional web application http://www.mustermann.org in the browser. 
+With a postfix mapping we have to do the URL in the address bar.
+
+----
+http://www.mustermann.org/helloWorld.jsf
+----
+
+With a prefix mapping, the URL looks like this:
+
+----
+http://www.mustermann.org/faces/helloWorld.jsp
+----
+
+In general, both methods can be used for a JSF application. However, in some cases, such as using `Tomahawk` or `Trinidad`, it may be beneficial to use a prefix mapping.
+
 ===== Context parameters
+
+In the first place in the configuration are usually the context parameters. 
+The optional specification of `context-param` elements is used to define parameters for initializing the `Servle-Contexts`. 
+Basic settings can be made here. 
+The following list shows an overview of the most important settings for JSF:
+
+* `javax.faces.CONFIG_FILES`: +
+`param-value` can be used to specify JSF configuration files. 
+Even if the value of this parameter remains empty, the default `WEB-INF/faces-config.xml` file is always loaded, so the parameter is optional. 
+For better clarity, it may also be desirable to introduce several such files. 
+The names of these files must then be separated by `commas` in the `param-value` element. 
+Listing deployment of multiple configuration files shows an example.
+
+.`web.xml`
+[source,xml]
+----
+<param-name>javax.faces.CONFIG_FILES</param-name>
+<param-value>
+    /WEB-INF/faces-navigation.xml,
+    /WEB-INF/faces-I18N.xml
+</param-value>
+----
+* `javax.faces.DEFAULT_SUFFIX`: + 
+This parameter defines a `space-separated` list of view identifier extensions that JSF should interpret as JSP declarations. 
+The default is `.jsp`.
+* `javax.faces.FACELETS_BUFFER_SIZE`: +
+Use this parameter to set the size of the `HTTP` response buffer. 
+The buffer can be deactivated with the value `-1`, which is also the default value.
+* `javax.faces.FACELETS_LIBRARIES`: +
+This parameter integrates facelet tag libraries into the application. 
+The value expected is a `semicolon-separated` list of paths relative to the root directory of the application. 
+Listing Including multiple tag libraries shows how to include two tag libraries in the `WEB-INF` directory.
+
+.`web.xml`
+[source,xml]
+----
+<context-param>
+  <param-name>javax.faces.FACELETS_LIBRARIES</param-name>
+  <param-value>
+    /WEB-INF/mygourmet.taglib.xml;
+    /WEB-INF/converters.taglib.xml
+  </param-value>
+</context-param>
+----
+
+* `javax.faces.FACELETS_REFRESH_PERIOD`:
+This parameter defines the amount of time in seconds after which page declarations are checked for changes to requests. 
+For example, a value of 10 means that no changes are considered after compiling the page declaration for at least 10 seconds. 
+During development, the value should be as low as possible so that changes to the server are taken into account immediately. 
+A value of `-1` completely disables the checking of changes. 
+This setting is particularly suitable for production systems, since the review of course also represents a minimum effort. 
+Note, however, that changes to page declarations without server restart are no longer possible in this case. 
+The default value for this parameter in Mojarra is 2. 
+MyFaces defines the default value depending on the current project stage. 
+If the project stage is set to Production, the default value is `-1`, otherwise 2.
+* `javax.faces.FACELETS_SKIP_COMMENTS`: +
+If this parameter is set to `true`, removes all comments from the page declarations when compiling. 
+This will help ensure that developer-inserted comments do not appear in the rendered output.
+* `javax.faces.FACELETS_SUFFIX`: + 
+This parameter defines a `space-separated` list of view identifier extensions that JSF should interpret as facelets declarations. The default is `.xhtml`.
+* `javax.faces.FACELETS_VIEW_MAPPINGS`: + 
+This parameter defines a `semicolon-separated` list of view identifiers that JSF should interpret as facelet declarations. 
+This list may also contain wildcard entries such as `/secure/*`.
+* `javax.faces.FULL_STATE_SAVING_VIEW_IDS`: +
+This parameter defines a `comma-separated` list of view identifiers for which JSF should use the full-state saving known from version 1.2.
+* `javax.faces.INTERPRET_EMPTY_STRING_SUBMITTED_VALUES_AS_NULL : 
+Setting this parameter to true causes JSF to set the SubmittedValue to zero before validation for all input components whose submitted value is an empty string . This behavior is not enabled by default.
+* `javax.faces.PARTIAL_STATE_SAVING`: +
+This parameter controls whether the partial state saving introduced with JSF 2.0 is used in the application. 
+The value `true` enables partial state saving. 
+The same applies if the parameter is `not set`. 
+All other values, such as `false`, disable partial state saving for the entire application.
+* `javax.faces.PROJECT_STAGE`: 
+Use this parameter to set the project phase of the application to one of the following values: Production (default), Development, SystemTest, or UnitTest.
+* `javax.faces.STATE_SAVING_METHOD`: + 
+JSF saves the state of the component tree for subsequent requests to the same view when rendering a view. 
+The data management can be done either on the client or on the server. 
+If `param-value` is set to `server`, the bandwidth requirement is reduced, but the server is more heavily loaded. 
+On the other hand, if `param-value` is set to `client`, the data volume increases and the component tree has to be serialized (Base64-encoded) into client-side fields. 
+If there is no explicit reason to save the status of the application on the client, it is recommended to use the default method not overwrite server.
+* `javax.faces.VALIDATE_EMPTY_FIELDS`: + 
+This parameter controls the validation behavior of JSF for input devices whose value is `null` or `empty`. 
+The following three values ​​are possible, the default value is `auto`: +
+** `true`: JSF validates all input components.
+** `auto`: JSF validates input components whose value is `null` or `empty` when bean validation is available in the application.
+** `false`: JSF does not validate input components whose value is `null` or `empty`.
+* `javax.faces.WEBAPP_CONTRACTS_DIRECTORY`: + 
+Defines the directory from which JSF resolves `resource-library` contracts in the web application. 
+The default value is `/contracts`. 
+Details can be found in Section: A first example.
+* `javax.faces.WEBAPP_RESOURCES_DIRECTORY`: + 
+Defines the directory from which JSF resolves resources in the web application. 
+The default value is `/resources`. 
+Details can be found in section Section: Identification of Resources - Part 1.
 
 ==== The JSF configuration file - `faces-config.xml`
 
+This section is about making central settings for JavaServer Faces. 
+On the one hand `faces-config.xml` offers the possibility to set everyday configuration settings in the development of a JSF application. 
+This includes the configuration of `Managed-Beans`, `Navigation rules` and settings for the application itself. 
+The second task area, the registration of components, renderers, validators and converters, is interesting for the developer of components (and component libraries). 
+Finally, there are more advanced options, such as the inclusion of phase listeners and the configuration of factories for the generation of JSF core classes.
+
+JSF offers as of version 2.0 for many settings in the configuration file `faces-config.xml` alternatively the ability to use annotations.
+
+The configuration of `Managed-Beans` takes place in one `managed-bean` element per bean or as of JSF 2.0 with the annotation. 
+A more detailed description of the comprehensive setting options can be found in section [subsec: configuration of Managed-Beans]. 
+
+The rules for navigating in a JSF application are defined using `navigation-rule` elements. 
+How it works is shown in Section [Section: Navigation], In the course of the development of a JSF web application many navigation rules can arise. 
+To keep track, we recommend that you move some parts of the configuration to separate files, as described in the JSF `faces-config.xml` configuration file.
+
 ===== Application Settings - application
 
+A central `element` in the `faces-config.xml` is the tag `application`. 
+It makes important settings for core areas of JSF. 
+The `application` element can be considered the central hub of a JSF application. 
+Here it is possible to decorate essential parts such as the `View-Handler` or the `EL-Resolver` of JSF with own implementations in addition to settings for `Localization` and the definition of `Message` and `Resource bundles`.
+This gives the user a powerful tool to customize the application to their own needs.
+
+Listing <.`faces-config.xml` with Spring-EL Resolver, `faces-config.xml` with Spring-EL Resolver>> shows an example of a `faces-config.xml` whose elements we will discuss below.
+
+`faces-config.xml` with Spring-EL Resolver
+[source,xml]
+----
+<faces-config>
+<application>
+  <navigation-handler>
+    at.irian.jsfatwork.MyNavigationHandler
+  </navigation-handler>
+  <el-resolver>
+    org.springframework.web.jsf.el.SpringBeanFacesELResolver
+  </el-resolver>
+  <message-bundle>
+    at.irian.jsfatwork.messages
+  </message-bundle>
+  <locale-config>
+    <default-locale>de</default-locale>
+    <supported-locale>en</supported-locale>
+  </locale-config>
+  <resource-bundle>
+    <base-name>at.irian.jsfatwork.text</base-name>
+    <var>text</var>
+  </resource-bundle>
+</application>
+</faces-config>
+----
+
+The following list provides an overview of the most important settings. 
+The individual points are each `child elements` of the `application` tag:
+
+* `locale-config` is a container used to define the languages ​​supported by the application. 
+For example, Listing <<.`faces-config.xml` with Spring-EL Resolver, `faces-config.xml` with Spring-EL Resolver>> defines German as the default language and English as the supported language. 
+The configuration of internationalization is discussed in more detail in section [Section: Internationalization].
+* `message-bundle` defines the name of the resource bundle that contains the messages of the application, as shown in Listing <<.`faces-config.xml` with Spring-EL Resolver, `faces-config.xml` with Spring-EL Resolver>>. 
+For more information, see section [Subsec: Internationalization of JSF Messages].
+* `resource-bundle` is a container for defining a resource bundle that contains texts for the application. 
+In the example in Listing <<.`faces-config.xml` with Spring-EL Resolver, `faces-config.xml` with Spring-EL Resolver>>, the resource bundle `at.irian.jsfatwork.text` under the name `text` is made available in page definitions. 
+More detailed information can be found in section [Subsec: Internationalization of Application Texts].
+* `navigation-handler` defines the class of the used `Navigation-Handler`. 
+This can, for example, be overwritten for extended logging or other special purposes in the navigation area.
+* `view-handler` defines the class of the used `View-Handler`, for which there is a basic implementation. 
+With `Facelets` and JSF before version 2.0 the `Facelets-View-Handler` had to be entered here.
+* `state-manager` defines the class of the `State-Managers` used.
+* `el-resolver` defines the class of the `EL-Resolver` used, which is responsible for the resolution of the `Value-Expression`. 
+Here, for example, can be entered for Spring.
+
+The other possible elements of `faces-config.xml`, such as the registration of the `Renderer`, `Converter` or `Validator`, are described in the sections [Section: Conversion] and [Section: Validation] or in chapter [Chapter: The Custom JSF Component] (for the configuration of components) treated in more detail.
+
 ==== Configuration of the Unified EL
+
+If you have an older server in use (such as Tomcat 6 or Jetty 7), you still do not have to miss the most important features of the new Unified EL of Java EE 6. 
+
+JBoss' alternative EL implementation provides the key features of the new Unified EL, but still implements the old API. 
+This helps avoid problems with older servers. 
+The JBoss EL in version 2.0.1.GA is obtained through a dependency in the Maven project file `pom.xml` (see Listing <<.Maven dependency to JBoss EL, Maven dependency to JBoss EL>>).
+
+.Maven dependency to JBoss EL
+[source,xml]
+----
+<dependency>
+  <groupId>org.jboss.el</groupId>
+  <artifactId>jboss-el</artifactId>
+  <version>2.0.1.GA</version>
+  <scope>compile</scope>
+</dependency>
+----
+
+In the second step, we have to convince JSF to use the alternative implementation. 
+To do this, use a context parameter to set the class `org.jboss.el.ExpressionFactoryImpl` as an expression factory. 
+Table: <<.expression-factory displays the names of the context parameters for Apache MyFaces and Mojarra, expression-factory displays the names of the context parameters for Apache MyFaces and Mojarra>>.
+
+.expression-factory displays the names of the context parameters for Apache MyFaces and Mojarra
+[options="header",cols="1,1"]
+|===
+|Implementation   |parameter   
+//-------------
+|Apache MyFaces   |org.apache.myfaces.EXPRESSION_FACTORY   
+|Mojarra   |com.sun.faces.expressionFactory   
+|===
