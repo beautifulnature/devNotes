@@ -1,45 +1,522 @@
 == Ajax and JSF
 
+Ajax has gained tremendous importance in recent years and is an indispensable part of web development. With the increasing use of the Internet in recent years, the desire for a more interactive and extensive use of websites, as has been customary and familiar to users in the field of conventional desktop applications for many years, has increased. This gap is to be closed by new approaches in web technology. The basic goal must be to adapt the Web more closely to the often very different needs of users. 
+History of the Web: In the history of the World Wide Web, the first technological approach (Web version 1.0) was to present purely static HTML pages to the user. These were difficult to maintain, offered no dynamic behavior and had an often opaque user interface for the user. 
+The next phase was initiated through the use of dynamic content. After interacting with the server, the user gets dynamic and specific content. This approach to the World Wide Web is sometimes attributed to version number 1.5. 
+Web 2.0: The concept of the Web in version 2.0 is a logical progression that follows the needs of users. First used in October 2004 for a conference, it stands for networked and personalized platforms designed to replace desktop applications in many areas. 
+Web 2.0 is a term whose definition is quite broad. Ajax is one of those technologies that should support the implementation of Web 2.0 applications. Over the last few years, Ajax has become increasingly popular, with Google also contributing to a rapid upturn with its applications based on this technology. 
+Before we look at section [Section: Ajax JSF 2.0 and higher] If we look at the details and first practical examples, we will take a closer look at the Ajax section in the section [Introducing Ajax - "Asynchronous JavaScript and XML"] . In the sections [Section: Ajax in Composite Components ] and [Section: Own Ajax Components] we then pull all registers and use Ajax with composite components . Section [Section:  MyGourmet 14 : Ajax] then shows the integration of Ajax into MyGourmet . Last but not least, we present in section [Tools for the Ajax Developer] a few tools that can help you when working on Ajax applications.
+
 === Introduction to Ajax - "Asynchronous JavaScript and XML"
+
+By itself, Ajax is not a stand-alone web technology, but rather a collective term for a variety of technologies that have been in use for several years. The name of the definition of Ajax was first mentioned in 2005 in an essay about new developments and future trends in the field of web applications http://adaptivepath.com/publications/essays/archives/000385.php : . Ajax stands for " A synchronous J avaScript A nd X ML" and is based on basic technologies such as XHTML, Cascading Style Sheets (CSS), Document Object Model (DOM), XML, JavaScript and the XMLHttpRequest object.
+The central building block of an Ajax application is the scripting language JavaScript. Consequently, JavaScript must be enabled in the browser to use the Ajax functionality. Typically, any Ajax-developed website uses an existing JavaScript library, such as jQuery . Such a library provides code for easy use of the XMLHttpRequest object and often handles differences between individual browsers.
+When using Ajax in a web application, there are differences in the intensity of use. The simplest option is the minimal integration of Ajax to optimize the traditional processes of an application. The use of multiple Ajax-based components is already one level above settle. The final step is the realization of a complete application based on JavaScript and Ajax. However, JSF is no longer the optimal choice for building such applications - it's just about using pure JavaScript libraries or the Google Web Toolkit (GWT) framework. We will therefore only deal with the first two approaches.
+The advantage of a typical Ajax web application is the much smoother interaction between the browser and the web server. This is possible due to the technology of loading data asynchronously from the server, while on the client side the system does not have to come to a standstill. In addition, the browser's interface is only updated with the requested information, so it is not completely reloaded.
 
 === Ajax from JSF 2.0
 
+Of course, the rapid development of Ajax has also left its mark on the JSF world. The fact that JSF and Ajax work well together was proven by JSF 2.0, a whole host of component libraries and Ajax frameworks designed specifically for JSF. Each solution worked flawlessly on its own. The problem was - as with many developments of the time in the JSF environment - the lack of specification and the resulting incompatibility of the different products. Although all solutions pursued the same goal - the integration of JSF and Ajax - the technical implementation sometimes differed considerably. With JSF 2.0, this issue was history because the specification involves standardizing Ajax support.
+JSF, as of version 2.0, defines a JavaScript library that covers basic Ajax operations, such as sending a request and processing the response. This standardized interface ensures that all components use the same functionality on the client side and do not get in each other's way. 
+This JavaScript API also forms the basis for integrating Ajax into JSF applications. JSF basically offers two different approaches to equip views with Ajax functionality. First, developers can directly call the function of the JavaScript API to submit an Ajax request. On the other hand there is the day f: ajax a declarative variant for equipping a component or even an entire area of ​​a page declaration with Ajax functionality. 
+However, the specification does not just care about the client side. The processing of an Ajax request on the server is also fully specified. JSF 2.0 extended the lifecycle so that only the relevant parts of the component tree are executed ( partial view processing ) and rendered ( partial view rendering ) to process an Ajax request . 
+Throughout this section, we'll look at the details of Ajax integration in JSF 2.0 and later. After a first example with f: ajax in section [Section: A first example with f: ajax] follow in section [Section: f: ajax in action] for more examples and section [Events and listeners in Ajax requests] section shows how events and listeners behave in Ajax requests. The section [JavaScript API] then looks at the Ajax JavaScript API and section [Partial JSF Life Cycle Section] for partial lifecycle views. Finally section [Section: Reset input fields] shows how and why, starting with JSF 2.2 input fields can be reset for Ajax requests.
+
 ==== A first example with `f:ajax`
+
+As a first example, we will change the display and hiding of the credit card data in the editCustomer.xhtml view to Ajax. Until now, clicking on the checkbox "Specify credit card" via JavaScript triggered a submission of the form. Of course, a cycle of the lifecycle across the entire component tree took place on the server. Actually, we only want to reset the useCreditCard property and show or hide the two labels and input components of the credit card data .
+We want to make sure that a click on the selection field triggers an Ajax request to the server. In response to the request, the registered value change listener should be executed and the credit card data area should be re-rendered. JSF facilitates this task enormously from version 2.0 onwards. The f: ajax tag can be used to provide a component with Ajax functionality by including it as the child tag of the Ajax-enabled element in the declaration. In our example, the desired functionality results from adding the f: ajax element to the selection component h: selectBooleanCheckbox . Listing Use of f: ajax to switch the credit card data shows the relevant parts of the declaration editCustomer.xhtml . For ease of use, we have divided the form into two sections: one for basic data and one for credit card information.
+
+<h:form id="form">
+  <h:panelGrid id="baseData" columns="2">
+    ...
+    <h:selectBooleanCheckbox id="useCreditCard"
+        value="#{customerBean.customer.useCreditCard}"
+        valueChangeListener=
+            "#{customerBean.useCreditCardChanged}">
+      <f:ajax render="ccData"/>
+    </h:selectBooleanCheckbox>
+  </h:panelGrid>
+  <h:panelGrid id="ccData" columns="2">
+    ...
+  </h:panelGrid>
+</h:form>
+Adding the f: ajax tag already has the desired effect: if the user in the browser changes the value of the "Specify credit card" field, the entire page will not be reloaded, only the area with the credit card details will be redrawn. You can convince yourself of this with a tool like Firebug (see section [Firebug section] ) by analyzing the type of remote request. But you can just as well output the current time on the page - it will not change. 
+The small change has a resounding effect. How does JSF process the tag f: ajax ? The chosen approach is as simple as it is powerful. JSF sets the tag f: ajax when rendering our selection component as calling the function jsf.ajax.request () attribute onchange order. The render attribute tells JSF which component to re- render . In our case this is the Panel Grid component with the ID ccData .
+Tip: Even with Ajax h: form must continue to be used in the usual way.
+Please also note that the h: selectBooleanCheckbox component is no longer immediate . Previously, this was necessary because when you clicked on the selection box, the complete form was always executed in the lifecycle and some of the other form fields are required to be specified, and thus ugly validation messages were displayed. With Ajax, the life cycle is executed only partially for one component, no validation messages for other components appear. 
+If we write the f: ajax tag in Listing Use of f: ajax to toggle the credit card data with the default values ​​for its attributes, we get:
+<f:ajax event="valueChange" execute="@this" render="ccData"/>
+The result of the long spelling is identical. The value of the event attribute determines the event from which the Ajax request is raised. Possible values ​​for this are valueChange for input components , action for command components and all other HTML events - but without the prefix on . With the value click, we could trigger the Ajax request just as well by clicking on the selection field. The execute attribute defines which components are processed when the lifecycle is processed on the server. The constant @this designates the enclosing component. The attributes event and execute can be omitted in our case, since the values valueChange and @this are the default values ​​for input components . What JSF does on the server in response to this request is shown in section [Partial JSF Life Cycle Section] . 
+Listing Switching the credit card data using the JavaScript API shows the second variant of equipping a component with Ajax. After sending an Ajax request via the standardized JavaScript API, the appropriate function jsf.ajax.request () can be used. also be used directly. The function takes as parameters the triggering DOM element, the event and an associative array of options. More in section [Section: JavaScript API] .
+ <h:selectBooleanCheckbox id="useCreditCard"
+    value="#{customerBean.customer.useCreditCard}"
+    valueChangeListener="#{customerBean.useCreditCardChanged}"
+    onchange="jsf.ajax.request(
+        this, event, {render: 'form:ccData'});"/>
+Tip: Use h: head and h: body in all page declarations . Only in this way can JSF correctly integrate the script resources required for Ajax.
 
 ==== `f:ajax` in use
 
+With the tag f: ajax a whole range of standard components in JSF can be equipped with Ajax behavior. More specifically, it is all the components that implement the ClientBehaviorHolder interface, which makes it relatively easy to make your own or component library components fit for f: ajax . There's nothing to stop the compatibility of components from different sources with respect to Ajax. 
+f: ajax can be used in two ways. First, a single component can be equipped with Ajax behavior by inserting f: ajax as a child tag. On the other hand, it is also possible with f: ajax to change an entire area of ​​a page to Ajax. 
+Here are the key attributes of the tag f: ajax :
+event : 
+Name of the event that triggers the Ajax request. Possible values ​​are valueChange for input components , action for command components and all other HTML events - but without the prefix on . The default value of this attribute is determined by the component.
+execute : 
+A space-separated list of the IDs of those components that should be executed in the lifecycle when JSF handles the Ajax request. May also include the constants @this (the element itself), @form (the form's element), @all (all elements), and @none (no element). If the attribute is set as a value expression, the type of the property must be List <String> . The default value is @this .
+render : 
+A space-separated list of the IDs of those components that are to be rendered in the lifecycle when JSF handles the Ajax request. Can also contain the constants @this , @form , @all and @none . If the attribute is set as a value expression, the type of the property must be List <String> . The default value is @none .
+listener : 
+In this attribute, a method of a managed bean can be registered as a listener via a method expression. The method must have a parameter of type AjaxBehaviorEvent and is executed during the Ajax request in the Invoke Application phase. Details follow in section [Section: Events and Listeners in Ajax Requests] .
+onevent : 
+Allows registering a client-side JavaScript callback function for Ajax events. Details follow in section [Section: JavaScript API] .
+onerror : 
+Allows registering a client-side JavaScript callback function for errors encountered while editing the Ajax request. Details follow in section [Section: JavaScript API] .
+disabled : 
+The Ajax behavior is "disabled" if this attribute is set to true .
+delay : 
+Allow delaying Ajax requests by the value specified in milliseconds. If multiple Ajax requests occur during this time, only the most recent will be processed. Details follow in Section [Section: Controlling the Ajax Queue] .
+resetValues : 
+JSF 2.2 allows the selective resetting of input fields for Ajax requests. Details follow in section [section: Reset input fields] .
+Let's look at a few short examples. The first example includes a form with two input fields for the first name and last name of a person and a button. Below the button there is a text field with which the complete name is displayed. Without Ajax, a click on the button will cause a normal submit followed by a rebuild of the view. In this case, the entered name is only visible in the text field after the transfer. 
+Listing f: ajax in action: Example 1 already shows the example in a variant extended with Ajax. The day f: ajax causes the Ajax button to trigger the execution of the two input components and the rendering of the text box. If you enter a first and last name in the browser and activate the button, the text field will be updated without rebuilding the view.
+ <h:form id="form">
+  <h:panelGrid columns="1">
+    <h:inputText id="first" value="#{test.first}"/>
+    <h:inputText id="last" value="#{test.last}"/>
+    <h:commandButton value="Show">
+      <f:ajax execute="first last" render="name"/>
+    </h:commandButton>
+  </h:panelGrid>
+  <h:outputText id="name" value="#{test.name}"/>
+</h:form>
+The execute attribute contains the IDs first and last of the two input components and the render attribute the ID name of the text component. These values ​​are included in the Ajax request, and JSF executes the lifecycle for only the two input components, and then renders the text box. The event attribute is not set explicitly, but for h: commandButton , action is defined as the default event .
+Tip: Components that are re-rendered using Ajax - whose IDs therefore occur in the render attribute of f: ajax - must always be present in the DOM of the page (see section [Section: Ajax in composite components ] ).
+In the second example, an additional f: ajax tag is used to give Ajax behavior to a whole area of ​​the declaration. Listing f: ajax in action: Example 2 shows the extended declaration.
+ <h:form id="form">
+  <f:ajax render="name">
+    <h:panelGrid columns="1">
+      <h:inputText id="first" value="#{test.first}"/>
+      <h:inputText id="last" value="#{test.last}"/>
+      <h:commandButton value="Show">
+        <f:ajax execute="first last" render="name"/>
+      </h:commandButton>
+    </h:panelGrid>
+  </f:ajax>
+  <h:outputText id="name" value="#{test.name}"/>
+</h:form>
+Since f: ajax does not define an event in the event attribute , only those components within the tag that have a default event are equipped with Ajax behavior. Specifically, these are the two input components with the valueChange event . The Ajax behavior of the button for the default event already determines the inner f: ajax tag and therefore does not change. With the added Ajax functionality, the text box will now be re-rendered each time the browser changes one of the two input fields. 
+Table tab: ajax-default-events shows an overview of all standard components with default events .
+component	Default event
+h: commandButton	action
+h: commandLink	action
+h: inputText	value change
+h: input textarea	value change
+h: input secret	value change
+h: selectBooleanCheckbox	value change
+h: selectOneRadio	value change
+h: selectOneListbox	value change
+h: selectOneMenu	value change
+h: selectManyCheckbox	value change
+h: selectManyListbox	value change
+h: selectManyMenu	value change
+Listing f: ajax in action: Example 3 shows the same example as Listing f: ajax in action: Example 2 , with the difference that in the outer f: ajax tag the event attribute is set to dblclick .
+ <h:form id="form">
+  <f:ajax event="dblclick" render="name">
+    <h:panelGrid columns="1">
+      <h:inputText id="first" value="#{test.first}"/>
+      <h:inputText id="last" value="#{test.last}"/>
+      <h:commandButton value="Show">
+        <f:ajax execute="first last" render="name"/>
+      </h:commandButton>
+    </h:panelGrid>
+  </f:ajax>
+  <h:outputText id="name" value="#{test.name}"/>
+</h:form>
+Due to this small change, all components within f: ajax now trigger an Ajax request after a double-click. The same applies to the panel grid and the button, which now has two different events with Ajax behavior. 
+The next example in Listing f: ajax in action: Again, Example 4 is only a variant of the already known form. This time, however, there are two text boxes for outputting the name: the first is inside the form and has the ID inside . The second text box is outside and listening for the ID outer, The outer field should be updated whenever the value of one of the input fields changes, whereas the inner field should be updated by clicking on the button. That should not be a problem in and of itself. If the render attribute of the inner f: ajax tag is set to inner and outer to outer , then this behavior should happen. But it does not - JSF already complains when loading the page that the ID outer does not exist. Why this is so, we clarify the same.
+ <h:form id="form">
+  <f:ajax render=":outer">
+    <h:panelGrid columns="1">
+      <h:inputText id="first" value="#{test.first}"/>
+      <h:inputText id="last" value="#{test.last}"/>
+      <h:commandButton value="Show">
+        <f:ajax execute="first last" render="inner"/>
+      </h:commandButton>
+    </h:panelGrid>
+  </f:ajax>
+  <h:outputText id="inner" value="#{test.name}"/>
+</h:form>
+<h:outputText id="outer" value="#{test.name}"/>
+The problem is caused by the text field outside the form and is due to the calculation of the client IDs for Ajax requests. JSF uses the method UIComponent.findComponent () , which applies a specific algorithm to find the component with the given ID. This algorithm assumes that the passed ID is relative to the next highest naming container. So in our case we try to resolve the component with the ID outer as a child of the form with the ID form . This can not work, however, since the text box is outside. The solution to this problem is simple: findComponent () treats all IDs with a leading colon as absolute IDs, which are resolved starting at the root node of the component tree. So we just need to set the render attribute in the outer f: ajax tag to : outer to get the functionality you want.
+
 ==== Events and Listeners in Ajax Requests
+
+In this section, we'll take a closer look at events and listeners in Ajax queries. The use of action methods and event handling methods for Action or Value Change events works the same as in non-Ajax requests. 
+In the example in Listing h: selectOneMenu with f: ajax and Value-Change-Listener we show you how to combine two h: selectOneMenu- components with simple means . The choices of the second component should depend on the selection made in the first component and be updated via Ajax. A good example of this is the selection of a country and a matching state. With the f: ajax Tag we miss the first component the necessary Ajax behavior.
+ <h:selectOneMenu id="country" value="#{test.country}"
+    valueChangeListener="#{test.countryChanged}">
+  <f:selectItems value="#{test.countryItems}"/>
+  <f:ajax render="state"/>
+</h:selectOneMenu>
+<h:selectOneMenu id="state" value="#{test.state}">
+  <f:selectItems value="#{test.stateItems}"/>
+</h:selectOneMenu>
+On the h: selectOneMenu component to select the country, the test.countryChanged method is registered as a value change listener. Whenever a user changes the value in the browser, an Ajax request is issued and the life cycle is executed partially for that component. Because the user changed the value, JSF also calls the value change listener. In this method, the list of states is first reset depending on the country selected. Then the currently selected state will be reset to zero . Listing Value Change Listener for initializing the states shows the relevant code. The h: selectOneMenu component with the ID state will then be re-rendered and updated in the browser with the new values.
+ public void countryChanged(ValueChangeEvent ev) {
+  state = null;
+  updateStateItems((String)ev.getNewValue());
+}
+private void updateStateItems(String country) {
+  if (country != null) {
+    stateItems = stateItemsMap.get(country);
+  } else {
+    stateItems = new ArrayList<SelectItem>();
+  }
+}
+The currently selected country is retrieved from the passed event in the method countryChanged and not from the country property of the managed bean. The value change listener is already called in the process validation phase of the lifecycle and the value selected by the user has therefore not yet been written back to the property. 
+As an alternative to the value change listener, an Ajax listener can also be used here. f: ajax offers the option of specifying a method expression in the attribute listener . Listing h: selectOneMenu with f: ajax and Ajax listener shows the example from above with an Ajax listener. The value change listener is no longer needed in this case.
+ <h:selectOneMenu id="country" value="#{test.country}">
+  <f:selectItems value="#{test.countryItems}"/>
+  <f:ajax render="state" listener="#{test.countryChanged}"/>
+</h:selectOneMenu>
+<h:selectOneMenu id="state" value="#{test.state}">
+  <f:selectItems value="#{test.stateItems}"/>
+</h:selectOneMenu>
+An Ajax listener method must have an AjaxBehaviorEvent parameter , as Listing Ajax lists to initialize the states . The content of the method differs from the Value-Change-Listener to the Listing Value-Change-Listener for initializing the federal states . After JSF first calls the Ajax listener in the invoke application phase, the value in the country property is already up to date. The updateStateItems method has not changed compared to Listing Value Change listeners for initializing the states .
+ public void countryChanged(AjaxBehaviorEvent ev) {
+  state = null;
+  updateStateItems(country);
+}
+In section [Partial JSF Life Cycle Section] , the partial lifecycle of Ajax requests is examined in more detail.
 
 ==== JavaScript API
 
+JSF defines as of version 2.0 a JavaScript library as a client-side basis for the integration of Ajax. The library is stored in the resource named jsf.js in the library javax.faces . If you use Ajax declaratively with the f: ajax tag , you do not have to worry about including this resource. Only when using the JavaScript API directly do you need to specify:
+<h:outputScript name="jsf.js" library="javax.faces"
+    target="head"/>
+You do not have to worry about the script resource jsf.js itself. It is included in the standard delivery of JSF and is included in the jar files. When using the JavaScript API, it is important to use h: head and h: body in the page declaration. Only then can it be guaranteed that the script will arrive correctly in the rendered output at the browser. 
+Here is a list of the key features of the JavaScript API:
+jsf.ajax.request (source, event, options) : 
+This method sends an Ajax request to the server.
+jsf.ajax.response (request, context) : 
+This method handles the server's response to the Ajax request and is not relevant to end users.
+jsf.ajax.addOnError (callback) : 
+This method registers a callback function to handle errors that occurred while processing the Ajax request.
+jsf.ajax.addOnEvent (callback) : 
+This method registers a callback function to handle Ajax events.
+
 ===== Sending Ajax Requests
+The jsf.ajax.request (source, event, options) method is the core of JSF's JavaScript API. It alone is responsible for sending asynchronous Ajax requests to the server. The tag f: ajax is just a simpler variant to bring the Ajax behavior into the view by declarative means. When rendering, JSF again makes a call to the jsf.ajax.request () function . 
+The source and event parameters pass the DOM and DOM events that are responsible for triggering the Ajax request. The third parameter options is an associative array that passes more options as key-value pairs to the function. These options largely correspond to the already known attributes from f: ajax . About execute IDs are to be executed components indicated and render IDs of components that are to be redrawn. While the use of f: ajax in most cases a relative ID is sufficient, when calling the JavaScript function always the complete client ID must be specified. The function operates directly at the DOM level and can not resolve relative IDs via the JSF component tree. 
+The function jsf.ajax.request () Builds the Ajax request and sends it to the server asynchronously. What JSF does exactly with this request is given in Section [Partial JSF Life Cycle Section] . As soon as the response to the request comes back from the server, if successful, the jsf.ajax.response () function is called to process the response and, if necessary, to rebuild parts of the view. 
+Listing Example 5 with Ajax via JavaScript shows again the example with the two selection lists from the last section. This time, however, the Ajax behavior is implemented directly through the JavaScript API. Just as before, changing the value in the first component triggers an Ajax request that causes the second component to redraw.
+ <h:form id="form">
+  <h:selectOneMenu id="country" value="#{test.country}"
+      valueChangeListener="#{test.changeCountry}"
+      onchange="jsf.ajax.request(
+          this, event, {render: 'form:state'})">
+    <f:selectItems value="#{test.countryItems}"/>
+  </h:selectOneMenu>
+  <h:selectOneMenu id="state" value="#{test.state}">
+    <f:selectItems value="#{test.stateItems}"/>
+  </h:selectOneMenu>
+</h:form>
 
 ===== Handling Status and Errors of Ajax Requests
 
+The jsf.ajax.addOnEvent (callback) function can register a callback function to handle the status of Ajax requests. The callback function is given an object with more detailed information about the event, whereby, in particular, the status property is interesting. It takes the values begin for the event just before the request is sent to the server, complete for the event after the response comes back from the server, and success for the event upon successful completion of the request. The callback function is therefore called three times for each Ajax request. Listing callback function for Ajax events shows a function that outputs a message for each event. In Section [Section: The Composite Component mc: ajaxStatus] , we'll show you how to use the simplest means to create a composite component to represent an Ajax status message.
+ var processEvent = function processEvent(data) {
+  if (data.status == "begin") {
+    alert('Begin');
+  } else if (data.status == "complete") {
+    alert('Complete');
+  } else if (data.status == "success") {
+    alert('Success');
+  }
+}
+jsf.ajax.addOnEvent(processEvent);
+A function registered via jsf.ajax.addOnEvent () is called on every Ajax request. addOnEvent () can also be called multiple times in succession to register more than one function. If you need a callback function for a specific Ajax request, you can with the attribute onevent of f: ajax or when calling jsf.ajax.request () as an option with the key onevent register. 
+With the function jsf.ajax.addOnError (callback) A callback function can be registered which is called when an error occurs while an Ajax request is being processed. The callback function is also provided here with an object with detailed information. The status property can take the values httpError , serverError , malformedXML, or emptyResponse . 
+A function registered via jsf.ajax.addOnError () is called in the event of an error on every Ajax request. addon error () can also be called multiple times in succession to register more than one function. If you need a callback function for a particular Ajax request, you can register it as an option with the onerror key by using the onerror attribute of f: ajax or by calling jsf.ajax.request () .
+
 ==== Partial JSF life cycle
+
+One of the key features of a reasonable Ajax integration is partial view processing and partial view rendering of the component tree. In response to an Ajax request, in the first step, the lifecycle should not be executed for the complete component tree, but only for the components specified in the request. In the second step, as a result of the request, another part of the component tree, which does not have to match the first part, is rendered. 
+Starting with version 2.0, JSF supports partial execution and rendering directly with the standard lifecycle. This is the lifecycle, as in Figure lifecycle with Ajax to recognize, divided into the two logical areas of execution and rendering .
+
+Which components are used in the two areas is determined by the parameters of the Ajax request. Their values ​​correspond to the values ​​of the f: ajax attributes execute and render or the parameters of the same name in the associative array of the function jsf.ajax.request () . 
+Table tab: ajax-request-params shows the most important parameters of the Ajax request from the introductory example in section [Section: A first example with f: ajax] . JSF uses the parameter javax.faces.partial.ajax to know that this is an Ajax request and that the lifecycle must be partially executed. The parameter javax.faces.source indicates which component triggered the request, and the remaining two parameters determine which components are executed and rendered.
+parameter	value
+javax.faces.partial.ajax	true
+javax.faces.source	form: useCreditCard
+javax.faces.partial.execute	form: useCreditCard
+javax.faces.partial.render	form: grid
+However, you do not have to worry about these parameters. JSF automatically completes the creation and submission of the Ajax request in the background. All you have to do is specify which components should be executed and rendered - and only if these data differ from the default values.
 
 ==== Check Ajax queue
 
+JSF 2.2: With JSF 2.2 it is possible to influence the client-side queue of Ajax requests. The new delay attribute of f: ajax allows Ajax requests to be delayed by the value specified in milliseconds. If multiple Ajax requests occur during this period, only the most recent will be processed. This functionality is tailor-made for Ajax requests triggered by keyboard events. The classical application scenario for this is the automatic completion of user input. 
+The example in Listing Example for delay of f: ajax shows an input component that triggers an Ajax request each time the user presses the button. With the value 300 for delay Ensures that the server is not bombarded with requests when the user types quickly. If several Ajax requests occur within the specified 300 milliseconds, only the most recent one is processed.
+ <h:inputText value="#{bean.product}">
+  <f:ajax event="keyup" render="result" delay="300"/>
+</h:inputText>
+<h:panelGroup id="result">
+  <ui:repeat value="#{bean.products}" var="p">
+    #{p}<br/>
+  </ui:repeat>
+</h:panelGroup>
+
 ==== Reset input fields
+
+JSF 2.2: With the new attribute resetValues of f: ajax , starting with JSF 2.2, a previously known problem can be elegantly solved. In some cases, during Ajax requests, JSF can update the value of input components only if explicitly previously reset. For this, the new attribute resetValues must be set to true in f: ajax . In this case, before the render phase, JSF resets all of the input components specified in the render attribute by calling the UIViewRoot.resetValues method . Why this can be necessary is shown in the example in Listing 
+Example of resetValues . The code looks perfect at first glance. However, a closer look reveals a potential problem.
+ <h:form id="form">
+  <h:messages id="msgs"/>
+  <h:inputText id="v1" value="#{bean.value1}"/>
+  <h:commandLink value="+1" action="#{bean.incValue1}">
+    <f:ajax render="v1"/>
+  </h:commandLink>
+  <h:inputText id="v2" value="#{bean.value2}">
+    <f:validateLongRange minimum="10"/>
+  </h:inputText>
+  <h:commandButton value="Save">
+    <f:ajax execute="v1 v2" render="msgs v1 v2"/>
+  </h:commandButton>
+</h:form>
+As long as the user only clicks on the "+1" link, everything works perfectly. During the Ajax request, the value1 property is first incremented by one in the action method , and then the input field is rendered with the new value. 
+The problems do not begin until the user presses the save button with an invalid value for the second input field. In this case, the validation fails for the component with ID v2 . However, after we have included the ID of h: messages as a precaution in the render attribute , the user gets an error message as expected.
+So far, everything works as expected, but now when you click on the "+1" link, the updated value is no longer displayed (although it is actually increased). The reason for this is quickly found. During the request with the invalid value for v2 , JSF set the local value for both components in the process validation phase. Because of the validation error this was never reset. Since the local value always takes precedence over the value in the model when rendering, the value of the value1 property updated only in the model is not displayed. 
+Exactly this problem can be avoided by setting resetValues . The following example shows the perfectly working variant of the "+1" link.
+<h:commandLink value="+1" action="#{bean.incValue1}">
+  <f:ajax render="v1" resetValues="true"/>
+</h:commandLink>
 
 === Ajax in composite components
 
+In the next example we will change the composite component collapsiblePanel created in section Section: The component mc: collapsiblePanel to Ajax. In the current version, the entire page is rebuilt each time the user clicks on the icon to fold and unfold the content - a behavior that is no longer up-to-date. Rather, when clicking on the icon only the content of the panel should be displayed or hidden. 
+Nothing easier than that. As in the last example, the Ajax support can be realized with a single line. After we want to change the rendering of the page triggered by the component h: commandButton to Ajax, we add the tag f: ajax there. listing Ajax in the composite component collapsiblePanel shows the implementation part of the composite component with Ajax support.
+ <cc:implementation>
+  <h:panelGroup layout="block"
+      styleClass="collapsiblePanel-header">
+    <h:commandButton id="toggle"
+        actionListener="#{cc.toggle}"
+        styleClass="collapsiblePanel-img"
+        image="#{resource[cc.collapsed ?
+           'mygourmet:toggle-plus.png' :
+           'mygourmet:toggle-minus.png']}">
+      <f:ajax render="@this panel-content"/>
+    </h:commandButton>
+    <cc:renderFacet name="header"/>
+  </h:panelGroup>
+  <h:panelGroup id="panel-content" layout="block">
+    <h:panelGroup rendered="#{!cc.collapsed}">
+      <cc:insertChildren/>
+    </h:panelGroup>
+  </h:panelGroup>
+</cc:implementation>
+In the render phase of the partial lifecycle, we need to re-render two components in this case. On the one hand the panel group with the content of the component and on the other hand also the button itself, because the icon changes depending on the fold-in state. The simultaneous rendering of multiple components is expected to cause no problems for JSF. The render attribute picks up any number of space-separated IDs, again with the @this constant representing the enclosing component. 
+As you may have noticed, compared to the non-Ajax version, the tag cc: insertChildren is from two h: panelGroupEnclosed in tags. It is not a mistake, but a necessary action for Ajax to work properly. The explanation is plausible: Since the panel group is re-rendered with the identifier panel-content in response to the Ajax request and replaced in the browser, it must always exist there. With only one panel group, the rendered output would disappear from the DOM after the first collapse and could not be faded in anymore. 
+The f: ajax tag in Listing Ajax in the composite component collapsiblePanel is an abbreviated form of the following tag:
+<f:ajax event="action" execute="@this"
+    render="@this panel-content"/>
+As in the last example, the attributes event and execute can also be omitted here in favor of the default values. Command components define action as the default event for f: ajax if no other value is specified. 
+But that's not all. We go one step further and also move part of the content added to the composite component to Ajax. In the viewCustomer.xhtml view , the list of addresses of a customer is contained in a composite component of the type dataTable (see section Section: The component mc: dataTable ). The table is in turn into one embedded collapsiblePanel component. In the table, there is an h: commandLink component for deleting the address for each address. Clicking on this link should trigger an Ajax request and cause the table to be redrawn. 
+Listing Ajax composite component collapsiblePanel The insert shows the relevant parts of the page declaration show-Customer.xhtml with the link converted to Ajax.
+ <mc:collapsiblePanel id="addressPanel"
+    collapsed="#{customerBean.collapsed}">
+  <f:facet name="header">
+    <h3>#{msgs.title_addresses}</h3>
+  </f:facet>
+  <mc:dataTable id="addresses" var="address"
+      value="#{customerBean.customer.addresses}">
+    ...
+    <h:column>
+      <h:commandLink action="#{addressBean.edit(address)}"
+          value="#{msgs.edit}"/> 
+      <h:commandLink value="#{msgs.delete}"
+          action="#{customerBean.deleteAddress(address)}">
+        <f:ajax render=":form:addressPanel:addresses"/>
+      </h:commandLink>
+    </h:column>
+  </mc:dataTable>
+</mc:collapsiblePanel>
+With f: ajax the link component gets inoculated with the Ajax behavior. When the user activates the link in the browser, an Ajax request is sent to the server. JSF runs the life cycle for the h: commandLink component and then renders the table. Please note the shape of the ID in the render attribute : The leading colon indicates an absolute ID. This step becomes necessary when there are several naming containers between the triggering and the rendering components.
+This example shows very well how well the individual features in JSF harmonize with each other. Integrating Ajax into composite components provides an easy way to build components with outward-transparent Ajax support.
+
 === Custom Ajax components
+
+In this section, we'll show you how simple yet powerful the JSF Ajax integration is by using two composite components. The ajaxStatus and ajaxPoll components directly use the JavaScript API to provide advanced Ajax functionality.
 
 ==== The composite component `mc:ajaxStatus`
 
+Increasing the use of Ajax reduces the number of requests for a complete reload. In addition to the many advantages that Ajax brings with it, there is also a small disadvantage. The browser does not display any status message while an Ajax request is being processed. With every complete page setup, the user will see a progress bar or a message telling the status of the page layout - not so with Ajax requests. And although Ajax significantly shortens the time between inquiry and response, there may be unclear situations for the user. For this reason, we create a component that displays a status message while an Ajax request is active. 
+With the information about the JavaScript API from section [Section: JavaScript-API] it is easy to create such a component. All we need is a status message and a JavaScript function, which is registered as jsf.ajax.addOnEvent () as a callback and dynamically fades in and displays the status message. We then pack this together into a composite component and the Ajax status component is finished. Listing composite component ajaxStatus shows the declaration.
+ <cc:interface>
+  <cc:attribute name="text" default="Loading"/>
+  <cc:attribute name="style"/>
+  <cc:attribute name="styleClass"
+      default="ajax-progress"/>
+</cc:interface>
+<cc:implementation>
+  <h:outputStylesheet library="mygourmet"
+      name="components.css"/>
+  <h:outputScript name="jsf.js" library="javax.faces"
+      target="head"/>
+  <h:outputScript name="ajaxStatus.js"
+      library="mygourmet" target="head"/>
+  <script type="text/javascript">
+    registerAjaxStatus('#{cc.clientId}:msg');
+  </script>
+  <div id="#{cc.clientId}:msg" class="#{cc.attrs.styleClass}"
+      style="display: none;#{cc.attrs.style}">
+    #{cc.attrs.text}
+  </div>
+</cc:implementation>
+The interface of the component is not very exciting. It only consists of the three attributes text for the status message and style and styleClass to adapt the appearance to your own needs. 
+In the implementation part, first required resources are loaded. These include the stylesheet components.css , the jsf.js JavaScript library, and the ajaxStatus.js script with the functionality of the component. Then, by calling the function registerAjaxStatus () defined in ajax-Status.js Registered a callback for the current component. As a parameter, this function gets the ID of the div element with the status message. Finally, this element should be turned on and off during an Ajax request. Note once more the access to # {cc.clientId} for the ID . This is the only way to ensure that the Client ID rendered by JSF is actually used. The fade in and fade out is quite simply realized via the CSS property display , whereby the element is initially hidden with display: none in the attribute style . 
+The really interesting aspect of the component is the one in Listing JavaScript for composite component ajaxStatus represented JavaScript code.
+ function processAjaxUpdate(msgId) {
+  function processEvent(data) {
+    var msg = document.getElementById(msgId);
+    if (data.status == "begin") {
+      msg.style.display = '';
+    } else if (data.status == "success") {
+      msg.style.display = 'none';
+    }
+  }
+  return processEvent;
+};
+function registerAjaxStatus(msgId) {
+  jsf.ajax.addOnEvent(processAjaxUpdate(msgId));
+}
+The registerAjaxStatus () function registers a callback function with a call to jsf.ajax.addOnEvent () to show or hide the element with the passed ID. However, it does not register the function processAjaxUpdate () , as it may seem at first glance, but its inner function processEvent () . By nesting functions, it is possible to pass the ID of the element from outside, whereas the inner function gets the parameter data . Because for the inner function a closure is created, the passed ID is not lost and we have an elegant way to define multiple independent Ajax update components in one view. 
+To use the component, just insert the <mc: ajaxUpdate /> tag in the declaration - assuming the prefix mc is defined accordingly.
+
 ==== The composite component `mc:ajaxPoll`
+
+For some applications, it is necessary to update areas of a page at periodic intervals. Classic examples are pages with stock market prices, auctions or current sports results. Although JSF does not provide this functionality directly, it can be implemented in a composite component with just a few lines of JavaScript code. Again, the JavaScript API proves to be extremely useful. 
+In the implementation part, the required resources are loaded first. These include JSF's JavaScript library jsf.js and the ajaxPoll.js script with the necessary functionality for the component. Subsequently, a call is made to the function defined in ajaxPoll.jsstartAjaxPoll () started the polling. As a parameter, this function gets the id of the div element, which is filled with custom content via cc: insertChildren , and the interval. Once again , refer to the ID to access # {cc.clientId} to get the correct client ID. Listing composite component ajaxPoll shows the declaration.
+ <cc:interface>
+  <cc:attribute name="interval" required="true"/>
+</cc:interface>
+<cc:implementation>
+  <h:outputScript name="jsf.js" library="javax.faces"
+      target="head"/>
+  <h:outputScript name="ajaxPoll.js"
+      library="mygourmet" target="head"/>
+  <script type="text/javascript">
+  startAjaxPoll('#{cc.clientId}',#{cc.attrs.interval});
+  </script>
+  <div id="#{cc.clientId}">
+    <cc:insertChildren/>
+  </div>
+</cc:implementation>
+The entire Ajax functionality of the component is in the script resource ajaxPoll.js . The code can be seen in Listing JavaScript for composite component ajaxPoll .
+ function processPollEvent(interval) {
+  return function(data) {
+    if (data.status == 'success') {
+      startAjaxPoll(data.source.id, interval);
+    }
+  };
+}
+function poll(clientId, interval) {
+  var element = document.getElementById(clientId);
+  element.mgPoll = true;
+  jsf.ajax.request(element, null, {render: clientId,
+      onevent: processPollEvent(interval)});
+}
+function startAjaxPoll(clientId, interval) {
+  setTimeout("poll('"+clientId+"', "+interval+")", interval);
+}
+The starting point is the startAjaxPoll () function, which receives as parameters the ID of the DOM element to be updated and the interval between the Ajax requests. The Ajax request itself is issued in the poll () function , which is called in startAjaxPoll () via the JavaScript function setTimeout () after the milliseconds specified in the interval. The poll () function first looks for the DOM element for the submitted client ID, and then sends the query using jsf.ajax.request () . The trick is that via a callback function after successfully completing the request via startAjaxPoll () the entire process is started again. This creates the polling effect and ensures that no further requests are sent to the server in case of an error. 
+The component still has a small flaw. If ajaxStatus is used at the same time , the status message is displayed with every update - a behavior that is not always appropriate. But even there is a very simple solution. As you may have noticed, in poll (), the mgPoll property is dynamically set to the DOM element. This property can then be used in the callback function of ajaxStatus with data.source.mgPoll be queried. If it is set, the message is not displayed. 
+To use the component, only the tag mc: ajaxPoll with the desired content must be inserted in the declaration - provided that the prefix mc is defined accordingly. Here is an example with which a kind of clock is built into the view:
+<mc:ajaxPoll interval="950">#{customerBean.time}</mc:ajaxPoll>
 
 === MyGourmet 14: Ajax
 
+MyGourmet 14 is identical in functionality to MyGourmet 13 . The big difference lies in the integration of Ajax, which in some places avoids a complete reload of the view. The application is thus more fluid overall. Figure MyGourmet 14 with Ajax status shows a screenshot of view showCustomer.xhtml enabled Ajax status message.
+
+So that users are always informed about the status of an Ajax request, we insert the composite component ajaxStatus directly in the template customerTemplate.xhtml into the header. Listing The component ajaxStatus in use shows the updated header area.
+ <ui:define name="header">
+  <h:graphicImage name="images/logo.png"/>
+  <h1>#{msgs.title_main}</h1>
+  <mc:ajaxStatus style="float:right; width: 100px;"/>
+</ui:define>
+After the Ajax requests in MyGourmet are processed fairly quickly, the status message flashes only briefly. If you want to look at them in their full glory, you can for example use Firebug to set a breakpoint in the script. 
+The class DebugPhaseListener also got a small extension. Log messages at the beginning and at the end of each phase now tell you if the request is an Ajax request or not. To determine this, we call the isAjaxRequest () method of the partial view context, which can be reached via the faces context. Listing Extended version of the debug phase listener with Ajax support shows the source code.
+ public class DebugPhaseListener implements PhaseListener {
+  private static Log log = LogFactory.getLog(
+      DebugPhaseListener.class);
+
+  public void afterPhase(PhaseEvent ev) {
+    String ajax = getAjaxText(ev.getFacesContext());
+    PhaseId phaseId = ev.getPhaseId();
+    log.debug("After phase: " + phaseId + ajax);
+  }
+  public void beforePhase(PhaseEvent ev) {
+    String ajax = getAjaxText(ev.getFacesContext());
+    PhaseId phaseId = ev.getPhaseId();
+    log.debug("Before phase: " + phaseId + ajax);
+  }
+  public PhaseId getPhaseId() {
+    return PhaseId.ANY_PHASE;
+  }
+  private String getAjaxText(FacesContext ctx) {
+    return ctx.getPartialViewContext()
+        .isAjaxRequest() ? " (Ajax)" : "";
+  }
+}
+The rest of the changes include only those views of the application that have been enhanced with Ajax throughout the chapter. In addition to the dynamic display and hiding of the credit card data in editCustomer.xhtml, this also includes the collapsiblePanel with the addresses in the showCustomer.xhtml page . There is even the double Ajax functionality: in the composite component itself and in the embedded table for deleting an address. 
+In section [Section: A first example with f: ajax] we already have a solution for the dynamic display and hiding of credit card data using f: ajax shown. The implementation presented there, however, still has a small flaw: If the credit card data changed in the displayed state, hidden and displayed again, the changes are lost. A closer look at the used f: ajax tag shows the reason. After we do not specify the execute attribute (and thus use the default value of @this ), JSF only handles the select box when performing the partial lifecycle execution. The changed data never arrive at the server and will be overwritten by the new rendering in the browser with the old values.
+
 === Tools for the Ajax developer
+
+Ajax is not easy to use due to the large number of basic technologies used. If you want to build Ajax applications, support through suitable development tools is indispensable. The following list of tools is not exhaustive. We want to show you a number of tools that have proven themselves in the daily work with JSF projects.
 
 ==== Firebug
 
+Firebug Firebug is available at http://getfirebug.com and as an add-on. It's an extension of Firefox that integrates a number of very useful web developer tools directly into the browser. Firebug is freely available and proves to be priceless in many situations. Especially when it comes to analyzing the DOM tree or debugging JavaScript code. Here is a list of the most important features:
+Inspect and edit HTML code
+Inspect and edit CSS rules
+Debugging and profiling JavaScript code
+Analyze the DOM
+Analyze the HTTP traffic
+The functionality and user-friendliness improve with each new version. In the meantime, there is even a list of very useful enhancements for Firebug itself. This includes, for example, YSlow for checking HTML pages for performance issues.
+
 ===== Analysis of the DOM Tree
 
-===== JavaScript debugging
+If one tries to understand the update by the Ajax response with an editor, no change of the HTML code will be visible. The website was not completely reloaded, only the DOM tree was updated. The browser renders this DOM tree and displays it graphically. The change can only be visualized by visualizing the tree itself. Firebug provides the visual representation of the tree of HTML elements in the form of a directory structure. Figure Firebug with updated component shows the view showCustomer.xhtml with folded Addresses panel and activated Firebug .
 
+It is also possible to search for nodes by their ID, tag name or attributes, have them highlighted in the browser or change their properties. Not only does Firebug show the current HTML code, it also highlights elements that have just changed. 
+The bottom panel in Figure Firebug with updated component shows the DOM tree synchronized with the web page. The highlighted element is the div block of the panel that displays the list of addresses. For an initial request to the page, the panel is always unfolded. The collapsed state shown in the figure occurred only after the click on the icon in response to the Ajax request.
+As soon as you select an element in the tree view, it is highlighted in color in the browser. It is also possible to display an item directly from the browser window. Additional information about the nodes, such as name, ID or properties, is available on the right side . There is also the option to switch to a JavaScript object view. As seen in Figure view with attributes and methods in Firebug , you can view all the methods and attributes of a JavaScript object.
+
+Even if you use Internet Explorer, you do not have to do without a DOM inspector. As of version 8, a corresponding tool is even included in the standard scope of delivery. For older versions, the Internet Explorer Developer Toolbar is recommended. The Internet Explorer Developer Toolbar is available at the address .: .
+
+===== JavaScript debugging
+An irreplaceable tool for Ajax developers is a JavaScript debugger, such as Firebug for Firefox . This can be run at runtime JavaScript code of the web page or the Ajax library in steps. Thus, complex code becomes easier to understand, objects, their data and methods can be recognized and faulty behavior can be easily determined. As in conventional debuggers, it is possible to set breakpoints and to look at the state of variables and objects and call functions at this point in the Ajax application. A practice example can be seen in Figure JavaScript Debugging in Firebug .
+
+Here a breakpoint was set in the script inputSpinner.js . As soon as the user clicks on one of the images to increase or decrease the value, the window of the debugger opens and the processing of the code stops exactly at this point. In the monitor window any conceivable JavaScript command can be entered. For example, here's the code to display the input spinner input box: <
+document.getElementById('form:stars')
+The Internet Explorer version 8 already comes as standard in the delivery of a quite useful developer tool with DOM browser and JavaScript debugger. An earlier version of is Microsoft Script Debugger Microsoft Script Debugger is under http://www.microsoft.com/downloads available .: available as freeware.
 ==== HTTP Debugger
+Sometimes it can be quite useful to take a closer look at the history of the log. With an HTTP debugger it is possible to record all HTTP traffic. One of the best known tools in this area is the freely available HTTP debugger Fiddler (Windows) Fiddler is available at http://fiddler2.com .: . The cooperation with the browser is controlled by the program itself - it represents a local proxy. In the proxy must be entered under the connection settings with the data 127.0.0.1 and port 8888 . In Internet Explorer, no further settings have to be made, because the intermediate point is automatically recognized. Fiddler can be configured to stop the program from processing an HTTP request or an HTTP response, similar to a regular debugger, to see the current state of interaction. This is logged in the left pane of Fiddler as it shows the HTTP debugger Fiddler logs the HTTP traffic . In version 2 it is even possible to debug HTTPS connections.
+
+The data displayed is the state of an Ajax request for the HTTP response. The upper right window displays the usual log information of the previous request. In our example, this is a POST request with the protocol version 1.1 in a given HTTP session. The window at the bottom right shows the payload of the answer. You can see the list, which is picked up by the XML HttpRequest object and subsequently inserted into the DOM tree. 
+For Firefox, Firebug now also provides a very useful overview of all remote HTTP requests and allows easy switching between "full" and Ajax requests.
 
 ==== Web Developer Toolbar
+
+An indispensable tool for Web developers for Firefox and Chrome is the add-on Web Developer Web Developer is available as an add-on to Firefox and Chrome, and at the address http://chrispederick.com/work/web-developer/ available .: . Roughly outlined, this add-on offers the following features:
+Graphical award of individual HTML elements
+Validation of HTML, CSS and other technologies
+Formatted display of the source code
+Freely definable size of the browser window
+Visual output of HTML attributes
+Manipulation of forms
+Display CSS styles of individual HTML elements
+Edit CSS and HTML and view the changes in real time
+The most important function of the extension is the possibility of editing CSS and the immediate display of the changes. The writing and tedious constant switching to the browser can be avoided. The developer can immediately track the impact of individual CSS commands.
