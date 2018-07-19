@@ -723,35 +723,1100 @@ These automatic IDs are distinguishable from manually assigned identifiers throu
 
 === conversion
 
+Conversion is an important aspect of the JSF LifeCycle because values ​​are represented on the Web client as `Strings`, but as `Java types` on the server side. 
+The converters play the role of an internal mediator. 
+They take care of converting the user-entered `strings` into `Java objects` and convert `Java objects` back into `strings` when rendering the output.
+
+In JSF, there are already standard converters for many data types that are used automatically. 
+For example, in MyGourmet 3, if we change the type of property `creditCardNumber` of the class from `String` to `Integer`, we do not have to worry about the conversion. 
+If no other converter is defined, JSF automatically uses the default converter for the data type.
+
+This standard converter is responsible for both directions of conversion. 
+For one thing, when rendering the view, it converts the integer value of the creditCardNumber property to a string. 
+When submitting a form, it also converts the user-entered string back to an integer.
+
+Each converter implements the `javax.faces.convert.Converter` `interface` shown in Listing <<.The Interface Converter, The Interface Converter>>.
+
+.The Interface Converter
+[source,java]
+----
+public interface Converter {
+  Object getAsObject(FacesContext context,
+      UIComponent component,
+      String value) throws ConverterException;
+  String getAsString(FacesContext context,
+      UIComponent component,
+      Object value) throws ConverterException;
+}
+----
+
+The two directions of the conversion are obvious here: For the conversion of the Java data type into a string, the method `getAsString()` is called, for the conversion from the string back to the Java data type the method `getAsObject()`. +
+Finding a converter for a component works through the following steps:
+
+* The component tag contains a `converter` `attribute` that references a converter.
+* The component tag has a `child tag` that references a converter.
+* The component points to a `value` with a certain `data type` - a converter is `registered` for this `data type`.
+
+The registration of converters in `faces-config.xml` is discussed below. 
+First, in the next section, we will show you which converter JSF already delivers in the standard version.
+
 ==== Standard converter
+
+Of the standard converters that are integrated via a child tag, the tag `f:convertDateTime` and the tag `f:convertNumber` are relevant in practice. 
+
+The `f:convertDateTime` tag has the following properties:
+
+* `type`: +
+This attribute defines which parts of the `date value` are displayed. 
+It can take the values `date`, `time` or `both`.
+* `dateStyle`: +
+This attribute specifies the type of `date display` when type is set to `date` or `both`. 
+Possible values are `default`, `short`, `long`, `full`.
+* `timeStyle`: +
+This attribute specifies the type of `time display` when type is set to `time` or `both`. 
+The same values ​​are valid as for the `dateStyle` entry.
+* `pattern`: +
+Instead of specifying type, `dateStyle` and `timeStyle`, a date pattern (such as dd.MM.yyyy) can be passed directly here.
+* `timeZone`: +
+The time zone for the output can be changed using this attribute, for example, the default value for this attribute is `GMT`.
+* `locale`: +
+Here a localization can be specified - both as a `string` and as an instance of the class `Locale` via a `Value-Expression`. 
+Examples of the value are: en_US or #{session.locale}.
+
+The tag `f:convertNumber` has the following properties:
+
+* `type`: +
+Can accept the currency or percentage properties in addition to the default number.
+* `currencyCode`: +
+With this property the currency can be set via an internationally valid code - for the euro that would be eg. `EUR`. 
+Alternatively, you can set the attribute currencySymbol.
+* `currencySymbol`: +
+Alternative to the currencyCode. 
+Example would be the indication of for the Euro.
+* `groupingUsed`: +
+Indicates whether a separator (for example, a thousands separator) is used.
+* `locale`: +
+Here a localization can be specified - both as a string and as an instance of the class `Locale` via a `Value-Expression`. 
+Examples of the value are: `en_US` or # {session.locale}.
+* `minFractionDigits`: + 
+This attribute specifies the minimum number of decimal places.
+* `maxFractionDigits`: +
+This attribute specifies the maximum number of decimal places.
+* `minIntegerDigits`: +
+This attribute specifies the minimum number of decimal places.
+* `maxIntegerDigits`: +
+This attribute specifies the maximum number of digits before the decimal point.
+* `pattern`: +
+As an alternative to specifying the other attributes, this attribute can be used to directly define a pattern for the display - for example, the specification of "#.###,##" for the "German" number format is possible here.
+
+For the individual attributes of the converters, they are as close as possible to the attributes of the localization functions of Java itself - in the Java API documentation you will find more about the possible values ​​for the individual parameters and their effects.
+
+The handling of errors and error messages in the form of messages during conversion is explained in more detail in section [Message section].
+
+Converter for localization: Converters are also used to localize values. 
+With the `locale` attribute, the localization code for the default converters can be explicitly set - both as a `String` and as an instance of the class `Locale` via a `Value-Expression`. 
+Without explicit specification, the default localization code is used. 
+In the example in Listing <<.Localization with Converters, Localization with Converters>>, the date December 13, 2012 is read from a backing bean and displayed for German and English, resulting in the following output:
+
+.Localization with Converters
+----
+13.12.12
+12/13/12
+----
+[source,xhtml]
+----
+<h:outputText id="orderDate" value="#{orderBean.orderDate}">
+  <f:convertDateTime dateStyle="short" locale="de"/>
+</h:outputText>
+<h:outputText id="orderDate" value="#{orderBean.orderDate}">
+  <f:convertDateTime dateStyle="short" locale="en"/>
+</h:outputText>
+----
+
+Converter Binding: As of JSF 1.2, the standard converter tags (`f:convertNumber`, `f:convertDateTime` and `f:converter`) have an additional attribute binding, via which the converter instance can be obtained from a `Managed-Bean`.
 
 ==== Custom converter
 
+Of course, the functionality of the JSF framework can be extended by creating your own converter: It is possible to replace existing converters with your own as well as to process new Java data types or to develop your own converter for individual component tags.
+
+For example, consider a converter that replaces groups of whitespace characters with an underscore in input strings. 
+Listing <<.converter for replacing characters, converter for replacing characters>> shows the corresponding class `Replace-Converter`.
+
+.converter for replacing characters
+[source,java]
+----
+public class ReplaceConverter implements Converter {
+  public Object getAsObject(FacesContext ctx, UIComponent c,
+      String value) throws ConverterException {
+    if (value == null) return null;
+    return value.replaceAll("s+", "_");
+  }
+  public String getAsString(FacesContext ctx, UIComponent c,
+      Object value) throws ConverterException {
+    if (value == null) return null;
+    return value.toString();
+  }
+}
+----
+
+Our converter implements the `Interface` `Converter` with the two methods `getAsObject()` and `getAsString()`. 
+After we want to convert user-input strings, we replace the characters in the `getAsObject()` method. 
+In the `getAsString()` method called when rendering, we simply return the string representation of the passed object (it should be a string anyway).
+
+A small note: This converter works in the form shown above only with input components, but not with output components. Why? 
+For the aforementioned reason that in `getAsString()` only the string representation of the passed object is returned.
+
+Custom converters can be registered and federated in JSF in several ways. 
+One possibility is to provide converters to individual components of a view. 
+This works for all input and output components via the child element `f:converter` or a `Method_Expression` in the attribute `converter`. 
+The `f:converter` tag is simply added as a child element to the tag of the desired component in the page declaration. 
+However, the converter must already be registered under a unique identifier in the system. 
+This identifier is then used in the `attribute` `converterId` of `f:converter` entered.
+
+Starting with version 2.0 JSF offers the possibility to register converters with the annotation @FacesConverter in the system. 
+Listing <<.Converter with @FacesConverter Register, Converter with @FacesConverter Register>> shows how the previously created converter is connected to the identifier specified in the annotation.
+
+.Converter with @FacesConverter Register
+[source,java]
+----
+@FacesConverter("at.irian.ReplaceConverter")
+public class ReplaceConverter implements Converter {
+  ...
+}
+----
+
+In JSF prior to version 2.0, converters were registered only in the `faces-config.xml` file. 
+Of course, in JSF 2.0 and newer versions, this variant is still available. 
+To do this, a `converter` `element` must be created for each `converter` with the `child elements` `converter-id` for the identifier and `converter-class` for the class of the converter. 
+Listing <<.the converter in `faces-config.xml`, the converter in `faces-config.xml`>> shows how the previously annotated registration of our converter looks like in `faces-config.xml`.
+
+.the converter in `faces-config.xml`
+[source,xml]
+----
+<converter>
+  <converter-id>at.irian.ReplaceConverter</converter-id>
+  <converter-class>
+    at.irian.jsfatwork.gui.jsf.ReplaceConverter
+  </converter-class>
+</converter>
+----
+
+JSF offers yet another variant to connect a converter with a component. 
+All input and output components have the `attribute` `converter`. 
+In this `attribute`, a `Value-Expression` can be used to reference a `Managed-Bean` property of `type` `javax.faces.convert.Converter`. 
+The getter method of this property must then return a new instance of the desired converter each time it is called. 
+A setter method is not needed for this.
+
+Listing <<.Custom converters in the page declaration, Custom converters in the page declaration>>  shows for both variants presented how the converter in the page declaration is connected to a component. 
+When using the `attribute` `converter` Of course, there must be a `getReplaceConverter()` method in the referenced managed bean.
+
+.Custom converters in the page declaration
+[source,xhtml]
+----
+<h:inputText value="#{bean.stringValue}">
+  <f:converter converterId="at.irian.ReplaceConverter"/>
+</h:inputText>
+<h:inputText value="#{bean.otherStringValue}"
+    converter="#{bean.replaceConverter}"/>
+----
+
+Alternatively, it may be a good idea to create a centralized `Managed-Bean` for all application custom converters. 
+This bean is in the `Application` scope and provides for each converter a getter method that returns a new instance of the converter. 
+Listing <<.`Managed-Bean` for Converter, `Managed-Bean` for Converter>> shows how such a `Managed-Bean` might look like.
+
+[source,java]
+----
+@ManagedBean @ApplicationScoped
+public class ConverterProvider {
+  public Converter getReplaceConverter() {
+    return new ReplaceConverter();
+  }
+}
+----
+
+Registering a converter with an identifier provides a decisive advantage: Facelets make it even easier to integrate custom converters. 
+In section [Section: Creating tag libraries with facelets], we show you how to easily define a tag for a custom converter in a tag library. 
+In addition to incorporating custom converters into separate components, JSF also provides the ability to globally register a converter for a specific data type. 
+As of JSF 2.0, it is sufficient to set the element `forClass` of the annotation `@FacesConverter` to the desired data type. 
+Listing <<.converter for data type with @FacesConverter, converter for data type with @FacesConverter>> shows this for the data type `Date`.
+
+.converter for data type with @FacesConverter
+[source,java]
+----
+@FacesConverter(forClass = Date.class)
+public class MyDateConverter implements Converter {
+  ...
+}
+----
+
+In JSF prior to version 2.0, converters for certain classes had to be registered in `faces-config.xml`. 
+How to do this, Listing shows <<.converter for Date type, converter for Date type>> in `faces-config.xml`. 
+If under `converter-for-class` a class is specified for which no converter exists yet, a new converter is registered.
+Of course, this type of configuration will continue to work with JSF 2.0 and later versions.
+
+.converter for Date type
+[source,xml]
+----
+<converter>
+  <converter-for-class>
+    java.util.Date
+  </converter-for-class>
+  <converter-class>
+    at.irian.jsfatwork.MyDateTimeConverter
+  </converter-class>
+</converter>
+----
+
+In the example of MyGourmet 5 in section [Section:  MyGourmet 5 : Conversion], another custom converter for postal codes is being developed and integrated into the example.
+
 ==== MyGourmet 5: Conversion
+
+The example MyGourmet 5 extends MyGourmet 4 from section [Section:  MyGourmet 4 : Phase Listener and System Events] by some input fields and shows the use of standard and custom converters.
+
+Starting with this example, let's change the underlying backing bean. 
+So far, there has been a bean that has all the characteristics of the customer and the code for the page. 
+With regard to the extensions in this section, it makes sense to separate these aspects. 
+The customer's data is now in the class `Customer` in the package `at.irian.jsfatwork.domain`. 
+The `Managed-Bean` `CustomerBean` replaces the previous class `Customer` in the package `at.irian.jsfatwork.gui.page`. 
+It contains a customer property for the current customer and code relevant to the page.
+
+To demonstrate the converter, the class `Customer` also receives the properties `birthday`, `zipCode`, `city` and `street`. 
+For entering the date of birth on `editCustomer.xhtml` we add the default converter `f:convertDateTime` with a pattern. 
+Listing <<.input component with date converter, input component with date converter>> shows the tag.
+
+.input component with date converter
+[source,xhml]
+----
+<h:inputText id="birthday" size="30"
+    value="#{customerBean.customer.birthday}">
+  <f:convertDateTime pattern="dd.MM.yyyy"/>
+</h:inputText>
+----
+
+The birthdate on `showCustomer.xhtml` uses the same default converter. 
+Listing <<.output component with date converter, output component with date converter>> shows the tag.
+
+.output component with date converter
+[source,xml]
+----
+<h:outputText
+    value="#{customerBean.customer.birthday}">
+  <f:convertDateTime pattern="dd.MM.yyyy"/>
+</h:outputText>
+----
+
+As an example of a user-defined converter, we want to develop a converter that allows you to enter postcodes with country codes without saving them. 
+For this purpose, all letters including the first occurrence of the character '-' are ignored. 
+The remainder of the entered string must then be a number. 
+The input A-1010 then becomes, for example, the number 1010.
+
+The new converter `ZipCodeConverter` is derived from the JSF class `IntegerConverter`, which has the advantage that the actual conversion of the postal code without the country code can be done by it. 
+Listing <<.converter for postal codes with country codes, converter for postal codes with country codes>> shows the code of the class. 
+With the annotation @FacesConverter we register the converter under the identifier `at.irian.ZipCode` for later use in the system.
+
+[source,java]
+----
+@FacesConverter(value="at.irian.ZipCode")
+public class ZipCodeConverter
+    extends IntegerConverter implements Serializable {
+  public Object getAsObject(FacesContext ctx,
+      UIComponent component,String value)
+      throws ConverterException {
+    if (value != null && value.length() > 0) {
+      int pos = value.indexOf('-');
+      for (int i = 0; i < pos; i++) {
+        if (!Character.isLetter(value.charAt(i))) {
+          throw new ConverterException("Zip invalid.");
+        }
+      }
+      if (pos > -1 && pos < value.length() - 1) {
+        return super.getAsObject(
+            ctx, component, value.substring(pos + 1));
+      }
+    }
+    return super.getAsObject(ctx, component, value);
+  }
+}
+----
+
+Particularly interesting is the part that handles the error handling: If the zip code does not match the pattern, an exception instance of the type `ConverterException` is generated. 
+The exception is linked through its constructor to a message, which is then output as an error message in the web browser.
+
+The user-defined converter `ZipCodeConverter` is integrated via the child element `f:converter` in `editCustomer.xhtml`. 
+Listing <<.converter via identifier, converter via identifier>> shows the corresponding tag.
+
+.converter via identifier
+[source,xhtml]
+----
+<h:inputText id="zipCode" size="30" required="true"
+    value="#{customerBean.customer.zipCode}">
+  <f:converter converterId="at.irian.ZipCode"/>
+</h:inputText>
+----
+
+Now that we've converted all the input to the required data types, we'll turn to validating user input in the next section.
 
 === validation
 
+Entering data is a matter that users like to make mistakes - identifying and preventing the entry of erroneous data into the model must be a concern of any development framework. 
+JSF already offers many possibilities out-of-the-box to prevent such mistakes.
+
+For validating user input, so-called `Validators` are used in JSF. 
+The linking of `Validators` and input components is very simple - similar to the integration of converters. 
+In addition to a set of standard validators included with JSF, it's easy to write your own validators.
+
+With JSF 2.0 and above, validation is even easier with support for the BeanValidation concept (JSR-303). 
+New mechanisms enable for the first time fully `metadata-based` validation without detours. 
+Section [JSR-303 bean validation section] is dedicated to this highly topical issue and shows how to use bean validation in combination with JSF in your own projects.
+
+Then, in Section [Standard Validators], we turn to the default validators before we show you how to create custom validators in the [Custom Validators] section.
+
 ==== Bean validation according to JSR-303
+
+JSF 2.0 was a big step forward for web application validation. 
+Before that, validation across the layer boundaries has always led to redundancy. 
+In many cases, the same validation rules were implemented in multiple layers of the application. 
+In addition to an increased implementation effort, this approach also leads to a higher error rate. 
+Validation was then applied, for example, through JSF validators in the view as well as persisting the entities in the service.
+
+The combination of JSF version 2.0 and BeanValidation (JSR-303) changes that radically. 
+Bean Validation defines a `metadata model` and a Java API to focus validation on the domain classes. 
+Constraints are implemented in the form of `Validator` classes bound to `JavaBeans` with annotations. 
+
+Using the example of MyGourmet, let's take a look at how bean validation is used in practice. 
+For a property of a bean bound to an input component, JSR-303-compliant metadata will be automatically validated. 
+Listing <<.Validation with bean validation, Validation with bean validation>> shows a snippet of the class `Customer` with bean validation metadata. 
+With the annotation `@NotNull` Let's avoid one of the three properties taking on the value `null`. 
+The `zipCode` property is additionally restricted to a value range of `1000 to 99999` with the annotations `@Min` and `@Max`.
+
+.Validation with bean validation
+[source,java]
+----
+public class Customer {
+  @NotNull @Min(value = 1000) @Max(value = 99999)
+  private Integer zipCode;
+  @NotNull
+  private String city;
+  @NotNull
+  private String street;
+  ...
+}
+----
+
+An important precondition is to be considered: In order for missing user input from JavaServer Faces to be interpreted as `null` values, the context parameter `javax.faces.INTERPRET_EMPTY_STRING_SUBMITTED_VALUES_AS_NULL` must be set to `true` in the `web.xml`. 
+By default, JSF ignores input components without user input during validation. 
+This behavior then makes it impossible, for example, to use @NotNull. 
+
+That's it! More is not necessary to use bean validation as of JSF 2.0 if an implementation of JSR-303 is available in the runtime environment. 
+In MyGourmet this is due to a dependence on Hibernate Validator v4, the reference implementation of JSR-303, guaranteed in the Maven project file `pom.xml`. 
+As you can see, we did not have to change any of the views to enable validation.
+
+For the full example of MyGourmet 6, with all the validation changes, see section [section: MyGourmet 6 validation].
+
+In the following list you will find a list of all standard constraints in bean validation:
+
+* `@AssertFalse` +
+The annotated element must be `false`.
+* `@AssertTrue` +
+The annotated element must be `true`.
+* `@DecimalMax` +
+The annotated element must be less than or equal to the value specified in `value`. 
+Note that `value` is a `String` that is interpreted as `BigDecimal` (see the API documentation for BigDecimal for details).
+* `@DecimalMin` +
+The annotated element must be greater than or equal to the value specified in `value`. 
+Note that `value` is a `String` that is interpreted as `BigDecimal` (see the API documentation for BigDecimal for details).
+* `@Digits` +
+The annotated element can not have more than integer digits before the comma and no more than fractional digits after the decimal point.
+* `@Future` +
+The annotated element must be a `date` in the future.
+* `@Max` +
+The annotated element must be less than or equal to the value specified in `value`. 
+In contrast to `@DecimalMax`, value here has the type `long`.
+* `@Min` +
+The annotated element must be greater than or equal to the value specified in `value`. 
+In contrast to `@DecimalMin`, value here has the type `long`.
+* `@NotNull` +
+The annotated element can not be `null`.
+* `@Null` +
+The annotated element must be `null`.
+* `@Past` +
+The annotated element must be a `date` in the past.
+* `@Pattern` +
+The annotated element must match the regular expression specified in `regexp`.
+* `@Size` +
+The size of the annotated element must be between `min` and `max`. 
+`Strings` and all `Collection` types can be validated with this constraint.
+
+MyFaces ExtVal: Unfortunately, JSF does not provide the full functionality of Bean-Validation. 
+Alternatively, you can take a look at the project MyFaces Extensions Validator (aka ExtVal) Further information on the project MyFaces ExtVal see http://myfaces.apache.org/extensions/validator. 
+Throw that an adapter for JSR-303 compliant implementations. 
+This adapter also provides additional functionality and alternative concepts. 
+For example, MyFaces becomes `ExtVal` for group validation (as an alternative to declarative in the view) provide annotations for the properties and action methods in the backing bean. 
+This makes refactoring much easier and can be done reliably. 
+Beyond the standard, MyFaces `ExtVal` offers its own validation module with additional functions especially for JSF. 
+Among other things, cross-component validation is supported. 
+MyFaces `ExtVal` can also be used with JSF 1.1 and JSF 1.2.
 
 ===== Custom Constraints with Bean Validation
 
+With `Bean-Validation`, you can easily create your own Validators and Constraints. 
+We want to use this feature in MyGourmet and create a Validator that checks the birth date for a specific period of time. 
+The date can not be before 1.1.1900 and not in the future.
+
+All we need is an annotation and a Validator class. 
+Let's start with the annotation `@Birthday`. 
+For this annotation to be used as a constraint for `Bean-Validation`, it must be annotated with `@Constraint`. 
+The element `validatedBy` connects to the `Validator` class, in our case. 
+A constraint annotation must be at least over the elements `message` to define an error message, `groups` to define validator groups, and `payload` to pass additional information. 
+Listing <<.custom constraint annotation displays the code of @Birthday, custom constraint annotation displays the code of @Birthday>>.
+
+.custom constraint annotation displays the code of @Birthday
+[source,java]
+----
+@Constraint(validatedBy = BirthdayValidator.class)
+@Retention(RUNTIME)
+@Target({ANNOTATION_TYPE, METHOD, FIELD})
+public @interface Birthday {
+  String message() default "Wrong birthday";
+  Class<?>[] groups() default {};
+  Class<? extends Payload>[] payload() default {};
+}
+----
+
+The two annotations `@Retention` and `@Target` ensure that the annotation is evaluated at runtime and can be applied to other annotations, methods and fields. 
+The element has a default value, which is output as an error message if it is not overwritten. 
+The default value should ideally refer to a resource bundle, more in Section [Internationalization Section]. 
+
+For the successful use of our constraint only the Validator class `BirthdayValidator` is missing. 
+It must implement the `ConstraintValidator` `interface`, parameterized with the previously defined annotation and the data type to be validated. 
+The method initialize gets the associated annotation as a parameter during the validation process and serves to initialize the validator. 
+The actual validation then takes place in the method `isValid()`, which receives the `value` to be validated and the current context. 
+In case of successful validation, it must return `true`. 
+Listing <<.Validator for custom constraint, Validator for custom constraint>> shows the source code.
+
+.Validator for custom constraint
+[source,java]
+----
+public class BirthdayValidator
+    implements ConstraintValidator<Birthday, Date> {
+  public void initialize(Birthday birthday) {}
+
+  public boolean isValid(Date date,
+      ConstraintValidatorContext ctx) {
+    boolean dateCorrect = true;
+    if (date != null) {
+      ctx.disableDefaultConstraintViolation();
+      if (date.after(new Date())) {
+        ctx.buildConstraintViolationWithTemplate(
+            "Birthday is in the future.")
+            .addConstraintViolation();
+        dateCorrect = false;
+      }
+      Calendar cal = Calendar.getInstance();
+      cal.set(Calendar.YEAR, 1900);
+      cal.set(Calendar.MONTH, 0);
+      cal.set(Calendar.DAY_OF_MONTH, 1);
+      if (date.before(cal.getTime())) {
+        ctx.buildConstraintViolationWithTemplate(
+            "Birthday is before Jan 1, 1900.")
+            .addConstraintViolation();
+        dateCorrect = false;
+      }
+    }
+    return dateCorrect;
+  }
+}
+----
+
+Since we perform two different checks in `isValid`, we also want to define two different error messages. 
+The standard error message should not be displayed at all and is switched off by means of `ctx.disableDefaultConstraintViolation()`. 
+Now we can add any error messages to the context with the following code, which are then converted into JSF messages:
+
+----
+ctx.buildConstraintViolationWithTemplate("Fehlermeldung")
+    .addConstraintViolation();
+----
+
+Our custom constraint is now ready for use. 
+The birthday property of the `Customer` class looks like this with the new annotation:
+
+----
+@Birthday
+private Date birthday;
+----
+
 ==== Standard Validators
+
+After the brief introduction to `Bean-Validation` with JSF, we will focus on the remainder of the classic JSF validation section. 
+For inclusion as a child tag, a list of validators is already available in the JSF standard:
+
+* `f:validateLength`: + 
+This Validator checks the `length of a string` based on the values ​​of the `minimum` and `maximum` attributes. 
+The following example allows you to enter a string of minimum length three and maximum length seven:
+
+[source,xhtml]
+----
+<h:inputText value="#{backingBean.property}">
+  <f:validateLength minimum="3" maximum="7"/>
+</h:inputText>
+----
+
+* `f: validateLongRange`: + 
+To check if an `integer` is `within a certain range`, JSF offers the `LongRange` validator. 
+Again, the valid attributes are `minimum` and `maximum`. 
+An example of checking a number in the range 0-1000:
+
+[source,xhtml]
+----
+<h:inputText value="#{backingBean.property}">
+  <f:validateLongRange minimum="0"
+        maximum="1000"/>
+</h:inputText>
+----
+
+* `f: validateDoubleRange`: + 
+JSF offers the `DoubleRange` `Validator` to check if a `floating-point` number is within a certain range. 
+Again, the valid attributes are `minimum` and `maximum`. 
+An example of checking a number in the range 0.0 - 1.0:
+
+[source,xhtml]
+----
+<h:inputText value="#{backingBean.property}">
+  <f:validateDoubleRange minimum="0.0"
+        maximum="1.0"/>
+</h:inputText>
+----
+
+* `f: validateRegex`: +
+This Validator checks if the `String` value `matches the regular expression` specified in the `pattern` attribute. 
+For a detailed explanation of regular expressions in Java, see the Java API documentation. 
+Here is a small example where the value of a component must consist of a capital letter followed by any sequence of letters:
+
+[source,xhtml]
+----
+<h:inputText value="#{backingBean.property}">
+  <f:validateRegex pattern="[A-Z][a-zA-Z]*"/>
+</h:inputText>
+----
+
+* `f: validateRequired`: + 
+This Validator checks if the user has ever specified a value.
+
+As you've probably noticed, the Validator is only available as of JSF 2.0. 
+How did that work before? 
+In older versions, the same effect was achieved by setting the `required` attribute on the individual input components. 
+If the `attribute` is set to `true`, the validation of the component fails with a blank value. 
+As of JSF 2.0, you can use both variants, but your own validator fits better into the validation concept. 
+
+Until JSF 2.0, you can not check `null` in custom validators because JSF does not call validation at all unless the `required` attribute of a component is set `false` and the user has not entered anything. 
+This behavior was necessary because Validators could not be made optional. 
+As of JSF 2.0, this behavior can be controlled via the context parameter `javax.faces.VALIDATE_EMPTY_FIELDS`. 
+A value of `true` (or `auto` in combination with `Bean-Validation`) instructs JSF to validate `empty` input components as well.
+
+Validator Binding: As of JSF 1.2, the tags of the standard validators have an additional `attribute` `binding`, which can be used to link a validator instance with a property of a `Managed-Bean`. 
+The linked property must be of type `javax.faces.validator.Validator` respectively.
+
+As of JSF 2.0, all standard Validators have the `disabled` attribute, which takes a `Value-Expression`. 
+If the expression evaluates to `true`, the Validator is not used in the lifecycle.
+
+Combination of validators: It is possible to combine validators - for example, to ensure that a `String` is specified that is between three and six characters long and consists of a capital letter followed by a number of other letters (see Listing <<.combination of validators, combination of validators>>).
+
+.combination of validators
+[source,xhtml]
+----
+ <h:inputText value="#{backingBean.wert}">
+  <f:validateRequired/>
+  <f:validateLength minimum="3" maximum="6"/>
+  <f:validateRegex pattern="[A-Z][a-zA-Z]*"/>
+</h:inputText>
+----
 
 ==== Custom validators
 
+If you need reviews that are not covered by standard validators, you can write your own validators. 
+The easiest way to do that is with validation methods. 
+These are referenced with a `Method-Expression` in the `validator` `attribute` of the input component and must have the signature shown in the Listing <<.signature of a validation method, signature of a validation method>>. 
+The name of the method is freely selectable.
+
+.signature of a validation method
+[source,java]
+----
+ public void validate(
+    FacesContext ctx,
+    UIComponent component,
+    Object value) throws ValidatorException;
+----
+
+Let's look at a small example in detail. 
+Our user-defined `Validator` should check a string for the values `yes` and `no` and generate an error message for all other inputs. 
+Listing <<.example of a validation method, example of a validation method>> shows the corresponding method.
+
+.example of a validation method
+[source,java]
+----
+ public void yesNoValidate(FacesContext ctx, UIComponent comp,
+    Object value) throws ValidatorException {
+  if (value instanceof String) {
+    String strValue = (String) value;
+    if (!(strValue.equals("ja")
+        && !(strValue.equals("nein")))) {
+      throw new ValidatorException(
+          new FacesMessage("messageText", null));
+    }
+  } else {
+      throw new ValidatorException(
+          new FacesMessage("messageText", null));
+  }
+}
+----
+
+In case of an error, the method throws a `ValidatorException` with an associated `FacesMessage`. 
+It is displayed to the user. 
+The handling of errors and error messages in the form of validation messages is explained in more detail in the section [Message section].
+
+For this method to be called during the validation process, it must be connected to the input component:
+----
+<h:inputText value="#{backingBean.wert}"
+  validator="#{backingBean.yesNoValidate}"/>
+----
+
+If, in addition to a validation method, additional validators with tags are integrated into the component, the validation method always comes last. 
+
+Cross-Component Validation: Some use cases require validation methods that do not just validate the value of a component. 
+The method must be linked to the last component to be validated - only then can the converted and validated values ​​of all other components be accessed. 
+For an example of cross-component validation, see MyGourmet 6 in section [Section:  MyGourmet 6: Validation].
+
+Custom validators can also be implemented as stand-alone classes that must then implement the `javax.faces.validator.Validator` interface. 
+In a page declaration, such validators are integrated with the tag `f:validator` as a child element in an input component. 
+The `validatorId` `attribute` of this tag refers to the identifier under which the validator class is registered in the system. 
+The registration of a validator can also be done with an annotation as with converters in `faces-config.xml` or as of JSF 2.0. 
+Listing <<.registration of a validator with identifier, registration of a validator with identifier>> shows the corresponding fragment of the configuration - is the equivalent annotation.
+
+.registration of a validator with identifier
+[source,xml]
+----
+<validator>
+  <validator-id>at.irian.YesNo</validator-id>
+  <validator-class>
+    at.irian.jsfatwork.YesNoValidator
+  </validator-class>
+</validator>
+----
+
+JSF 2.2: As of JSF 2.2, the element `value` of the annotation @FacesValidator is `optional` and is supplemented with a naming convention. 
+If not specified, JSF uses the class name with a small initial letter as `validatorID`. 
+For our validator class `YesNoValidator` this would be the id `yesNoValidator`.
+
 ==== MyGourmet 6: Validation
+
+MyGourmet 6 extends its predecessor MyGourmet 5 from section [Section:  MyGourmet 5: Conversion]. 
+The focus of this example, as the previous section makes it easy to guess, is on standard and custom validators.
+
+Most of the validation tasks in MyGourmet are handled by bean validation - as we saw in [JSR-303 bean validation section]. 
+Listing <<.MyGourmet 6: Bean Customer with Annotations, MyGourmet 6: Bean Customer with Annotations>> shows all the properties of the class `Customer` with the bean validation annotations, but without the associated getters and setters.
+
+.MyGourmet 6: Bean Customer with Annotations
+[source,java]
+----
+public class Customer {
+  @NotNull
+  private String firstName;
+  @NotNull
+  private String lastName;
+  @NotNull
+  private String email;
+  @NotNull @Min(value = 1000) @Max(value = 99999)
+  private Integer zipCode;
+  @NotNull
+  private String city;
+  @NotNull
+  private String street;
+  @Birthday
+  private Date birthday;
+  private Boolean useCreditCard = Boolean.FALSE;
+  @NotNull
+  private CreditCardType creditCardType;
+  @NotNull
+  private String creditCardNumber;
+  ...
+}
+----
+
+To introduce the use of the JSF default validators, the address zip code in `editCustomer.xhtml` could also be validated to range 1000 through 99999 instead of bean validation using the `f:validateLongRange` tag.
+
+Listing MyGourmet 6: Validating the postcode with default validator shows the corresponding fragment of the page.
+
+[source,xml]
+----
+<h:inputText id="zipCode" size="30" required="true"
+    value="#{customerBean.customer.zipCode}">
+  <f:converter converterId="at.irian.ZipCode"/>
+  <f:validateLongRange minimum="1000" maximum="99999"/>
+</h:inputText>
+----
+
+We also want to show you how the customer's date of birth is validated in the classic way. 
+For this purpose the validator BirthdayValidator (not to be confused with the constraint validator from section [Section: bean validation according to JSR-303] !) Is used, which checks the date for the value range and in the system under the name `at.irian.Birthday` is registered. 
+Listing MyGourmet 6: Date Validator shows the code.
+
+[source,java]
+----
+@FacesValidator(value = BirthdayValidator.VALIDATOR_ID)
+public class BirthdayValidator 
+    implements Validator, Serializable {
+  private static final long serialVersionUID = 1L;
+  public static final String VALIDATOR_ID = "at.irian.Birthday";
+
+  public void validate(FacesContext ctx, UIComponent component,
+      Object value) throws ValidatorException {
+    Date date = (Date)value;
+    if (date.after(new Date())) {
+      FacesMessage msg = new FacesMessage(
+          FacesMessage.SEVERITY_ERROR,
+          "Birthday is in the future.", null);
+      throw new ValidatorException(msg);
+    }
+    Calendar cal = Calendar.getInstance();
+    cal.set(Calendar.YEAR, 1900);
+    cal.set(Calendar.MONTH, 0);
+    cal.set(Calendar.DAY_OF_MONTH, 1);
+    if (date.before(cal.getTime())) {
+      FacesMessage msg = new FacesMessage(
+          FacesMessage.SEVERITY_ERROR,
+          "Birthday is before Jan 1, 1900.", null);
+      throw new ValidatorException(msg);
+    }
+  }
+}
+----
+
+If the user specifies a date outside this range, a ValidatorException is thrown with a corresponding FacesMessage. 
+The inclusion of this custom validator in the page declaration can be seen in Listing MyGourmet 6: Birthdate Validation.
+
+[source,xml]
+----
+<h:inputText id="birthday" size="30"
+    value="#{customerBean.customer.birthday}">
+  <f:convertDateTime pattern="dd.MM.yyyy"/>
+  <f:validator validatorId="at.irian.Birthday"/>
+</h:inputText>
+----
+
+As an example of a cross-component validation with a validation method, the credit card number is made dependent on the card type selected. 
+If card A is selected, the card number must be four characters long, and card B must be five characters long. 
+The extended tags for the type and the card number on the page editCustomer.xhtml shows listing MyGourmet 6: credit card data with validation .
+
+[source,xml]
+----
+<h:selectOneListbox id="ccType"
+    value="#{customerBean.customer.creditCardType}"
+    rendered="#{customerBean.customer.useCreditCard}">
+  <f:selectItems value="#{customerBean.creditCardTypes}"/>
+  <f:event type="javax.faces.event.PostValidateEvent"
+      listener="#{customerBean.postValidateCCType}"/>
+</h:selectOneListbox>
+<h:inputText id="ccNumber"
+    value="#{customerBean.customer.creditCardNumber}"
+    rendered="#{customerBean.customer.useCreditCard}"
+    validator="#{customerBean.validateCreditNumber}"/>
+----
+
+In Listing MyGourmet 6: Credit Card Data with Validation, note that the components are shown or hidden by the rendered attribute, depending on the value of the `useCreditCard` property. 
+Because JSF validates only rendered components, we can use it to control validation.
+
+For validating the credit card number, the method `validateCreditNumber()` of the class `CustomerBean` is responsible. 
+The number entered by the user is passed directly to the method as a `value` `argument`. 
+However, reading the current credit card type requires a little more effort. 
+Easy access to the `useCreditCard` property of the current customer does not always deliver the current value in this case. 
+The reason for this is simple: The property in the model is updated only after the successful validation of all components and still has the old value at the time of calling the validation method. 
+There are several ways to read the current value entered by the user.
+
+On the one hand, the component for the credit card type can be linked with the binding attribute to a property of the backing bean - a process that also includes component binding is called. 
+The binding provides direct access to the component in the validation method. 
+However, if the bean is in the session scope as in our case, component binding can lead to unpleasant side effects because the component is created only once and then placed in the bean. 
+
+JSF offers another very elegant way to read the current credit card type using the system event PostValidateEvent. 
+This event is triggered immediately after validating a component. 
+So we just need to register a listener method for this event with the `f:event` tag (see Listing MyGourmet 6: Credit Card Data with Validation) and then access the component and the current value in this method. 
+Listing MyGourmet 6: System Event Listener for Validation shows the listener method for the PostValidateEvent system event in the CustomerBean class.
+
+[source,java]
+----
+public void postValidateCCType(ComponentSystemEvent ev) {
+  this.creditCardTypeInput = (UIInput)ev.getComponent();
+}
+----
+
+See Listing MyGourmet 6: Credit Card Number Validation Method for the implementation of the validation method in the CustomerBean class. 
+Note the access to the creditCardTypeInput field for reading the current credit card type. 
+Since the order of validation of individual components in JSF is always determined by the component tree, this field is guaranteed to be set before the validation method is called.
+
+[source,java]
+----
+public void validateCreditNumber(FacesContext ctx,
+    UIComponent comp, Object value) throws ValidatorException {
+  CreditCardType ccType =
+      (CreditCardType)creditCardTypeInput.getValue();
+  Boolean useCC = customer.getUseCreditCard();
+  if (useCC != null && useCC && ccType != null) {
+    String ccNumber = (String)value;
+    int length;
+    if (ccType == CreditCardType.CARD_A) length = 4;
+    else length = 5;
+    if (!ccNumber.matches("
+d{" + length + "}")) {
+      String msgText = MessageFormat.format(
+          "Card number must consist of {0} digits.", length);
+      FacesMessage msg = new FacesMessage(
+          FacesMessage.SEVERITY_ERROR, msgText, null);
+      throw new ValidatorException(msg);
+    }
+  }
+}
+----
 
 === Messages
 
 === Internationalization
 
+An important topic in the development of web applications is internationalization. 
+This includes, on the one hand, storing strings independently of the application, so that these strings can be transferred from translators to other languages. 
+On the other hand, depending on the region, there may be a different conversion of dates, numbers, and currency. 
+JSF is equipped to do that and makes locating your application a breeze.
+
 ==== Determination of the localization code
 
+When running a JSF application, it runs for each user with a specific location code, also called `locale`. 
+The `locale` is composed of two statements. 
+On the one hand, the language is set to the code in which the application is to run, on the other hand the establishment of a state takes place 
+There are significant differences in the application of one and the same language in different countries. 
+Sometimes a division is also made in a third level, for example, dialects within the language of a state.
+
+The definition of the supported localization codes of an application takes place in the `faces-config.xml` file. 
+Listing Configuration for internationalization shows an example of a configuration. 
+The configured application supports the languages German, English for the USA, English for Great Britain and French.
+
+[source,xml]
+----
+<application>
+  <locale-config>
+    <default-locale>en</default-locale>
+    <supported-locale>de</supported-locale>
+    <supported-locale>en_US</supported-locale>
+    <supported-locale>en_GB</supported-locale>
+    <supported-locale>fr</supported-locale>
+  </locale-config>
+  <message-bundle>
+    at.irian.jsfatwork.messages
+  </message-bundle>
+</application>
+----
+
+Localization in Request: Which localization code is actually selected is up to the user who connects to the system. 
+The user's browser sends an `HTTP` header with the desired location. 
+If the application supports this localization, it is selected - otherwise the default setting is used.
+
+Localization in the view: If you want to select a locale not dependent on the `HTTP` request to make for example, a German user sitting at a Web client in a French internet café and wants to see in his language. the user interface, of course, the localization code on a page can the indication of the locale attribute is set centrally on the `f:view` tag. 
+This attribute can be dynamically bound to the property of a managed bean. An example:
+----
+<f:view locale="#{userBean.userLocale}">
+    ...
+</f:view>
+----
 ==== Internationalization of JSF Messages
+
+The entry `message-bundle` in the `faces-config.xml` determines where the file for the messages of the application can be found. 
+Therefore, for configuration from Listing Configuration for Internationalization, the following files in the package `at.irian.jsfatwork` are required to cover all the languages ​​specified:
+
+* `messages.properties`
+* `messages_de.properties`
+* `messages_en_US.properties`
+* `messages_en_GB.properties`
+* `messages_fr.properties`
+
+In these files, you can manage the texts for messages that your application generates in custom converters, validators, or even bean methods. 
+Furthermore, the messages used by the system can be overwritten if needed.
+
+Now that the bundles are configured and created, we want to use them. 
+In the example of MyGourmet 6, we generated messages in the custom validation methods in the event of an error. 
+The text is there, however, still specified. 
+To change that, we create a helper method that creates an instance of the `FacesMessage` class with a localized text. 
+Listing Internationalized messages in the backing bean demonstrates this method.
+
+[source,java]
+----
+public static FacesMessage getFacesMessage(
+    FacesContext ctx, FacesMessage.Severity severity,
+    String msgKey, Object... args) {
+  Locale loc = ctx.getViewRoot().getLocale();
+  ResourceBundle bundle = ResourceBundle.getBundle(
+      ctx.getApplication().getMessageBundle(), loc);
+  String msg = bundle.getString(msgKey);
+  if (args != null) {
+    MessageFormat format = new MessageFormat(msg);
+    msg = format.format(args);
+  }
+  return new FacesMessage(severity, msg, null);
+}
+----
+
+The code is simple: The method `getMessageBundle()` returns the name of the bundle - the view root the current locale. 
+With these two pieces of information the concrete bundle is loaded - from this the text for the indicated key is read out. 
+This text will then be used as a summary message when creating the message. 
+The detailed information is not given here.
+
+Messages generated by standard components always provide an overview message and detailed information. 
+In the `.properties` file, therefore, there is an entry with a suffix _detail appended to the key.
+
+If you use Apache MyFaces, you can also use the class Use `org.apache.myfaces.shared_impl.util.MessageUtils` to create localized messages. 
+With this class you also have the advantage that detailed information is automatically read out according to the above-mentioned scheme.
 
 ===== Messages for bean validation
 
+If you create your own constraints for bean validation, you should also use internationalized messages. 
+Bean Validation is a JSF independent system - so the texts are defined elsewhere. 
+Error messages in curly brackets are resolved in the Resource Bundle ValidationMessages . 
+For example, the text {validator.msg} is interpreted as the key for the resource bundle.
+
+By default, the bean validator creates JSF messages in a slightly different format than other JSF validators. 
+While other validators start the error message with the input component label and a colon, the bean validator returns the text that comes back from the bean validation API. 
+This behavior can easily be changed. 
+To do this, you must exchange the message format template of the bean validator in the message bundle of the application. 
+Add the lines from Listing Bean Validator messages. 
+The placeholder {0} indicates the actual error message and {1} the label.
+
+[source,xml]
+----
+javax.faces.validator.BeanValidator.MESSAGE={1}: {0}
+javax.faces.validator.BeanValidator.MESSAGE_detail={1}: {0}
+----
+
+A more detailed description of the internationalization of MyGourmet with examples follows in Section [Section:MyGourmet 7: Internationalization].
+
 ==== Internationalization of application texts
+
+For the other texts in applications (for example, for descriptions or labels), the procedure is somewhat different - since JSF 1.2, there are two different ways to reference a resource bundle.
+
+The first method is the `f:loadBundle` tag, which exposes a resource bundle for use on the same page. 
+This tag should no longer be used as it will make the internationalized data available only from the render response phase.
+
+These problems can be avoided with the newer method. 
+The resource bundle in `faces-config.xml` is referenced with the resource-bundle element in the application section . 
+Listing Internationalization through configuration with resource-bundle shows how the example was implemented earlier with this method, with the advantages that the texts are available in all pages and that they also work with Ajax.
+
+<resource-bundle>
+  <base-name>de.test.resource.text</base-name>
+  <var>text</var>
+</resource-bundle>
+Access to the elements of the resource bundle is identical for both methods and is done via a value expression in the value attribute . An example:
+<h:outputText value="#{text.description}"/>
+For the first part of the value expression, the name of the variable assigned to the .properties file is used and, as an attribute name, the key of the entry in the file. The power hidden in JSF is shown by the ability to use that expression in almost every attribute of every tag, not just the value attribute. 
+For the internationalization of applications, the h: outputFormat tag is of particular importance. The decisive advantage over h: outputTextis the support of message format templates. This makes it possible to define texts with placeholders already in the resource bundle of the application. The position of the placeholders can even be adapted to the respective language - an important step in the direction of maintainability and central internationalization of texts. 
+The following example displays a status message for the customer's profile with parameters:
+<h:outputFormat value="#{msgs.profile_msg}" rendered=
+    "#{customerBean.customer.firstName != null}">
+  <f:param value="#{customerBean.customer.firstName}"/>
+  <f:param value="#{msgs.profile_active}"/>
+</h:outputFormat>
+In the German Resource Bundle profile_msg and profile_active could be defined as follows:
+profile_msg=Ihr Profil ist {1}, {0}.
+profile_active=aktiv
+In the English translation, the following strings could result:
+profile_msg={0}, your profile is {1}.
+profile_active=active
+The adaptation of the example to different languages ​​only takes place in the resource bundle of the application. By using the OutputText component directly, such a flexible approach is impossible. 
+Access from the backing bean: As in the page declaration, the internationalized texts can also be accessed from the backing bean code. Prior to JSF 1.2, there was no specific solution - Java provides the necessary code. In version 1.2 this has changed. Texts embedded with resource-bundle can now be resolved directly with their application name using Application.getResourceBundle () . Listing Internationalized Texts in the Backing Bean shows a helper method to load texts from a resource bundle.
+ public static String getResourceText(FacesContext ctx,
+    String bundleName, String key, Object... args) {
+  String text;
+  try {
+    Application app = ctx.getApplication();
+    ResourceBundle bundle = app.getResourceBundle(
+        ctx, bundleName);
+    text = bundle.getString(key);
+  } catch (MissingResourceException e) {
+    return "???" + key + "???";
+  }
+  if (args != null) {
+    text = MessageFormat.format(text, args);
+  }
+  return text;
+}
+The example MyGourmet 7 in the next section shows the practical use of message and resource bundle.
 
 ==== MyGourmet 7: Internationalization
 
+The example MyGourmet 7 corresponds in functionality exactly to the predecessor example MyGourmet 6 from section [section:  MyGourmet 6 : validation].
+
+The changes relate only to the internationalization of the application.
+
+The first step is to configure the localization in the `faces-config.xml` file. 
+In our case, German is configured as the default value and English as the supported language (Listing MyGourmet 7: Configuration).
+ <application>
+  <locale-config>
+    <default-locale>de</default-locale>
+    <supported-locale>en</supported-locale>
+  </locale-config>
+  <message-bundle>
+    at.irian.jsfatwork.messages
+  </message-bundle>
+  <resource-bundle>
+    <base-name>
+      at.irian.jsfatwork.messages
+    </base-name>
+    <var>msgs</var>
+  </resource-bundle>
+</application>
+The resource bundles are stored in the package at.irian.jsfatwork under the name of messages - a bundle with the name messages_de for the German language and a bundle with the name messages_en for the English language. By configuring the resource-bundle element, the bundle named msgs can be used in all pages of the application in EL expressions. In Listing Extract from the German Bundle of MyGourmet you can find an excerpt from the bundle messages_de.properties for the German language.
+ title_main=MyGourmet
+title_show_customer=Kunde
+title_edit_customer=Kunde bearbeiten
+first_name=Vorname
+last_name=Nachname
+email=E-Mail-Adresse
+birthday=Geburtstag
+use_credit_card=Kreditkarte angeben
+credit_card_type=Kreditkarten-Typ
+credit_card_number=Kreditkarten-Nummer
+profile_msg=Ihr Profil ist {1}, {0}.
+profile_active=aktiv
+credit_card_type_CARD_A=Card A
+credit_card_type_CARD_B=Card B
+validateBirthday.MAXIMUM=Geburtsdatum liegt in der Zukunft.
+validateBirthday.MINIMUM=Geburtsdatum ist vor dem 1.1.1900.
+validateCreditCardNumber.NUMBER=Kreditkartennummer 
+    muss aus {0} Ziffern bestehen.
+javax.faces.validator.BeanValidator.MESSAGE={1}: {0}
+The access to the localized texts should be demonstrated using the first name of the customer. All other texts in the page are treated analogously. Here is the localized label for the first name:
+<h:outputLabel for="firstName" value="#{msgs.first_name}:"/>
+It references an EL expression in the value attribute, which consists of the name of the bundle and the key for the first name. 
+In some cases it is necessary to access localized resources directly in Java. For this purpose, the class GuiUtil combines the method for reading a localized text from Listing Internationalized Texts in the Backing Bean and the method for creating a localized message from Listing Internationalized Messages in the Backing Bean . In MyGourmet comes GuiUtil in CustomerBean used. listing Use of GuiUtil in MyGourmet exemplifies two methods from this managed bean.
+ public void validateCreditNumber(FacesContext ctx,
+    UIComponent component,
+    Object value) throws ValidatorException {
+  CreditCardType ccType =
+      (CreditCardType)creditCardTypeInput.getValue();
+  Boolean useCC = customer.getUseCreditCard();
+  if (useCC != null && useCC && ccType != null) {
+    String ccNumber = (String)value;
+    int length;
+    if (ccType == CreditCardType.CARD_A) length = 4;
+    else length = 5;
+    if (!ccNumber.matches("
+d{" + length + "}")) {
+      FacesMessage msg = GuiUtil.getFacesMessage(
+          ctx, FacesMessage.SEVERITY_ERROR,
+          "validateCreditCardNumber.NUMBER", length);
+      throw new ValidatorException(msg);
+    }
+  }
+}
+
+private String getCCTypeLabel(CreditCardType type) {
+  FacesContext c = FacesContext.getCurrentInstance();
+  String key = "credit_card_type_" + type.toString();
+  return GuiUtil.getResourceText(c, "msgs", key);
+}
+The method validateCreditNumber is already known from MyGourmet 6 : In contrast to the previous version, a localized message is created in case of an error. The key of the text used is validateCreditCardNumber.NUMBER . A look at Listing excerpt from the German Bundle of MyGourmet shows that this text is a message format template with a placeholder. When creating the message, this placeholder will be replaced with the length of the credit card number. 
+The getCCTypeLabel method returns the localized name for fields of the Enum CreditCardType .
+The bean validation resource bundles are filed under the name ValidationMessages - a bundle named ValidationMessages_de for the German language and a bundle named ValidationMessages_en for the English language.

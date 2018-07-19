@@ -849,15 +849,534 @@ The example in Listing <<.`f:selectItem` in action, `f:selectItem` in action>> s
 <f:selectItem value="#{customerBean.selectMexican}"/>
 ----
 
-In this example, `itemDisabled` is determined by a Unified-EL expression, which is true if the user has visited the page less than 5 times.
+In this example, `itemDisabled` is determined by a `Unified-EL` expression, which is true if the user has visited the page less than 5 times.
 
 ===== Several options with `f:selectItems`
+
+The `f:selectItems` tag allows you to define multiple selections for a selection component. 
+The list of options is specified in the `value` attribute as a `Unified-EL` expression. 
+In JSF versions prior to 2.0, this value expression must return a value of type `SelectItem`, `SelectItem[]`, `Collection` (from `SelectItem` instances), or `Map`. 
+For a `Map`, the `key` is used as the `itemLabel` and the `value` as the `itemValue`. 
+As of JSF 2.0, a list of POJOs (Plain Old Java Objects) is enough - but more on that later.
+
+If individual values ​​are to be displayed in addition to a dynamic selection list, they can be used together with `f:selectItem`. 
+For example, this combination can add a blank element to a list of values. 
+Listing <<.`f:selectItems` in Action, `f:selectItems` in Action>> shows an example of choosing `preferredCategories` in MyGourmet with a combination of `f:selectItems` and `f:selectItem` tags.
+
+.`f:selectItems` in Action
+[source,xhtml]
+----
+<h:selectManyListbox id="prefCat" value=
+    "#{customerBean.customer.preferredCategories}">
+  <f:selectItems value="#{customerBean.categories}"/>
+  <f:selectItem itemValue="CN" itemLabel="Chinese"/>
+</h:selectManyListbox>
+----
+
+Excerpts from the managed bean for this example can be found in Listing <<.Extract from Managed Bean for `UISelectItems`, Extract from Managed Bean for `UISelectItems`>>.
+
+.Extract from Managed Bean for `UISelectItems`
+[source,java]
+----
+public List<SelectItem> getCategories() {
+  if (categories == null) {
+    categories = new ArrayList<SelectItem>();
+    categories.add(new SelectItem("IT", "Italian"));
+    categories.add(new SelectItem("AT", "Austrian"));
+  }
+  return categories;
+}
+----
+
+Listing <<.HTML code of the `UISelectItem` and `UISelectItems` component, HTML code of the `UISelectItem` and `UISelectItems` component>> displays the generated HTML code.
+
+.HTML code of the `UISelectItem` and `UISelectItems` component
+[source,html]
+----
+<select id="form:prefCat" name="form:prefCat"
+    multiple="multiple" size="5">
+  <option value="IT">Italian</option>
+  <option value="AT">Austrian</option>
+  <option value="CN">Chinese</option>
+</select>
+----
+
+Starting with version 2.0, JSF allows a number of new attributes for `f:selectItems` to be used to generate the selection objects similar to the iteration of a `Data-Table` via a `List`. 
+The creation of `SelectItem` instances in the `Managed-Bean` is then no longer necessary.
+
+As with `h:dataTable`, the `var` attribute defines a `name` over which the current element is available when iterating. 
+This name is then used in the `itemLabel` and `itemValue` attributes in value expressions to set the `value` and `label` of a single option.
+
+Let's look at a short example. 
+Listing <<.`f:selectItems` with attribute `var`, `f:selectItems` with attribute `var`>> shows the modified tags for the declaration of the selection list.
+
+.`f:selectItems` with attribute `var`
+[source,xhtml]
+----
+<h:selectManyListbox id="prefCat" size="5"
+    value="#{customerBean.customer.preferredCategories}">
+  <f:selectItems value="#{customerBean.categories}"
+      var="cat" itemLabel="#{cat.name}" itemValue="#{cat.abbr}"/>
+</h:selectManyListbox>
+----
+
+In Figure <<.Data flow at `f:selectItems` with attribute `var`, Data flow at `f:selectItems` with attribute `var`>>, you can see what the associated data flow looks like. 
+The list referenced in the `value` attribute contains `five` beans of type `Category` - with the `name` and `abbr` properties. 
+While going through the list the current bean is under the in `var` distinguished name `cat` stored. 
+This creates an instance of the `SelectItem` class - with `cat.name` as the `label` and `cat.abbr` as the `value`. 
+These Select-Items then represent the possible options of the selection list.
+
+====
+.Data flow at `f:selectItems` with attribute `var`
+image::images/selectitems.jpg[]
+====
+
+Object groups: When using `h:selectItems`, individual elements of the list can also be grouped. 
+To do this, JSF provides the `SelectItem`- derived class `SelectItemGroup`. 
+The changes to the `Managed-Bean` to use collections are marginal (Listing extract from `Managed-Bean` for collections).
+
+[source,java]
+----
+public List<SelectItem> getCategories() {
+  if (categories == null) {
+    categories = new ArrayList<SelectItem>();
+    SelectItem[] euItems = {
+      new SelectItem("IT", "Italian"),
+      new SelectItem("AT", "Austrian")
+    };
+    SelectItemGroup euGroup = new SelectItemGroup(
+        "Europe", null, true, euItems);
+    categories.add(euGroup);
+    categories.add(new SelectItem("MX", "Mexican"));
+  }
+  return categories;
+}
+----
+
+The associated HTML code is shown in Listing <<.HTML code of the `UISelectItem` and `UISelectItems` component, HTML code of the `UISelectItem` and `UISelectItems` component>> with grouping.
+
+.HTML code of the `UISelectItem` and `UISelectItems` component, HTML code of the `UISelectItem` and `UISelectItems` component
+[source,html]
+----
+<select id="form:prefCat" name="form:prefCat"
+    multiple="multiple" size="5">
+  <optgroup label="Europe">
+    <option value="IT">Italian</option>
+    <option value="AT">Austrian</option>
+  </optgroup>
+  <option value="MX">Mexican</option>
+</select>
+----
+
 === Panel Components
+
+Grouping components in a container uses the `UIPanel` component. 
+Actions such as showing or hiding all components can be performed together for components nested in a panel tag.
+
+The HTML tag library provides the `h:panelGrid` tags to create a customizable `header` and `footer` `table` and `h:panelGroup` for easy grouping of items. 
+
+Elements grouped with `h:panelGroup` are rendered either as an `inline element` or, as of JSF 1.2, optionally as a `block element`. 
+A `block element` is always rendered by the browser in a new line, an `inline element` does not create a line break unless the line is over. 
+The output method is controlled with the attribute `layout`: The value `block` results in an output as `<div />` element, all other values output a `<span />` element. 
+
+An `h:panelGrid` element creates a table and arranges child components in the rows and columns. 
+This requires the number of columns with the attribute `columns` to be defined. 
+This places the first element contained in the first row in the first column, the second element in the first row in the second column, and so on up to the column defined with columns. 
+The subsequent element is then placed in the second row in the first column and the process continues according to the same pattern (Listing <<.The panel grid component `h:panelGrid`, The panel grid component `h:panelGrid`>>).
+
+.The panel grid component `h:panelGrid`
+[source,xhtml]
+----
+<h:panelGrid columns="3" styleClass="table-background"
+    width="40" columnClasses="table-odd-col, table-even-col"
+    footerClass="table-footer" headerClass="page-header">
+  <f:facet name="header">
+    <h:outputText value="Kopfzeile"/>
+  </f:facet>
+  <h:outputText value="(1,1)"/>
+  <h:outputText value="(1,2)"/>
+  <h:outputText value="(1,3)"/>
+  <h:outputText value="(2,1)"/>
+  <h:outputText value="(2,2)"/>
+  <h:outputText value="(2,3)"/>
+  <f:facet name="footer">
+    <h:outputText value="Fußzeile"/>
+  </f:facet>
+</h:panelGrid>
+----
+
+The number of child components in a `h:panelGrid` component should always be a multiple of the defined number of columns. 
+If this does not work out or if an `empty` cell is needed, an empty `h:panelGroup` element can be inserted. 
+If you want to display multiple components in a cell of the table, you can also group them with a `h:panelGroup` element.
+
+`h:panelGrid` can be expanded with `facets` by a `header` and a `footer`. 
+For this one is simply `Facet` with a distinguished name - `header` for `header` and `footer` added as a child element - the footers.
+
+Design: The layout of each table part can be determined by including CSS stylesheet classes in the `columnClasses`, `footerClass`, `headerClass`, and `rowClasses` attributes. 
+If `headerClass` specified, this class is on the Header-Facet applied, the same applies to `footerClass` and a Footer-Facet.
+
+[source,html]
+----
+<table class="table-background" width="40">
+  <thead>
+   <tr>
+     <th class="page-header" colspan="3" scope="colgroup">
+     Kopfzeile</th>
+   </tr>
+  </thead>
+  <tfoot>
+   <tr>
+     <td class="table-footer" colspan="3">Fußzeile</td>
+   </tr>
+  </tfoot>
+  <tbody>
+   <tr>
+     <td class="table-odd-col">(1,1)</td>
+     <td class="table-even-col">(1,2)</td>
+     <td class="table-odd-col">(1,3)</td>
+   </tr>
+   <tr>
+     <td class="table-odd-col">(2,1)</td>
+     <td class="table-even-col">(2,2)</td>
+     <td class="table-odd-col">(2,3)</td>
+   </tr>
+  </tbody>
+</table>
+----
+
 === `UIViewRoot`
+
+The component `UIViewRoot` maps the root element of the component tree. 
+Through the `UIViewRoot` component, all elements of the tree can be accessed, but it is not displayed. 
+The tag of the component is located in the core tag library and is integrated into a page declaration with `f:view`.
+
+`f:view` provides some useful attributes for working with JSF on a daily basis. 
+The `locale` attribute can be used to set the localization for the component tree and the page rendered from it. 
+Valid values ​​for `locale` are `Strings` that contain a localization code (such as "de" or "en"), or instances of the class `java.util.Locale`. 
+In JSF 1.2 two further interesting attributes have been added: `beforePhase` and `afterPhase` offer the possibility to include `Phase-Listeners` for the page with a `Method-Expression`. 
+These listeners are called before or after each phase (except for the `Restore-View` phase). 
+The method must have the following signature:
+
+----
+void phaseListener(javax.faces.event.PhaseEvent ev)
+----
+
+All that remains to be done is why phase listeners registered with the `beforePhase` and `afterPhase` attributes are not executed for the first phase: There is no component tree at the beginning of the first phase. 
+Therefore, `UIViewRoot` can not trigger events.
+
 === message components
+
+When executing a request, for example, messages (messages) may be created during validation, conversion or event handling. 
+Messages become instances of the `FacesMessage` class in JSF. 
+Using the `h:message` or `h:messages` component, these messages can be presented to the user. 
+Each message has a severity level (there are levels `Info`, `Warn`, `Error`, `Fatal`) and descriptive information. 
+Details of the JSF messaging system are covered in the Section: [Messaging section]. 
+
+Styling of Messages: By incorporating CSS classes or CSS styles, it is possible to display messages differently depending on their severity. 
+For this, the attributes `infoClass`, `infoStyle`, `warnClass` and `warnStyle`, `errorClass`, `errorStyle`, `fatalClass` and `fatalStyle` with the reference to the displayed CSS style or the CSS class to be displayed are used.
+
+A message - `h:message`: To display only a single `FacesMessage` for a particular component, the `h:message` Tag used. 
+If multiple messages are generated for the component, only the first one is displayed with this component. 
+The attribute for the `id` of that component is referenced for the first message to be displayed. 
+In Listing <<.`h:message` in action, `h:message` in action>>, the input field for the `birthday` from MyGourmet is specified with an `h:message` tag for the component.
+
+.`h:message` in action
+[source,xhtml]
+----
+<h:inputText id="birthday" size="30"
+    value="#{customerBean.customer.birthday}">
+  <f:convertDateTime pattern="dd.MM.yyyy"/>
+  <f:validator validatorId="at.irian.Birthday"/>
+</h:inputText>
+<h:message for="birthday" showDetail="true" showSummary="true"
+   warnStyle="color: green" infoStyle="color: blue"
+   errorStyle="color: red"/>
+----
+
+If the user enters a date of birth in the future, a validation error will be thrown and a message will be generated in the output with the CSS style "color: red" (the severity of any standard validation message is error). 
+
+If the `showDetail` attribute of the message component is set to `true`, the detailed error information is displayed; if `showSummary` is set to `true`, a summary of the error information is displayed. 
+If both attributes have the value `true`, the summary and the detailed information are output.
+
+All Messages - `h:messages`: Multiple messages can be viewed using the `h:messages` component. 
+If the `globalOnly` attribute is set to `false`, all messages are displayed; if set to `true`, only messages that do not belong to a component are output (typically messages triggered by `Event-Listener` or `Action-Methods`) were). 
+With `layout` the display type of the message is determined. 
+With layout = "list", the messages are output one by one in an HTML list element, with layout = "table" the individual messages are displayed in table rows.
+
+Each page with messages element: When developing a web application, do not forget to include a message output element in the page to instantly recognize validation and conversion errors. 
+Typical Impact: Navigation fails when converting or validating fails. 
+JSF will support you from version 2.0 onwards and automatically inserts a `h:messages` component into the view if none exists - but only if the `Project-Stage` is set to `Development` (see section [Section: Project-Stage])
+
 === Components for `GET` navigation
+
+The component `UIOutcomeTarget` has been included in the standard with version 2.0 of JSF and forms a central aspect of the extended support of `GET` requests and bookmarks. 
+The task of this component is to create a `hyperlink` that, when activated, makes a simple `GET` request, but still uses the navigation mechanism of JSF.
+
+The HTML tag library has tags for two occurrences of this component that differ only in the type of rendered output:
+
+* `h:link` is rendered as a link.
+* `h:button` is rendered as a button.
+
+Both components have the attributes `value` and `outcome`, with which the `hyperlink` is defined. 
+The value of `value` appears in the rendered output as the text of the link or button, depending on the Tag. 
+Crucial to the target of the link is the value of the attribute, which is passed to the navigation handler when the component is rendered. 
+This tries to find a navigation case where `from-outcome` matches the value of `outcome`. 
+If the search is `unsuccessful`, the value of `outcome` is interpreted directly as a `View-ID`.
+
+Listing <<.`h:link` in action, `h:link` in action>> shows two examples of `h:link` with a direct link to the view `/showCustomer.xhtml`. 
+In contrast to "classic" navigation, the goal of the navigation is already determined here in the `Render-Response` phase, not just in the `Invoke-Application-Phase` in post back. 
+With `f:param` it is possible to attach parameters to the link, as the second tag shows.
+
+[source,xhtml]
+----
+<h:link outcome="/showCustomer.xhtml"
+    value="#{msgs.menu_show_customer}"/>
+<h:link outcome="/showCustomer.xhtml"
+    value="#{msgs.menu_show_customer}">
+  <f:param name="id" value="1234"/>
+</h:link>
+----
+
+Unlike the command components, `h:link` and `h:button` need not be embedded in an `h:form` tag. 
+For more information about support for bookmarks and `GET` requests, see [Section: Bookmarks] and `GET` Requests in JSF.
+
 === Resource-related components
+
+With JSF 2.0, a standardized method of managing resources such as `stylesheets` or `scripts` has become standard. 
+At this point, we only want to give a brief overview and not go into detail about resource management. 
+A more detailed description follows in Chapter [Chapter: Resource Management].
+
+The following new tags of the HTML tag library allow the comfortable insertion of resources into the view:
+
+* `h:outputScript` outputs a script resource.
+* `h:outputStylesheet` outputs a stylesheet resource.
+
+In the simplest case, resources are identified by their file name. 
+Optionally, they can also be grouped in libraries that also have a name. 
+In the above two tags these values ​​can be entered directly into the attributes `name` and `library`.
+
+For example, the following tag inserts the `main.css` stylesheet from the `styles` `library` into the view:
+
+----
+<h:outputStylesheet name="main.css" library="styles"/>
+----
+
+Internally, JSF creates the file name `/styles/main.css` from there and then tries to find this file in the following order:
+* `/resources` in the root of the application
+* `/META-INF/resources` in jar files in `classpath`
+
+In addition, JSF allows the positioning of individual resources in defined areas of a view, such as the `head` or the `body`. 
+For JSF to correctly identify these areas, there are the following new components in the HTML Tag Library:
+
+* `h:head` encloses the head area of ​​the page.
+* `h:body` encloses the body area of ​​the page.
+
+When integrating a script resource with `h:outputScript`, the desired area can be specified with the attribute `target`. 
+The allowed values ​​are `head`, `body` and `form`.
+
+If you use resources in your application, you should use `h:head` and `h:body` in each view. 
+Otherwise, the correct loading of resources is not guaranteed. 
+This also applies if you are using a component library that manages its resources with JSF. 
+In this case, however, it may be that the library offers its own components for this purpose.
+
 === Behavioral Interfaces
+
+In JSF, there are several interfaces that define a particular behavior of components. 
+When introducing the standard components, you may have noticed that a number of them have similar patterns of behavior. 
+For example, there are some components that have one value, others can even change that value, and still others trigger an action event when a user activates it.
+
+As a user of the component, in addition to the behavior, you can also read from the interfaces implemented by the component which objects you can attach to the component. 
+For example, a `Validator` is only allowed for components whose value can be changed.
+
+Here is a selection of the most important behavioral interfaces:
+
+* ActionSource2 +
+The interface `ActionSource2` is the "successor" of `ActionSource` from JSF 1.2, which became necessary due to the conversion of method bindings to method expressions.
+
+Components that implement this interface are sources of action events and allow the addition of `Action-Listener`. +
+For example, `ActionSource2` is implemented by `UIComponent`.
+
+* ValueHolder
+
+Components that implement this interface have a `value` that can be set via a `Value-Expression`, but also locally, and support converters. 
+`ValueHolder` is implemented by `UIOutput`, for example.
+
+* EditableValueHolder
+This interface is derived from `ValueHolder` and extends its behavior. 
+Components that implement this interface allow editing the value and appending validators. 
+They also trigger `Value-Change-Events` when the value changes, allowing the user to react with `Value-Change-Listeners`. 
+`EditableValueHolder` is implemented by `UIInput`, for example.
+
 === MyGourmet 8: Standard Components
+
+MyGourmet 8 summarizes all the changes from the previous sections on JSF standard components. 
+The individual innovations have already been explained there. 
+Here only the complete example should be presented. 
+In the browser, the page `editCustomer.xhtml` looks with the new fields as shown in Figure <<.MyGourmet 8: View in Browser, MyGourmet 8: View in Browser>>.
+
+.MyGourmet 8: View in Browser
+====
+image::images/mygourmet08-editcustomer.jpg[]
+====
+
+The `showCustomer.xhtml` page displays the previously entered data. 
+Worth mentioning here is the output of the list of preferred categories and the values ​​of the other selection fields. 
+Instead of iterating over the selected categories in the view, the `preferredCategoriesString` property of the bean `customerBean` is used in the output. 
+The structure of the string to be displayed is moved to the backing bean - the logic is thus defined at a central location and the page definition remains slim. 
+In a similar way, the selected gender is output. 
+In the model, the `gender` is stored as a single character - the property `selectedGender` the output is used in the backing bean. 
+Internally, the character is converted into a readable string.
+
+The corresponding methods of the class `CustomerBean` can be found in Listing <<.MyGourmet 8: Extract of the class CustomerBean, MyGourmet 8: Extract of the class CustomerBean>>.
+
+.MyGourmet 8: Extract of the class CustomerBean
+[source,java]
+----
+public String getPreferredCategoriesString() {
+  StringBuilder categories = new StringBuilder();
+  List<String> cats = customer.getPreferredCategories();
+  if (cats != null) {
+    for (String cat : prefCats) {
+      if (categories.length() > 0) {
+        categories.append(", ");
+      }
+      categories.append(getCategoryLabel(cat));
+    }
+  }
+  return categories.toString();
+}
+
+public String getSelectedGender() {
+  return customer.getGender() != null
+      ? getGenderLabel(customer.getGender()) : null;
+}
+
+private String getCategoryLabel(String category) {
+  FacesContext c = FacesContext.getCurrentInstance();
+  return GuiUtil.getResourceText(
+      c, "msgs", "category_" + category);
+}
+
+private String getGenderLabel(char gender) {
+  FacesContext c = FacesContext.getCurrentInstance();
+  return GuiUtil.getResourceText(
+      c, "msgs", "gender_" + gender);
+}
+----
+
+The output of the selected gender can alternatively be made via a map with the gender as the key and the string as the value. 
+In the page, this map is used as key in an EL expression with the customer's gender:
+
+[source,xhtml]
+----
+#{customerBean.genderMap[
+    customerBean.customer.gender]}
+----
+
+This completes the example of MyGourmet 8. 
+This is followed directly by another example, which is dedicated to the standard component `UIData` and the switching between list view and detail view.
+
 === MyGourmet 9: `UIData` and detail view
 
+MyGourmet 9 demonstrates the use of the standard component `UIData` and the switching between list view and detail view. 
+To do this, we expand the customer's data with a list of addresses. 
+So that this address data does not have to be entered with every test run, the previous order of the pages is reversed. 
+The home page is now `showCustomer.xhtml` with the list of addresses. 
+The data of the customer remain editable and the individual addresses can be edited and deleted. 
+In the browser, the pages then look like in Figure <<.MyGourmet 9: `showCustomer.xhtml` in Browser, MyGourmet 9: `showCustomer.xhtml` in Browser>> and <<.MyGourmet 9: `editAddress.xhtml` in Browser, MyGourmet 9: `editAddress.xhtml` in Browser>>.
+
+====
+.MyGourmet 9: `showCustomer.xhtml` in Browser
+image::images/mygourmet09-showcustomer.jpg[]
+====
+
+====
+.MyGourmet 9: `editAddress.xhtml` in Browser
+image::images/mygourmet09-editaddress.jpg[]
+====
+
+A section of `showPersons.xhtml` with the additional `h:commandLink` tags for navigating the detail pages and deleting an address can be found in Listing <<.MyGourmet 9: Address data in `showCustomer.xhtml`, MyGourmet 9: Address data in `showCustomer.xhtml`>>.
+
+.MyGourmet 9: Address data in `showCustomer.xhtml`
+[source,xhtml]
+----
+<h:dataTable var="address"
+    value="#{customerBean.customer.addresses}">
+  <h:column>
+    <f:facet name="header">
+      <h:outputText value="#{msgs.zip_code}"/>
+    </f:facet>
+    <h:outputText value="#{address.zipCode}"/>
+  </h:column>
+  <h:column>
+    <f:facet name="header">
+      <h:outputText value="#{msgs.city}"/>
+    </f:facet>
+    <h:outputText value="#{address.city}"/>
+  </h:column>
+  <h:column>
+    <f:facet name="header">
+      <h:outputText value="#{msgs.street}"/>
+    </f:facet>
+    <h:outputText value="#{address.street}"/>
+  </h:column>
+  <h:column>
+    <h:commandLink value="#{msgs.edit}"
+      action="#{addressBean.edit(address)}"/>
+     
+    <h:commandLink value="#{msgs.delete}"
+      action="#{customerBean.deleteAddress(address)}"/>
+  </h:column>
+</h:dataTable>
+----
+
+
+The class `Customer` is extended by the property `addresses`. 
+The list consists of instances of the class `Address` with the properties `zipCode`, `city`, `street` and `country`. 
+For simplicity, the list is initialized with two elements if it is empty. 
+Listing <<.MyGourmet 9: Address data in Customer, MyGourmet 9: Address data in Customer>> shows the corresponding code of the class `Customer`.
+
+.MyGourmet 9: Address data in Customer
+[source,java]
+----
+private List<Address> addresses =
+    new ArrayList<Address>();
+public List<Address> getAddresses() {
+  if (addresses.size() == 0) {
+    addresses.add(new Address(
+        1010, "Wien", "Stephansplatz 1", "Austria"));
+    addresses.add(new Address(
+        1040, "Wien", "Karlsplatz 1", "Austria"));
+  }
+  return addresses;
+}
+public void setAddresses(List<Address> addresses) {
+  this.addresses = addresses;
+}
+----
+
+The list of addresses can thus already be output. 
+But how do we get from the overview page to the detail page, and also with the right data? 
+The source text of `showCustomer.xhtml` shown above already reveals the complete trick. 
+The key point is the use of a `Method-Expression` with one parameter, which enables the new unified EL. 
+To trigger navigation to the details page, the action attribute of the `h:commandLink` element is set to #{addressBean.edit(address)}.
+
+Let's take a look at the deletion of an address. 
+We are also relying on the new unified EL back and use a `Method-Expression` with a parameter. 
+The `h:commandLink` tag for deleting an address is shown in Listing <<.MyGourmet 9: Address data in `showCustomer.xhtml`, MyGourmet 9: Address data in `showCustomer.xhtml`>>. 
+The `Method-Expression` in the `action` attribute transfers the address to be deleted as a `parameter` to the method. 
+This gives us access to the address directly in the method, which was not so easy so far. .
+The code of the action method is shown in Listing <<.MyGourmet 9: Action method for deleting an address, MyGourmet 9: Action method for deleting an address>>.
+
+.MyGourmet 9: Action method for deleting an address
+[source,java]
+----
+public String deleteAddress(Address address) {
+  customer.getAddresses().remove(address);
+  return null;
+}
+----
+
+The new version of Unified EL is part of Java EE 6 and comes with all servers supporting Servlet 3.0 and JSP 2.2 (including Tomcat 7 or Jetty 8). 
+If you use an older server, you still do not have to do without the most important features of the new Unified EL. 
+Subsec Configuration of the Unified EL section shows how to use JBoss' alternative EL implementation.
