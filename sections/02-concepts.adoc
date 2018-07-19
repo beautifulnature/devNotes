@@ -1577,6 +1577,58 @@ d{" + length + "}")) {
 
 === Messages
 
+The term message in JSF refers to an instance of the class `javax.faces.application.FacesMessage`, which is used internally for messages of all kinds. 
+Messages are generated during the execution of the lifecycle or by the application and inserted in a queue in the `Faces-Context`. 
+If there are any `h:messages` or `h:message` components on the page, the messages are rendered.
+
+An example of using messages in the JSF lifecycle: If an error occurs during conversion or validation, the affected component creates a message and declares it invalid. 
+In this case, execution of the lifecycle after conversion and validation jumps directly to the render-response phase and the page is redisplayed with the error messages. 
+
+A message can have an overview message and detailed information. 
+But messages do not always have to be error messages. 
+JSF defines the following severities for FacesMessage instances:
+
+* SEVERITY_FATAL
+* SEVERITY_ERROR
+* SEVERITY_WARN
+* SEVERITY_INFO (default value )
+
+In MyGourmet 6, we used messages in the custom converters or validators. 
+Here's an example of the code that creates an error message for a birthdate in the future:
+
+[source,java]
+----
+if (date.after(new Date())) {
+  FacesMessage msg = new FacesMessage(
+      FacesMessage.SEVERITY_ERROR,
+      "Birthday is in the future.", null);
+  throw new ValidatorException(msg);
+}
+----
+
+However, messages can also be added when processing the application logic by calling the FacesContext.addMessage() method. 
+Global and Local Messages: In the example above, the message is passed to the constructor. 
+This is a local message. 
+The message is connected directly to the affected component when the exception is caught in JSF. 
+Where does that matter? 
+We have already discussed this with the message components themselves - there are two tags for the output of the messages : One is the h: messagesTag that displays all messages, both component and global messages, the other is the <h: message for = "componentId" /> tag, which represents only the messages of a particular component. 
+The first parameter of the addMessage () method can therefore be used to influence in which message areas the message will appear. 
+
+The tags h: messages and h: message have the attributes show-summary and showDetail, These attributes can be used to set whether the detailed information or the overview message of the message is displayed. 
+Since version 1.2 of JSF, there are additionally the attributes converterMessage , requiredMessage and validatorMessage for input components . 
+These can be used to override specific error messages of individual components with user-defined character strings. 
+The names are self-explanatory. 
+Also, since JSF 1.2, there is a label attribute for input components whose value is used for error messages instead of IDs. 
+
+When working with JSF, it makes sense to use a h: messagesTag on the side. 
+If an error occurs during the conversion and validation of a page, the model is not changed and the application logic is not executed - so it is not possible to navigate to a new page. 
+Without the h: messages tag, however, the occurrence of errors is incomprehensible to users (and of course also to application developers). 
+Starting with JSF 2.0, an h: messages component will automatically be added to every page if it does not already exist - but only if the project stage is set to Development (as shown in Section Section: Project Stage ). 
+In JSF versions prior to 2.0, you must use the h: messagesAlways install the tag yourself in the page. 
+The text of the message is given in the example above directly in English. 
+However, messages displayed to the user should be internationalized in any case. 
+Section [Internationalization section] shows how this works.
+
 === Internationalization
 
 An important topic in the development of web applications is internationalization. 
@@ -1704,28 +1756,58 @@ These problems can be avoided with the newer method.
 The resource bundle in `faces-config.xml` is referenced with the resource-bundle element in the application section . 
 Listing Internationalization through configuration with resource-bundle shows how the example was implemented earlier with this method, with the advantages that the texts are available in all pages and that they also work with Ajax.
 
+----
 <resource-bundle>
   <base-name>de.test.resource.text</base-name>
   <var>text</var>
 </resource-bundle>
-Access to the elements of the resource bundle is identical for both methods and is done via a value expression in the value attribute . An example:
+----
+
+Access to the elements of the resource bundle is identical for both methods and is done via a value expression in the `value` attribute. 
+An example:
+----
 <h:outputText value="#{text.description}"/>
-For the first part of the value expression, the name of the variable assigned to the .properties file is used and, as an attribute name, the key of the entry in the file. The power hidden in JSF is shown by the ability to use that expression in almost every attribute of every tag, not just the value attribute. 
-For the internationalization of applications, the h: outputFormat tag is of particular importance. The decisive advantage over h: outputTextis the support of message format templates. This makes it possible to define texts with placeholders already in the resource bundle of the application. The position of the placeholders can even be adapted to the respective language - an important step in the direction of maintainability and central internationalization of texts. 
+----
+For the first part of the value expression, the name of the variable assigned to the `.properties` file is used and, as an attribute name, the key of the entry in the file. 
+The power hidden in JSF is shown by the ability to use that expression in almost every attribute of every tag, not just the value attribute. 
+
+For the internationalization of applications, the `h:outputFormat` tag is of particular importance. 
+The decisive advantage over `h:outputTexts` the support of message format templates. 
+This makes it possible to define texts with placeholders already in the resource bundle of the application. 
+The position of the placeholders can even be adapted to the respective language - an important step in the direction of maintainability and central internationalization of texts.
+
 The following example displays a status message for the customer's profile with parameters:
+
+----
 <h:outputFormat value="#{msgs.profile_msg}" rendered=
     "#{customerBean.customer.firstName != null}">
   <f:param value="#{customerBean.customer.firstName}"/>
   <f:param value="#{msgs.profile_active}"/>
 </h:outputFormat>
-In the German Resource Bundle profile_msg and profile_active could be defined as follows:
+----
+
+In the German Resource Bundle `profile_msg` and `profile_active` could be defined as follows:
+
+----
 profile_msg=Ihr Profil ist {1}, {0}.
 profile_active=aktiv
+----
 In the English translation, the following strings could result:
+----
 profile_msg={0}, your profile is {1}.
 profile_active=active
-The adaptation of the example to different languages ​​only takes place in the resource bundle of the application. By using the OutputText component directly, such a flexible approach is impossible. 
-Access from the backing bean: As in the page declaration, the internationalized texts can also be accessed from the backing bean code. Prior to JSF 1.2, there was no specific solution - Java provides the necessary code. In version 1.2 this has changed. Texts embedded with resource-bundle can now be resolved directly with their application name using Application.getResourceBundle () . Listing Internationalized Texts in the Backing Bean shows a helper method to load texts from a resource bundle.
+----
+The adaptation of the example to different languages ​​only takes place in the resource bundle of the application. 
+By using the OutputText component directly, such a flexible approach is impossible.
+
+Access from the backing bean: As in the page declaration, the internationalized texts can also be accessed from the backing bean code. .
+Prior to JSF 1.2, there was no specific solution - Java provides the necessary code. 
+In version 1.2 this has changed. 
+Texts embedded with resource-bundle can now be resolved directly with their application name using `Application.getResourceBundle()`. 
+Listing Internationalized Texts in the Backing Bean shows a helper method to load texts from a resource bundle.
+
+[source,java]
+----
  public static String getResourceText(FacesContext ctx,
     String bundleName, String key, Object... args) {
   String text;
@@ -1742,16 +1824,20 @@ Access from the backing bean: As in the page declaration, the internationalized 
   }
   return text;
 }
+----
 The example MyGourmet 7 in the next section shows the practical use of message and resource bundle.
 
 ==== MyGourmet 7: Internationalization
 
-The example MyGourmet 7 corresponds in functionality exactly to the predecessor example MyGourmet 6 from section [section:  MyGourmet 6 : validation].
-
+The example MyGourmet 7 corresponds in functionality exactly to the predecessor example MyGourmet 6 from section [section: MyGourmet 6: Validation].
 The changes relate only to the internationalization of the application.
 
 The first step is to configure the localization in the `faces-config.xml` file. 
-In our case, German is configured as the default value and English as the supported language (Listing MyGourmet 7: Configuration).
+In our case, German is configured as the default value and English as the supported language (Listing <<.MyGourmet 7: Configuration, MyGourmet 7: Configuration>>).
+
+.MyGourmet 7: Configuration
+[source,xml]
+----
  <application>
   <locale-config>
     <default-locale>de</default-locale>
@@ -1767,8 +1853,15 @@ In our case, German is configured as the default value and English as the suppor
     <var>msgs</var>
   </resource-bundle>
 </application>
-The resource bundles are stored in the package at.irian.jsfatwork under the name of messages - a bundle with the name messages_de for the German language and a bundle with the name messages_en for the English language. By configuring the resource-bundle element, the bundle named msgs can be used in all pages of the application in EL expressions. In Listing Extract from the German Bundle of MyGourmet you can find an excerpt from the bundle messages_de.properties for the German language.
- title_main=MyGourmet
+----
+
+The resource bundles are stored in the package `at.irian.jsfatwork` under the name of `messages` - a bundle with the name `messages_de` for the German language and a bundle with the name `messages_en` for the English language. 
+By configuring the resource-bundle element, the bundle named `msgs` can be used in all pages of the application in `EL` expressions. 
+In Listing <<.Extract from the German Bundle of MyGourmet, Extract from the German Bundle of MyGourmet>> you can find an excerpt from the bundle `messages_de.properties` for the German language.
+
+.Extract from the German Bundle of MyGourmet
+----
+title_main=MyGourmet
 title_show_customer=Kunde
 title_edit_customer=Kunde bearbeiten
 first_name=Vorname
@@ -1784,13 +1877,28 @@ credit_card_type_CARD_A=Card A
 credit_card_type_CARD_B=Card B
 validateBirthday.MAXIMUM=Geburtsdatum liegt in der Zukunft.
 validateBirthday.MINIMUM=Geburtsdatum ist vor dem 1.1.1900.
-validateCreditCardNumber.NUMBER=Kreditkartennummer 
-    muss aus {0} Ziffern bestehen.
+validateCreditCardNumber.NUMBER=Kreditkartennummer muss aus {0} Ziffern bestehen.
 javax.faces.validator.BeanValidator.MESSAGE={1}: {0}
-The access to the localized texts should be demonstrated using the first name of the customer. All other texts in the page are treated analogously. Here is the localized label for the first name:
+----
+
+The access to the localized texts should be demonstrated using the first name of the customer. 
+All other texts in the page are treated analogously. 
+Here is the localized label for the first name:
+
+----
 <h:outputLabel for="firstName" value="#{msgs.first_name}:"/>
-It references an EL expression in the value attribute, which consists of the name of the bundle and the key for the first name. 
-In some cases it is necessary to access localized resources directly in Java. For this purpose, the class GuiUtil combines the method for reading a localized text from Listing Internationalized Texts in the Backing Bean and the method for creating a localized message from Listing Internationalized Messages in the Backing Bean . In MyGourmet comes GuiUtil in CustomerBean used. listing Use of GuiUtil in MyGourmet exemplifies two methods from this managed bean.
+-----
+
+It references an EL expression in the `value` attribute, which consists of the name of the bundle and the `key` for the first name. 
+
+In some cases it is necessary to access localized resources directly in Java. 
+For this purpose, the class `GuiUtil` combines the method for reading a localized text from Listing <<.Internationalized Texts in the Backing Bean, Internationalized Texts in the Backing Bean>> and the method for creating a localized message from Listing <<.Internationalized Messages in the Backing Bean, Internationalized Messages in the Backing Bean>>. 
+In MyGourmet comes `GuiUtil` in `CustomerBean` used. 
+Listing <<.Use of GuiUtil in MyGourmet, Use of GuiUtil in MyGourmet>> exemplifies two methods from this `Managed-Bean`.
+
+.Internationalized Texts in the Backing Bean
+[source,java]
+----
  public void validateCreditNumber(FacesContext ctx,
     UIComponent component,
     Object value) throws ValidatorException {
@@ -1817,6 +1925,10 @@ private String getCCTypeLabel(CreditCardType type) {
   String key = "credit_card_type_" + type.toString();
   return GuiUtil.getResourceText(c, "msgs", key);
 }
-The method validateCreditNumber is already known from MyGourmet 6 : In contrast to the previous version, a localized message is created in case of an error. The key of the text used is validateCreditCardNumber.NUMBER . A look at Listing excerpt from the German Bundle of MyGourmet shows that this text is a message format template with a placeholder. When creating the message, this placeholder will be replaced with the length of the credit card number. 
-The getCCTypeLabel method returns the localized name for fields of the Enum CreditCardType .
+----
+The method `validateCreditNumber` is already known from MyGourmet 6: In contrast to the previous version, a localized message is created in case of an error. 
+The `key` of the text used is `validateCreditCardNumber.NUMBER`. 
+A look at Listing excerpt from the German Bundle of MyGourmet shows that this text is a message format template with a placeholder. 
+When creating the message, this placeholder will be replaced with the length of the credit card number. 
+The `getCCTypeLabel` method returns the localized name for fields of the Enum CreditCardType.
 The bean validation resource bundles are filed under the name ValidationMessages - a bundle named ValidationMessages_de for the German language and a bundle named ValidationMessages_en for the English language.
