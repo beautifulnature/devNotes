@@ -1,87 +1,160 @@
 :sectnums:
 == Management of resources
 
-In JSF, resources are artifacts, such as images, scripts, or stylesheets, that require a component to fully display on the client.
+In JSF, resources are `artifacts`, such as images, scripts, or stylesheets, that require a component to fully display on the client.
 
-The management of resources is a requirement that is relevant in one form or another for each application. Especially for component libraries, it is important to define the dependencies between components and resources such as scripts or stylesheets. In addition, these resources must be made transparent to the application developer. Before JSF 2.0, there was no standardized way for it. Many providers have therefore developed independent solutions that are, however, in most cases compatible with each other.
+The management of resources is a requirement that is relevant in one form or another for each application. 
+Especially for component libraries, it is important to define the dependencies between `components` and resources such as `scripts` or `stylesheets`. 
+In addition, these resources must be made transparent to the application developer. 
+Before JSF 2.0, there was no standardized way for it. 
+Many providers have therefore developed independent solutions that are, however, in most cases compatible with each other.
 
-As of JSF 2.0, there is a standardized way to manage resources and position them flexibly in the view. This benefits not only component libraries, but all applications with their own images, stylesheets or scripts. The sections [Resource Identification Section - Part 1] through [Resources Section in MyGourmet 12 ] detail how resource management works. 
+As of JSF 2.0, there is a standardized way to manage resources and position them flexibly in the view. 
+This benefits not only component libraries, but all applications with their own `images`, `stylesheets` or `scripts`. 
+The sections [Resource Identification Section - Part 1] through [Resources Section in MyGourmet 12] detail how resource management works.
 
 JSF 2.2 offers resource library contracts the ability to define interchangeable templates and resources, as shown in section [Resource-Library Contracts].
 
 === Identification of Resources - Part 1
 
-In the simplest case, resources are identified by their name in JSF. 
+In the simplest case, resources are identified by their `name` in JSF. 
 Let's take a look at this using an example. 
-The following code inserts the image.png image into a view:
+The following code inserts the `image.png` image into a view:
 
 ----
 <h:graphicImage name="image.png"/>
 ----
 
-Experienced JSF developers will immediately notice that JSF ~ 1.2 does not yet have a name attribute defined for the h: graphicImage tag. The value of this attribute is the name of the resource to be output as an image. It is not a path statement in the classical sense, but an identifier, which is internally resolved into the actual path of the resource. 
+Experienced JSF developers will immediately notice that JSF ~ 1.2 does not yet have a `name` attribute defined for the `h:graphicImage` tag. 
+The `value` of this attribute is the name of the resource to be output as an image. 
+It is not a `path statement` in the classical sense, but an `identifier`, which is internally resolved into the actual path of the resource.
 
 JSF looks for resources in the following places of an application (in the order given):
 
-In the root directory of the web application under / resources
+. In the root directory of the web application under `/resources`
+. In `/META-INF/resources` and thus also in all `jar` files in `classpath`
 
-In / META-INF / resources and thus also in all jar files in classpath
+In our case, JSF tries to resolve the label `image.png` to one of the above locations. 
+Therefore we create the following file:
 
-In our case, JSF tries to resolve the label image.png to one of the above locations. Therefore we create the following file:
+----
 /resources/image.png
+----
 
-The above example shows the simple case of a resource referenced by its name. JSF also provides library partitioning, versioning, and resource localization. 
+The above example shows the simple case of a resource referenced by its `name`. 
+JSF also provides library partitioning, versioning, and resource localization.
 
-Libraries are a way to group resources under a common name. The library name is then used together with the resource name to identify the resource. We extend our example with a library images in which all images are stored. The code line from the top changes as follows:
+Libraries are a way to group resources under a common name. 
+The library name is then used together with the resource name to identify the resource. 
+We extend our example with a library `images` in which all images are stored. 
+The code line from the top changes as follows:
 
+----
 <h:graphicImage library="images" name="image.png"/>
+----
 
-JSF interprets the library as an additional directory when the resource is resolved. The path of the image file looks like this:
+JSF interprets the library as an additional directory when the resource is resolved. 
+The path of the image file looks like this:
+
+----
 /resources/images/image.png
+----
 
-But that's not all - resources and libraries can exist and be localized in several versions. The mode of operation is shown in Section [Section: Identification of Resources - Part 2] . 
+But that's not all - resources and libraries can exist and be localized in several versions. 
+The mode of operation is shown in Section [Section: Identification of Resources - Part 2].
 
-JSF 2.2: In versions prior to 2.2, JSF always looks for resources in the web application in the / resources directory . However, this path has the disadvantage that it is available without additional safeguards to the outside. This is not always the desired behavior, especially for composite components. As of JSF 2.2, this directory can therefore be adapted via the context parameter javax.faces.WEBAPP_RESOURCES_DIRECTORY in the web.xml . In the example in listing Configuration of the directory for resources is the directory within / WEB-INF , which makes it inaccessible from the outside.
+JSF 2.2: In versions prior to 2.2, JSF always looks for resources in the web application in the `/resources` directory. 
+However, this path has the disadvantage that it is available without additional safeguards to the outside. 
+This is not always the desired behavior, especially for composite components. 
+As of JSF 2.2, this directory can therefore be adapted via the context parameter `javax.faces.WEBAPP_RESOURCES_DIRECTORY` in the `web.xml`. 
+In the example in Listing <<.Configuration of the directory for resources, Configuration of the directory for resources>> is the directory within `/WEB-INF`, which makes it inaccessible from the outside.
 
- <context-param>
+.Configuration of the directory for resources
+[source,xml]
+----
+<context-param>
   <param-name>
     javax.faces.WEBAPP_RESOURCES_DIRECTORY
   </param-name>
   <param-value>/WEB-INF/resources</param-value>
 </context-param>
+----
 
-Since the resources are only read internally by JSF from this directory and are available externally under another URL, this is not a problem for the application. The path for the example with the library from the top looks like this:
+Since the resources are only read internally by JSF from this directory and are available externally under another URL, this is not a problem for the application. 
+The path for the example with the library from the top looks like this:
+----
 /WEB-INF/resources/images/image.png
+----
 
-Resolving the resources and delivering the data to the client is handled by the Resource Handlers class . Like many other parts of JSF, the resource handler can also be decorated with a custom implementation via faces-config.xml . Conceivable implementations could be to get resources from a database or create them dynamically - there are no limits to the imagination.
+Resolving the resources and delivering the data to the client is handled by the `Resource-Handler` class. 
+Like many other parts of JSF, the resource handler can also be decorated with a custom implementation via `faces-config.xml`. 
+Conceivable implementations could be to get resources from a database or create them dynamically - there are no limits to the imagination.
 
 === resources in use
 
-There are several ways to integrate JSF 2.0 resources into the page. The following standard components have the attributes name and library to directly reference the resource to be output:
-h: graphicImage prints the link to an image.
-h: outputScript prints the link to a script.
-h: outputStylesheet outputs the link to a stylesheet.
-Resources can also be referenced directly via an EL expression in the value attribute of the corresponding component - the implicit resource object serves this purpose. Properties of this object are interpreted as resource identifiers when evaluating the expression. This identifier can be the name of the resource or the name of the library followed by the name of the resource with a colon as a separator. 
-Here again the example from the last section, but this time implemented via an EL expression:
+There are several ways to integrate JSF 2.0 resources into the page. 
+The following standard components have the attributes `name` and `library` to directly reference the resource to be output:
+
+* `h:graphicImage` prints the link to an image.
+* `h:outputScript` prints the link to a script.
+* `h:outputStylesheet` outputs the link to a stylesheet.
+
+Resources can also be referenced directly via an `EL` expression in the `value` attribute of the corresponding component - the implicit `resource` object serves this purpose. 
+Properties of this `object` are interpreted as `resource identifiers` when evaluating the expression. 
+This `identifier` can be the `name of the resource` or the `name of the library followed by the name of the resource with a colon as a separator`.
+
+Here again the example from the last section, but this time implemented via an `EL` expression:
+
+----
 <h:graphicImage value="#{resource['images:image.png']}"/>
-If facelets are used as the page declaration language, this EL expression can even be used directly in the HTML code:
+----
+
+If facelets are used as the page declaration language, this `EL` expression can even be used directly in the HTML code:
+
+----
 <img src="#{resource['images:image.png']}"/>
-The third method for integrating resources is in the Java code and is especially interesting for developers of components. With the two annotations @ResourceDependency and @ResourceDependencies dependencies to resources can already be defined in the component or renderer class. For example, the following code links a component to the script.js resource from the scripts library :
+----
+
+The third method for integrating resources is in the Java code and is especially interesting for developers of components. 
+With the two annotations `@ResourceDependency` and `@ResourceDependencies` dependencies to resources can already be defined in the component or renderer class. 
+For example, the following code links a component to the `script.js` resource from the `scripts` library :
+
+[source,java]
+----
 @ResourceDependency(name="script.js", library="scripts")
 public class MyComponent extends UIComponentBase {
 ...
 }
-This method is mentioned here only for the sake of completeness. Further information on component development and resources can be found in Section Section: Writing a Rendering Class.
+----
+
+This method is mentioned here only for the sake of completeness. 
+Further information on component development and resources can be found in Section [Section: Writing a Rendering Class].
 
 === Positioning Resources
 
-We have not yet mentioned an important aspect of JSF resource management. Imagine you are using a component from a component library that uses a special script or style sheet. How does this resource get into the view? As a user of the library, we do not want to worry about it. For some resources, such as stylesheets and some scripts, they also need to be output to specific parts of the view for the page to work properly for the user. How the connection between component and resource is modeled, we have already shown in the last section. This does not yet explain how a link to the resource is taken into the view.
-JSF allows the positioning of individual resources in defined areas of the view such as the head or the body. For JSF to correctly identify these areas, there are the following new components in the HTML Tag Library :
-h: head encloses the head area of ​​the page.
-h: body encloses the body area of ​​the page.
-When integrating a resource, one of these areas can be addressed directly. The element target exists in @ResourceDependency and an attribute of the same name exists in h: outputScript . The allowed values ​​are head , body and form , but stylesheets are always printed in the head, regardless of the specification (according to the HTML standard, stylesheets must be linked in the head area so that the source text of the page remains valid HTML). For the positioning of resources to work, it is absolutely necessary h: head and h: body
-in all views. With facelets you can do this in a template centrally for all pages. You can find out how this works in Section Section: Templating . 
-Let's take a look at an example of how resource placement works in practice. The following document contains a body sheet without a position specification and a script with the position head :
+We have not yet mentioned an important aspect of JSF resource management. 
+Imagine you are using a component from a component library that uses a special script or style sheet. 
+How does this resource get into the view? 
+As a user of the library, we do not want to worry about it. 
+For some resources, such as `stylesheets` and some `scripts`, they also need to be output to specific parts of the view for the page to work properly for the user. 
+How the connection between `component` and `resource` is modeled, we have already shown in the last section. 
+This not yet explain how a `link` to the resource is taken into the view.
+
+JSF allows the positioning of individual resources in defined areas of the view such as the `head` or the `body`. 
+For JSF to correctly identify these areas, there are the following new components in the HTML Tag Library:
+
+* `h:head` encloses the head area of ​​the page.
+* `h:body` encloses the body area of ​​the page.
+
+When integrating a resource, one of these areas can be addressed directly. 
+With facelets you can do this in a template centrally for all pages. 
+You can find out how this works in Section [Section: Templating].
+
+Let's take a look at an example of how resource placement works in practice. 
+The following document contains a `styleSheet` in the body area without a `position` specification and a `script` with the position `head`:
+
+[source,xhtml]
+----
 <html xmlns="http://www.w3.org/1999/xhtml"
     xmlns:h="http://xmlns.jcp.org/jsf/html">
 <h:head>
@@ -93,7 +166,11 @@ Let's take a look at an example of how resource placement works in practice. The
   <h:outputText value="Test"/>
 </h:body>
 </html>
+----
+
 Here is the rendered HTML code:
+[source,html]
+----
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <title>Ressourcen-Test</title>
@@ -107,57 +184,114 @@ Here is the rendered HTML code:
   Test
 </body>
 </html>
-The code shows that both resources, the script and the stylesheet, were rendered in the head area of ​​the page. It works the same with components from a library - assuming that the developer annotated the component with @ResourceDependency and set the target attribute to head . If you then use h: head and h: body on the page, JSF will do the rest.
+----
+
+The code shows that both resources, the `script` and the `stylesheet`, were rendered in the `head` area of ​​the page. 
+It works the same with components from a library - assuming that the developer annotated the component with `@ResourceDependency` and set the `target` attribute to `head`. 
+If you then use `h:head` and `h:body` on the page, JSF will do the rest.
 
 === Identification of Resources - Part 2
 
-In section [Resource Identification Section - Part 1] , we pointed out that JSF supports versioning and localization of resources and libraries. 
-Version numbers are indicated in libraries and resources with underscores ( _ ), such as 1_0 or 1_0_1 . They are appended to the resource or library name , separated by a forward slash ( / ). For resource names , the version may also have a file extension such as .png or .css . Why this is so, we'll see the same. Here is our example with version numbers for the library and the resource:
+In section [Resource Identification Section - Part 1], we pointed out that JSF supports versioning and localization of resources and libraries. 
+Version numbers are indicated in libraries and resources with underscores ( _ ), such as `1_0` or `1_0_1`. 
+They are appended to the resource or library name, separated by a forward slash ( / ). 
+For resource names, the version may also have a file extension such as `.png` or `.css`. 
+Why this is so, we'll see the same. 
+Here is our example with version numbers for the library and the resource:
+----
 <h:graphicImage library="images/1_0"
     name="image.png/1_1.png"/>
-JSF interprets library versions as another directory in the path of the resource. Resource versions, on the other hand, are handled a bit differently. If a resource exists in multiple versions, the name of the resource becomes a directory and the individual versions are the actual resource files. The new path of the image file is as follows:
+----
+    
+JSF interprets `library versions` as another directory in the path of the resource. 
+`Resource versions`, on the other hand, are handled a bit differently. 
+If a resource exists in multiple versions, the `name of the resource` becomes a directory and the `individual versions` are the actual resource files. 
+The new path of the image file is as follows:
+----
 /resources/images/1_0/image.png/1_1.png
-In most cases, it is not necessary to define the version numbers when using resources. If no explicit versions are specified, JSF automatically uses the resource with the highest version number. 
-To illustrate the different combinations of resource names, library names, and version numbers, let's expand our example. Figure Examples of resources shows the resource directory of the application with a library and the two resources image.png and new.png . The picture itself is shown to the left of the name of the image file.
+----
+In most cases, it is not necessary to define the version numbers when using resources. 
+If no explicit versions are specified, JSF automatically uses the resource with the highest version number.
 
+To illustrate the different combinations of `resource names`, `library names`, and `version numbers`, let's expand our example. 
+Figure <<.Examples of resources, Examples of resources>> shows the resource directory of the application with a `library` and the two resources `image.png` and `new.png`. 
+The picture itself is shown to the left of the name of the image file.
 
+====
+.Examples of resources
+image::images/resources.jpg
+====
 
+Based on the directory tree shown in Figure <<.Examples of Resources, Examples of Resources>> we now want to resolve various resources and look at the result. 
+Table: resource-resolution displays which image is displayed for a number of combinations of library and resource names. 
+Please note especially names without version information and how they are always resolved to the highest version.
 
+[options="header",cols="1,1,1"]
+|===
+|Library   |resource   |   
+//----------------------
+|images   |image.png   |file=grafiken/resources-2_1.eps   
+|images   |image.png/2 _ 1.png   |file=grafiken/resources-2_1.eps   
+|images/2 _ 0   |image.png   |file=grafiken/resources-2_1.eps   
+|images/2 _ 0   |image.png/2 _ 1.png   |file=grafiken/resources-2_1.eps   
+|images   |image.png/2 _ 0.png   |file=grafiken/resources-2_0.eps   
+|images/1 _ 0   |image.png/1 _ 0.png   |file=grafiken/resources-1_0.eps   
+|images/1 _ 0   |image.png   |file=grafiken/resources-1_1.eps   
+|images   |new.png   |file=grafiken/resources-new.eps   
+|===
 
-
-Based on the directory tree shown in Figure Examples of Resources we now want to resolve various resources and look at the result. Table tab: resource-resolution displays which image is displayed for a number of combinations of library and resource names. Please note especially names without version information and how they are always resolved to the highest version.
-
-
-
-
-
-Finally, we will discuss the localization of resources. JSF looks for the following entry in the Application Message Bundle when resolving resources :
+Finally, we will discuss the localization of resources. 
+JSF looks for the following entry in the Application Message Bundle when resolving resources:
+----
 javax.faces.resource.localePrefix=<Wert>
-If this entry is set for the current locale, its value is interpreted as part of the path of the resource file. For example, if the value in the German Resource Bundle is set to de , the path to our image looks like this:
+----
+If this entry is set for the current locale, its value is interpreted as part of the path of the resource file. 
+For example, if the `value` in the German Resource Bundle is set to `de`, the path to our image looks like this:
+----
 /resources/de/images/image.png
-Further information on internationalization and the Application Message Bundle can be found in section Section: Internationalization .
+----
+Further information on internationalization and the Application Message Bundle can be found in section [Section: Internationalization].
 
 === Resources in MyGourmet 12
 
 The transition of MyGourmet to resources is trivial in the current state of development - we do not create a new example. 
-The most important change is the conversion of the main template template.xhtml to the elements h: head and h: body . But only the corresponding HTML elements have to be replaced. Once that's done, the stylesheet and logo can also be moved to the / resources directory and used as resources. 
-The resource management will only start from the next example MyGourmet 13 interesting, when everything revolves around the composite components introduced in JSF 2.0. For more information, refer to section Section: Composite Components .
+The most important change is the conversion of the main template `template.xhtml` to the elements `h:head` and `h:body`. 
+But only the corresponding HTML elements have to be replaced. 
+Once that's done, the stylesheet and logo can also be moved to the `/resources` directory and used as resources. 
+The resource management will only start from the next example MyGourmet 13 interesting, when everything revolves around the composite components introduced in JSF 2.0. 
+For more information, refer to section [Section: Composite Components].
 
 === Resource Library Contracts
 
-JSF 2.2: The JSF 2.2 plans originally envisioned a multi-templating system to support themes. However, this system did not make it to the final version of the specification. What's left are the so-called Resource Library Contracts, an emergency solution with basic features to support interchangeable templates and potential for future expansion. 
-Resource library contracts group templates and resources into a replaceable unit. A contract consists of one or more facelet templates, whose with ui: insertdefined replaceable areas and any number of resources. The templates, their replaceable areas and the resources thus form an (informal) interface that shows how a resource-library contract can be used. All resource library contracts with the same interface can be swapped.
+JSF 2.2: The JSF 2.2 plans originally envisioned a multi-templating system to support themes. 
+However, this system did not make it to the final version of the specification. 
+What's left are the so-called Resource Library Contracts, an emergency solution with basic features to support interchangeable templates and potential for future expansion. 
+Resource library contracts group templates and resources into a replaceable unit. 
+A contract consists of one or more facelet templates, with `ui:insert` defined replaceable areas and any number of resources. 
+The templates, their replaceable areas and the resources thus form an (informal) interface that shows how a resource-library contract can be used. 
+All resource library contracts with the same interface can be swapped.
 
 ==== A first example
 
-A resource library contract is basically a container for templates and resources that is stored in a special directory. By default, JSF looks for resource library contracts in the following places in an application (in the order given):
-In the root directory of the web application under / contracts
-In / META-INF / contracts and thus also in all jar files in classpath
-Illustration Resource-Library-Contract in the application shows the content of the contract with the name contract1 in the directory / contracts of the web application.
+A resource library contract is basically a container for templates and resources that is stored in a special directory. 
+By default, JSF looks for resource library contracts in the following places in an application (in the order given):
 
+. In the root directory of the web application under `/contracts`
+. In `/META-INF/contracts` and thus also in all `jar` files in classpath
 
-This resource library contract includes the template tem-plate.xhtml , the stylesheet style.css, and the image.png image . The template defines the replaceable header and content areas and includes the stylesheet as a JSF resource, as Listing Template for Resource-Library-Contract shows.
+Figure <<.Resource-Library-Contract, Resource-Library-Contract>> in the application shows the content of the contract with the name `contract1` in the directory `/contracts` of the web application.
 
+====
+.Resource-Library-Contract
+image::images/res-lib-contract-webapp.jpg[]
+====
+
+This resource library contract includes the template `template.xhtml`, the stylesheet `style.css`, and the `image.png` image. 
+The template defines the replaceable header and content areas and includes the stylesheet as a JSF resource, as Listing <<.Template for Resource-Library-Contract,Template for Resource-Library-Contract>> shows.
+
+.Template for Resource-Library-Contract
+[source,xhtml]
+----
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
       xmlns:h="http://xmlns.jcp.org/jsf/html">
@@ -172,7 +306,15 @@ This resource library contract includes the template tem-plate.xhtml , the style
   </div>
 </h:body>
 </html>
-The interface of this contract thus consists of the template template.xhtml and its replaceable areas header and content . We are not following the stylesheet and the picture at the moment (more on this topic in the section [Resources: Resource-Library-Contracts] ). With this knowledge, we can already use the template from the contract on a facelets page, as Listing Template Client shows for Resource-Library-Contract .
+----
+
+The interface of this contract thus consists of the template `template.xhtml` and its replaceable areas header and content. 
+We are not following the stylesheet and the picture at the moment (more on this topic in the section [Resources: Resource-Library-Contracts]). 
+With this knowledge, we can already use the template from the contract on a facelets page, as Listing <<.Template Client for Resource-Library-Contract, Template Client for Resource-Library-Contract>> shows.
+
+.Template Client for Resource-Library-Contract
+[source,xhtml]
+----
  <ui:composition template="/template.xhtml">
   <ui:define name="header">
     <h1>Überschrift</h1>
@@ -181,26 +323,57 @@ The interface of this contract thus consists of the template template.xhtml and 
     <p>Beliebiger Inhalt</p>
   </ui:define>
 </ui:composition>
-The template from the Resource Library Contract is referenced only by its name. This raises the question of how it comes from the contract in the page. To do this we need to consider two new aspects of JSF 2.2. Firstly, JSF provides all resource library contracts that are found when the application is started to all pages by default. Since there is only one contract in our example, this is exactly what you want. On the other hand, JSF as of version 2.2 always tries to load XHTML files and resources first from the contracts assigned to the page. 
-So in our case JSF is looking for template template.xhtml first in contract contract1, Even if a template with the name template.xhtml exists in the root directory of the application , it is the one that comes first from the contract. 
-The use of resource library contracts only becomes really interesting when several contracts with the same interface are available in one application. This makes it possible, for example, to implement templates with different styling for different areas of the application. In this case, of course, it must be ensured that there is a clear assignment of contracts to pages. Section [Resource Library Contracts Mapping Section] shows how this works.
-Adding resource library contracts to jar files creates more interesting use cases. Contracts can be easily replaced by replacing a jar file or used in multiple applications. Section [Section: Resource Library Contracts in Jar Files] shows what you need to be aware of.
+----
+
+The template from the Resource-Library-Contract is referenced only by its name. 
+This raises the question of how it comes from the contract in the page. 
+To do this we need to consider two new aspects of JSF 2.2. 
+Firstly, JSF provides all resource library contracts that are found when the application is started to all pages by default. 
+Since there is only one contract in our example, this is exactly what you want. 
+On the other hand, JSF as of version 2.2 always tries to load `XHTML` files and resources first from the contracts assigned to the page.
+
+So in our case JSF is looking for template `template.xhtml` first in contract `contract1`, Even if a template with the name `template.xhtml` exists in the root directory of the application, it is the one that comes first from the `contract`.
+
+The use of resource library contracts only becomes really interesting when several contracts with the same interface are available in one application. 
+This makes it possible, for example, to implement templates with different styling for different areas of the application. 
+In this case, of course, it must be ensured that there is a clear assignment of contracts to pages. 
+Section [Resource-Library-Contracts Mapping Section] shows how this works.
+
+Adding Resource-Library-Contracts to `jar` files creates more interesting use cases. 
+Contracts can be easily replaced by replacing a `jar` file or used in multiple applications. 
+Section [Section: Resource-Library-Contracts in `jar` files] shows what you need to be aware of.
 
 ===== Configuration of the Contracts Directory
 
-As mentioned previously, JSF locates resource library contracts in the web application by default in the / contracts directory . However, this path can be adjusted in the web.xml via the context parameter javax.faces.WEBAPP_CONTRACTS_DIRECTORY . In the example in Listing configuration of the directory for Contracts the directory lies within / WEB-INF , whereby it is no longer accessible from the outside.
+As mentioned previously, JSF locates resource library contracts in the web application by default in the `/contracts` directory. 
+However, this path can be adjusted in the `web.xml` via the `context-parameter` `javax.faces.WEBAPP_CONTRACTS_DIRECTORY`. 
+In the example in Listing <<.configuration of the directory for Contracts, configuration of the directory for Contracts>> the directory lies within `/WEB-INF`, whereby it is no longer accessible from the outside.
+
+.configuration of the directory for Contracts
+[source,xhtml]
+----
  <context-param>
   <param-name>
     javax.faces.WEBAPP_CONTRACTS_DIRECTORY
   </param-name>
   <param-value>/WEB-INF/contracts</param-value>
 </context-param>
-
+----
 ==== Resources from Resource Library Contracts
 
-In addition to templates, resource-library contracts can also contain any number of resources. The Resource-Library-Contract from section [Section: A First Example] contains , for example, not only the template but also the resources style.css and image.png . These resources can be integrated into a page via their name. The stylesheet is already used with h: outputStylesheet in the template, as Listing Template for Resource-Library-Contract shows.
-But integrating resources from a contract does not just work within the contract. As with the tem-plates, JSF as of version 2.2 always tries to load resources first from the contracts assigned to a page. Listing Template Client for resource library contract with resource shows again the template client from Listing Template Client for Resource-Library-Contract - this time with the image image.png .
- <ui:composition template="/template.xhtml">
+In addition to templates, Resource-Library-Contracts can also contain any number of resources. 
+The Resource-Library-Contract from section [Section: A First Example] contains, for example, not only the template but also the resources `style.css` and `image.png`. 
+These resources can be integrated into a page via their `name`. 
+The stylesheet is already used with `h:outputStylesheet` in the template, as Listing <<.Template for Resource-Library-Contract, Template for Resource-Library-Contract>> shows.
+
+But integrating resources from a contract does not just work within the contract. 
+As with the templates, JSF as of version 2.2 always tries to load resources first from the contracts assigned to a page. 
+Listing <<.Template Client for Rresource-Library-Contract with resource, Template Client for Rresource-Library-Contract with resource>> shows again the template client from Listing <<.Template Client for Resource-Library-Contract, Template Client for Resource-Library-Contract>> - this time with the image `image.png`.
+ 
+.Template Client for Rresource-Library-Contract with resource
+[source,xhtml]
+----
+<ui:composition template="/template.xhtml">
   <ui:define name="header">
     <h1>Überschrift</h1>
   </ui:define>
@@ -209,15 +382,34 @@ But integrating resources from a contract does not just work within the contract
     <h:graphicImage name="image.png"/>
   </ui:define>
 </ui:composition>
+----
 
 ==== Mapping Resource Library Contracts
 
-If several contracts with the same interface exist in one application, the assignment of contracts to pages must be adjusted. Otherwise, JSF will again provide all contracts in all pages, which may lead to unpredictable results. 
-JSF builds a list of all available resource library contracts when launching the application. However, this list has no clearly defined order. However, after JSF goes through the list of contracts available for the page when loading XHTML files and resources and simply uses the first hit, it remains to some extent a matter of chance to decide which contract to use.
-There are two ways to define the assignment of resource library contracts to application pages. It can be a basic assignment for individual pages or for entire page areas in the faces-config.xml . For individual pages, the assignment with f: view can also be specifically defined. 
-The assignment of contracts to pages in faces-config.xml is based on URL patterns. Possible values ​​for the patterns include individual pages such as /page1.xhtml , page ranges such as / customer / * or the entire application with *, A list of all contract names to be used is given per sample. In the evaluation, JSF first always considers exact matches for specific pages and otherwise the longest applicable pattern. 
-The configuration takes place in the element resource-library-contracts within application . There, a contract-mapping element is inserted for each combination of URL pattern and contract name . The URL pattern comes into the element url-pattern and the comma-separated list of contract names into the element contracts . With the listing assignment of Resource Library Contracts in the faces-config.xml The configuration shown here is assigned to all pages whose view ID starts with / special / , the contract layout-special and all other pages of the contract layout .
- <application>
+If several contracts with the same interface exist in one application, the assignment of contracts to pages must be adjusted. 
+Otherwise, JSF will again provide all contracts in all pages, which may lead to unpredictable results.
+
+JSF builds a list of all available resource library contracts when launching the application. 
+However, this list has no clearly defined order. 
+However, after JSF goes through the list of contracts available for the page when loading `XHTML` files and `resources` and simply uses the first hit, it remains to some extent a matter of chance to decide which contract to use.
+
+There are two ways to define the assignment of resource library contracts to application pages. 
+It can be a basic assignment for individual pages or for entire page areas in the `faces-config.xml`. 
+For individual pages, the assignment with `f:view` can also be specifically defined.
+
+The assignment of contracts to pages in `faces-config.xml` is based on URL patterns. 
+Possible values ​​for the patterns include individual pages such as `/page1.xhtml`, page ranges such as `/customer/*` or the entire application with `*`, A list of all contract names to be used is given per sample. 
+In the evaluation, JSF first always considers exact matches for specific pages and otherwise the longest applicable pattern. 
+
+The configuration takes place in the element `Resource-Library-Contracts` within application. 
+There, a `contract-mapping` element is inserted for each combination of URL pattern and contract name. 
+The URL pattern comes into the element `url-pattern` and the `comma-separated` list of contract names into the element `contracts`. 
+With the Listing <<.assignment of Resource-Library-Contracts, assignment of Resource-Library-Contracts>> in the `faces-config.xml` The configuration shown here is assigned to all pages whose `View-ID` starts with `/special/`, the contract `layout-special` and all other pages assigned to contract `layout`.
+
+.assignment of Resource-Library-Contracts
+[source,xml]
+----
+<application>
   <resource-library-contracts>
     <contract-mapping>
       <url-pattern>/special/*</url-pattern>
@@ -229,38 +421,81 @@ The configuration takes place in the element resource-library-contracts within a
     </contract-mapping>
   </resource-library-contracts>
 </application>
-The assignment of Resource-Library-Contracts can be overridden for individual pages. In addition, there is the new attribute contracts in the tag f: view , in which a comma-separated list of contract names can be specified. Listing assignment of resource-library contracts with f: view shows an example.
- <f:view contracts="contract1">
+----
+
+The assignment of `Resource-Library-Contracts` can be overridden for individual pages. 
+In addition, there is the new attribute `contracts` in the tag `f:view`, in which a `comma-separated` list of contract names can be specified. 
+Listing <<.assignment of Resource-Library-Contracts with `f:view`, assignment of Resource-Library-Contracts with `f:view`>> shows an example.
+
+.assignment of Resource-Library-Contracts with `f:view`
+[source,xml]
+----
+<f:view contracts="contract1">
   <ui:composition template="/template.xhtml">
     ...
   </ui:composition>
 </f:view>
-In the contracts attribute , a value expression can also be specified, as the following example shows:
+----
+
+In the `contracts` attribute, a `Value-Expression` can also be specified, as the following example shows:
+
+----
 <f:view contracts="#{bean.contracts}">
   ...
 </f:view>
-The referenced bean property must return the list of contract names in the form of a string. This allows you to dynamically change the contracts assigned to a page. 
-If you now come up with the idea of ​​defining this globally in a template, we unfortunately have to disappoint you. JSF explicitly permits the definition of contracts via f: view only in the first file that is processed when the page is created (ie in the template client).
+----
+
+The referenced bean property must return the list of contract names in the form of a string. 
+This allows you to dynamically change the contracts assigned to a page.
+
+If you now come up with the idea of ​​defining this globally in a template, we unfortunately have to disappoint you. 
+JSF explicitly permits the definition of contracts via `f:view` only in the first file that is processed when the page is created (i.e., in the template client).
 
 ==== Resource Library Contracts in Jar Files
 
-Resource library contracts in jar files offer some advantages. On the one hand, they can be used in several applications and, on the other hand, they can easily be exchanged when building the application. However, you should make sure that the new contract defines the same interface. 
-Jar files with Resource Library Contracts are created quickly. To do this, the contracts only have to be copied to the directory / META-INF / contracts . For the Contract contract1 , which is known from the section [Section: A First Example] , the directory structure then looks like in Figure Resource-Library-Contract in Jar file .
+Resource library contracts in `jar` files offer some advantages. 
+On the one hand, they can be used in several applications and, on the other hand, they can easily be exchanged when building the application. 
+However, you should make sure that the new contract defines the same interface.
 
-JSF only considers resource library contracts from jar files if they contain a file named javax.faces.contract.xml . This file may still be empty in JSF 2.2, but this will not be the case in future versions of JSF.
+Jar files with Resource-Library-Contracts are created quickly. 
+To do this, the contracts only have to be copied to the directory `/META-INF/contracts`. 
+For the Contract `contract1`, which is known from the section [Section: A First Example], the directory structure then looks like in Figure <<.Resource-Library-Contract in Jar file, Resource-Library-Contract in Jar file>>.
+
+====
+.Resource-Library-Contract in Jar file
+image::images/res-lib-contract-jar.jpg[]
+====
+
+JSF only considers resource library contracts from jar files if they contain a file named `javax.faces.contract.xml`. 
+This file may still be empty in JSF 2.2, but this will not be the case in future versions of JSF.
 
 ==== MyGourmet 12 with Resource Library Contracts
 
-In this section, we present a variant of MyGourmet 12 , where the base template of the application is managed using Resource Library Contracts. This allows us to define two contracts with different designs for the customer area and the vendor area of ​​the application. 
-The two designs are each realized as a contract: base-color for the familiar design and base-gray for a variant in gray. Both contracts include the following resources:
-The already known template template.xhtml without changes
-The style sheet mygourmet.css adapted for each contract 
-The color-matched image for each contract logo.png
-Figure Resource Library Contracts in 15mmMyGourmet 12 shows the resource library contracts base-color and base-gray in the directory structure of the application.
+In this section, we present a variant of MyGourmet 12, where the base template of the application is managed using Resource-Library-Contracts. 
+This allows us to define two contracts with different designs for the customer area and the vendor area of ​​the application.
 
+The two designs are each realized as a contract: base-color for the familiar design and base-gray for a variant in gray. 
+Both contracts include the following resources:
 
-To make the assignment of contracts to pages easier, we moved the pages in the customer area to / views / customer and the pages in the provider area to / views / provider . This allows us to assign the contract base color to the customer pages and the contract base gray to the supplier pages . Listing configuration in MyGourmet 12 shows the corresponding configuration in faces-config.xml .
- <resource-library-contracts>
+* The already known template `template.xhtml` without changes
+* The style sheet `mygourmet.css` adapted for each contract
+* The color-matched image for each contract logo.png
+
+Figure <<.Resource Library Contracts in MyGourmet 12, Resource Library Contracts in MyGourmet 12>> shows the Resource-Library-Contracts `base-color` and `base-gray` in the directory structure of the application.
+
+====
+.Resource Library Contracts in MyGourmet 12
+image::images/res-lib-contract-mg12.jpg[]
+====
+
+To make the assignment of contracts to pages easier, we moved the pages in the customer area to `/views/customer` and the pages in the provider area to `/views/provider`. 
+This allows us to assign the contract `base-color` to the customer pages and the contract `base-gray` to the supplier pages. 
+Listing <<.configuration in MyGourmet 12, configuration in MyGourmet 12>> shows the corresponding configuration in `faces-config.xml`.
+
+.configuration in MyGourmet 12
+[source,xml]
+----
+<resource-library-contracts>
   <contract-mapping>
     <url-pattern>/views/customer/*</url-pattern>
     <contracts>base-color</contracts>
@@ -270,4 +505,8 @@ To make the assignment of contracts to pages easier, we moved the pages in the c
     <contracts>base-gray</contracts>
   </contract-mapping>
 </resource-library-contracts>
-The pages of the application continue to use the template customerTemplate.xhtml . There we have to change the path of the base template to the value /template.xhtml - this template now comes out of the contract like the stylesheet. The logo is also included in the contract as a resource named logo.png .
+----
+
+The pages of the application continue to use the template `customerTemplate.xhtml`.
+There we have to change the path of the base template to the value `/template.xhtml` - this template now comes out of the contract like the stylesheet. 
+The logo is also included in the contract as a resource named `logo.png`.
