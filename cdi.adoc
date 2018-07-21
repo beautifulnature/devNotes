@@ -1,4 +1,4 @@
-= JavaServer Faces
+= CDI
 :revdate: 2016-05-01
 :copyright-year: 2016
 :language: en
