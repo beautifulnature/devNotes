@@ -1,0 +1,2487 @@
+== Apache Delta Spike
+
+In the previous chapters, we got to know different CDI concepts using the example application IdeaFork . Before we reduce IdeaFork to an efficient minimum in the next chapter , we will build the current state of IdeaForkcontinue in this chapter. For this we use a popular portable CDI extension called Apache DeltaSpike, which was founded in late 2011 to replace Apache MyFaces CODI and JBoss Seam3. A large part of all CDI-based applications used one of the two extensions at the time to benefit from additional concepts. CODI emerged from the requirements of large applications and was characterized by high stability and good performance in combination with innovative concepts. Similar to CODI, Seam3 offered some modules that improved CDI and integrated with other technologies. Although CODI provided fewer modules, the framework was preferred in many CDI-based JSF applications because the framework greatly facilitated the daily work, especially with CDI and JSF.
+ 
+
+The beginning was a bit sluggish, as some overlapping aspects had to be merged into a consistent API. With version 1.0 it finally happened and DeltaSpike covered the most successful concepts of CODI, whereby the migration of a CODI-based application in many cases was feasible in a few hours. In almost all areas, however, a complete re-implementation of the known functionalities was carried out in order to make them even more convenient and flexible at the same time. In addition, additional mechanisms and modules have been added that could be more easily implemented, including through parts originally sourced from Seam3. After some discussions and compromises, however, Seam3 only adopted a few implementations whereby the migration effort of a Seam3 application, depending on the parts used, can be more extensive. Some of the Seam3 modules have been moved to third-party projects. These modules are primarily the CDI integration of the corresponding projects, which will be developed and maintained by the projects themselves in the future. DeltaSpike thus provides primarily the direct improvement of CDI and other Java EE specifications, and also enables the portable use of CDI 1.x in Java SE projects. The practical extension of Java EE, but also of CDI itself, is the recipe for success of DeltaSpike. This helped the project to a diverse community and 2014 even to a "Duke's Choice Award". can be more extensive. Some of the Seam3 modules have been moved to third-party projects. These modules are primarily the CDI integration of the corresponding projects, which will be developed and maintained by the projects themselves in the future. DeltaSpike thus provides primarily the direct improvement of CDI and other Java EE specifications, and also enables the portable use of CDI 1.x in Java SE projects. The practical extension of Java EE, but also of CDI itself, is the recipe for success of DeltaSpike. This helped the project to a diverse community and 2014 even to a "Duke's Choice Award". can be more extensive. Some of the Seam3 modules have been moved to third-party projects. These modules are primarily the CDI integration of the corresponding projects, which will be developed and maintained by the projects themselves in the future. DeltaSpike thus provides primarily the direct improvement of CDI and other Java EE specifications, and also enables the portable use of CDI 1.x in Java SE projects. The practical extension of Java EE, but also of CDI itself, is the recipe for success of DeltaSpike. This helped the project to a diverse community and 2014 even to a "Duke's Choice Award". These modules are primarily the CDI integration of the corresponding projects, which will be developed and maintained by the projects themselves in the future. DeltaSpike thus provides primarily the direct improvement of CDI and other Java EE specifications, and also enables the portable use of CDI 1.x in Java SE projects. The practical extension of Java EE, but also of CDI itself, is the recipe for success of DeltaSpike. This helped the project to a diverse community and 2014 even to a "Duke's Choice Award". These modules are primarily the CDI integration of the corresponding projects, which will be developed and maintained by the projects themselves in the future. DeltaSpike thus provides primarily the direct improvement of CDI and other Java EE specifications, and also enables the portable use of CDI 1.x in Java SE projects. The practical extension of Java EE, but also of CDI itself, is the recipe for success of DeltaSpike. This helped the project to a diverse community and 2014 even to a "Duke's Choice Award". DeltaSpike thus provides primarily the direct improvement of CDI and other Java EE specifications, and also enables the portable use of CDI 1.x in Java SE projects. The practical extension of Java EE, but also of CDI itself, is the recipe for success of DeltaSpike. This helped the project to a diverse community and 2014 even to a "Duke's Choice Award". DeltaSpike thus provides primarily the direct improvement of CDI and other Java EE specifications, and also enables the portable use of CDI 1.x in Java SE projects. The practical extension of Java EE, but also of CDI itself, is the recipe for success of DeltaSpike. This helped the project to a diverse community and 2014 even to a "Duke's Choice Award".
+ 
+
+Another success factor is the tested portability, which plays a central role since the beginning of the project. With the help of JBoss Arquillian, a comprehensive set of tests has been set up. OpenWebBeans and Weld releases each have their own build job in the Apache Software Foundation Continuous Integration Cluster. This enables automated testing that ensures the compatibility of DeltaSpike with as many configurations as possible. In addition to OpenWebBeans and Weld itself, the test suite is also regularly run in combination with several open-source servers. These include several versions of Apache TomEE, JBoss AS7 and WildFly, as well as Oracle GlassFish.
+ 
+
+Meanwhile, DeltaSpike is so extensive that the description of all its components would go beyond the scope of this book. In the following parts we will therefore look at the most central components and a few of the expansion options. To do that, let's start with our CDI-based JSF example application named IdeaFork and implement some of it.
+
+=== All for one core
+DeltaSpike consists of several largely independent modules based on DeltaSpike Core. The use of individual modules is optional. If a CDI-based application with DeltaSpike is to be improved, then at least DeltaSpike Core must be added. In addition to various utilities for CDI, DeltaSpike-Core includes additional functionality that is useful in both CDI-based Java SE and Java EE applications.
+ 
+
+Before we enrich IdeaFork with mechanisms from DeltaSpike, we need to add DeltaSpike-Core as a dependency of IdeaFork . Normally, it is sufficient to define Core API as compile dependency and Core Impl as runtime dependency. Both can be seen in the Listing Maven configuration for DeltaSpike Core and are parameterized here with the separately defined Maven property $ {ds.version} .
+ <dependency>
+  <groupId>org.apache.deltaspike.core</groupId>
+  <artifactId>deltaspike-core-api</artifactId>
+  <version>${ds.version}</version>
+</dependency>
+<dependency>
+  <groupId>org.apache.deltaspike.core</groupId>
+  <artifactId>deltaspike-core-impl</artifactId>
+  <version>${ds.version}</version>
+  <scope>runtime</scope>
+</dependency>
+In addition to DeltaSpike Core, we will look at the following modules in this book in part:
+Delta Spike Bean Validation
+Delta Spike Data
+Delta Spike JPA
+Delta Spike JSF
+Delta Spike Scheduler
+Delta Spike Servlet
+Delta Spike Test Control
+The DeltaSpike modules Security, Partial-Bean and Proxy are partly required for functionalities of the previously listed modules. All three modules can also be used independently. However, we will primarily look at their use in combination with other components of DeltaSpike.
+ 
+
+With the help of DeltaSpike-Core and the various modules we will improve IdeaFork step by step. Since some mechanisms can be illustrated primarily in combination with others in a meaningful way, we will not look at each module in isolation, but we will thematically change IdeaFork by combining different parts of DeltaSpike. Before we start with the IdeaFork transition , let's take a look at the available modules and their Maven configuration.
+Delta Spike Bean Validation
+Java EE6 defines a rudimentary integration between bean validation and CDI. Above all, CDI-managed constraint validators are not supported. This limitation has been fixed with Java EE7. In IdeaFork we have manually implemented this in BeanAwareConstraintValidatorFactory . Such integration is also provided by the module shown in Listing Maven Configuration for DeltaSpike Bean Validation .
+ <dependency>
+  <groupId>org.apache.deltaspike.modules</groupId>
+  <artifactId>deltaspike-bean-validation-module-api</artifactId>
+  <version>${deltaspike.version}</version>
+</dependency>
+<dependency>
+  <groupId>org.apache.deltaspike.modules</groupId>
+  <artifactId>deltaspike-bean-validation-module-impl</artifactId>
+  <version>${deltaspike.version}</version>
+  <scope>runtime</scope>
+</dependency>
+Tip: All DeltaSpike modules consist of an API and an Impl part. The BeanValidation module adheres to this convention to avoid confusion. However, no API is currently required and thus the Impl dependency would be sufficient.
+Delta Spike Data
+The Data Module allows more efficient use of simple Java Persistence Query Language (JPQL) queries. In the background, the corresponding JPQL query is generated on the basis of the method signature or optionally on the basis of additional metadata.
+ 
+
+Listing Maven configuration for DeltaSpike Data shows the entries for the Maven configuration. As transitive dependencies, DeltaSpike-Data incorporates the JPA, partial bean, and proxy modules.
+ <dependency>
+  <groupId>org.apache.deltaspike.modules</groupId>
+  <artifactId>deltaspike-data-module-api</artifactId>
+  <version>${deltaspike.version}</version>
+</dependency>
+<dependency>
+  <groupId>org.apache.deltaspike.modules</groupId>
+  <artifactId>deltaspike-data-module-impl</artifactId>
+  <version>${deltaspike.version}</version>
+  <scope>runtime</scope>
+</dependency>
+Delta Spike JPA
+If EJBs are not available in a CDI-based application or pure CDI beans are preferred, this module provides alternative transaction handling. In addition to various strategies for handling transactions that can be used in Java SE and EE applications, this module defines, for example, a CDI context that limits the lifetime of corresponding CDI beans to the current transaction.
+ 
+
+The entries shown in Listing Maven Configuration for DeltaSpike JPA must be specified if this module is not to be used in combination with DeltaSpike Data.
+ <dependency>
+  <groupId>org.apache.deltaspike.modules</groupId>
+  <artifactId>deltaspike-jpa-module-api</artifactId>
+  <version>${deltaspike.version}</version>
+</dependency>
+<dependency>
+  <groupId>org.apache.deltaspike.modules</groupId>
+  <artifactId>deltaspike-jpa-module-impl</artifactId>
+  <version>${deltaspike.version}</version>
+  <scope>runtime</scope>
+</dependency>
+Delta Spike JSF
+The build dependencies from the Listing Maven configuration for DeltaSpike JSF (EE6) are required if a JSF application is to be developed even more efficiently. Some concepts of this module allow for higher type safety, which can reduce maintenance. The integration with other parts of DeltaSpike additionally allows the consistent use of different mechanisms of the framework. For this purpose, in addition to the proxy module above all the security module as a transitive dependency is required.
+ <dependency>
+  <groupId>org.apache.deltaspike.modules</groupId>
+  <artifactId>deltaspike-jsf-module-api</artifactId>
+  <version>${deltaspike.version}</version>
+</dependency>
+<dependency>
+  <groupId>org.apache.deltaspike.modules</groupId>
+  <artifactId>deltaspike-jsf-module-impl-ee6</artifactId>
+  <version>${deltaspike.version}</version>
+  <scope>runtime</scope>
+</dependency>
+The normal JSF module is compatible with EE6 and EE7. However, some EE6 servers log an error during application startup. The reason for this is the deactivation of optional classes of the JSF module, which are necessary for EE7 support. The application is still functional. In order to avoid possible uncertainty, an EE6-specific module can be used. Therefore, it is also possible for EE6 based applications to use the build dependencies from Listing Maven configuration for DeltaSpike JSF . This approach does not change the functionality and maintenance of the modules can be minimized.
+ <dependency>
+  <groupId>org.apache.deltaspike.modules</groupId>
+  <artifactId>deltaspike-jsf-module-api</artifactId>
+  <version>${ds.version}</version>
+</dependency>
+<dependency>
+  <groupId>org.apache.deltaspike.modules</groupId>
+  <artifactId>deltaspike-jsf-module-impl</artifactId>
+  <version>${ds.version}</version>
+  <scope>runtime</scope>
+</dependency>
+Delta Spike partial bean
+Partial beans are interface or abstract classes for which generic treatment can be provided. The build dependencies listed in Listing Maven Configuration for DeltaSpike Partial Bean enable such decoupling through special bindings.
+ 
+
+Among other things, this concept is the basis for the data module. The generation of JPQL queries is generically implemented in the data module, which means that the application does not need to contain logic for this. JPA repositories of an application can be reduced to interface or abstract classes.
+ <dependency>
+  <groupId>org.apache.deltaspike.modules</groupId>
+  <artifactId>deltaspike-partial-bean-module-api</artifactId>
+  <version>${ds.version}</version>
+</dependency>
+<dependency>
+  <groupId>org.apache.deltaspike.modules</groupId>
+  <artifactId>deltaspike-partial-bean-module-impl</artifactId>
+  <version>${ds.version}</version>
+  <scope>runtime</scope>
+</dependency>
+Proxies are required for the functionality of this module, which defines the proxy module of DeltaSpike as a transitive dependency.
+Delta Spike Proxy
+The proxy module decouples the use of proxy functionality from a concrete implementation and, as seen in Listing Maven configuration for DeltaSpike Proxy , is configured slightly differently. Currently, the ASM5 module is the only implementation. In the future there may be further implementations to support eg new JDK versions.
+ <dependency>
+  <groupId>org.apache.deltaspike.modules</groupId>
+  <artifactId>deltaspike-proxy-module-api</artifactId>
+  <version>${ds.version}</version>
+</dependency>
+<dependency>
+  <groupId>org.apache.deltaspike.modules</groupId>
+  <artifactId>deltaspike-proxy-module-impl-asm5</artifactId>
+  <version>${ds.version}</version>
+  <scope>runtime</scope>
+</dependency>
+Delta Spike Scheduler
+This module allows integration with schedulers that support task / job configuration with cron expressions. In addition, since DeltaSpike CDI-Control is required to start and stop the request context for each task / job, for example, this module is not compatible with all EE servers. Modern EE servers that use up-to-date versions of OpenWebBeans or Weld are generally unaffected by this limitation.
+ 
+
+Build dependencies for integration with Quartz are shown in the Listing Maven configuration for DeltaSpike Scheduler .
+ <dependency>
+  <groupId>org.apache.deltaspike.modules</groupId>
+  <artifactId>deltaspike-scheduler-module-api</artifactId>
+  <version>${ds.version}</version>
+</dependency>
+<dependency>
+  <groupId>org.apache.deltaspike.modules</groupId>
+  <artifactId>deltaspike-scheduler-module-impl</artifactId>
+  <version>${ds.version}</version>
+  <scope>runtime</scope>
+</dependency>
+
+<dependency>
+  <groupId>org.quartz-scheduler</groupId>
+  <artifactId>quartz</artifactId>
+  <version>${quartz.version}</version>
+</dependency>
+Delta Spike Security
+The security module from Listing Maven Configuration for DeltaSpike Security is not a complete security framework. Instead, this module makes it easy to integrate existing security frameworks with CDI beans. In combination with the JSF module, additional JSF pages can be secured with the same concepts.
+ <dependency>
+  <groupId>org.apache.deltaspike.modules</groupId>
+  <artifactId>deltaspike-security-module-api</artifactId>
+  <version>${ds.version}</version>
+</dependency>
+<dependency>
+  <groupId>org.apache.deltaspike.modules</groupId>
+  <artifactId>deltaspike-security-module-impl</artifactId>
+  <version>${ds.version}</version>
+  <scope>runtime</scope>
+</dependency>
+Delta Spike Servlet
+Similar to bean validation, full CDI integration for servlets was first implemented in Java EE7. The Dependencies included in Listing Maven Configuration for DeltaSpike Servlet primarily provide these functionalities for Java EE6 based applications as well.
+ <dependency>
+  <groupId>org.apache.deltaspike.modules</groupId>
+  <artifactId>deltaspike-servlet-module-api</artifactId>
+  <version>${ds.version}</version>
+</dependency>
+<dependency>
+  <groupId>org.apache.deltaspike.modules</groupId>
+  <artifactId>deltaspike-servlet-module-impl</artifactId>
+  <version>${ds.version}</version>
+  <scope>runtime</scope>
+</dependency>
+Delta Spike Test Control
+We use this CDI integration for JUnit for the examples in this book since the first commit in the Iditefit Git repository . In addition to DeltaSpike-Core, DeltaSpike CDI-Control is also required to use the test dependencies from Listing Maven configuration for DeltaSpike Test-Control for simple testing of CDI-based applications.
+ <dependency>
+  <groupId>org.apache.deltaspike.modules</groupId>
+  <artifactId>deltaspike-test-control-module-api</artifactId>
+  <version>${ds.version}</version>
+  <scope>test</scope>
+</dependency>
+<dependency>
+  <groupId>org.apache.deltaspike.modules</groupId>
+  <artifactId>deltaspike-test-control-module-impl</artifactId>
+  <version>${ds.version}</version>
+  <scope>test</scope>
+</dependency>
+Delta Spike CDI Control
+DeltaSpike CDI-Control is in parallel with DeltaSpike-Core, as this part of DeltaSpike is not based on DeltaSpike core, but is the basis for DeltaSpike scheduler and DeltaSpike test control.
+ 
+
+Originally designed for Java SE, CDI-Control also works with modern Java EE servers. For this DeltaSpike provides implementations for OpenWebBeans, OpenEJB and Weld. This approach eliminates the need to directly use proprietary container APIs in a CDI-based application. CDI-Control hides these calls behind a unified API. The only difference to the runtime is the respective implementation module involved. The same applies to the manual control of the standard scopes of CDI. Implementations of the ContextControl interface can start and stop the underlying contexts via proprietary container APIs.
+ 
+
+Depending on the usage target , the API module from Listing Maven configuration for DeltaSpike CDI-Control can be included as a compile or test dependency.
+ <dependency>
+  <groupId>org.apache.deltaspike.cdictrl</groupId>
+  <artifactId>deltaspike-cdictrl-api</artifactId>
+  <version>${ds.version}</version>
+  <scope>...</scope>
+</dependency>
+By definition, there are several implementation modules for the API module of CDI-Control, which can be seen in the Listings Maven configuration for DeltaSpike OWB-Control , Maven configuration for DeltaSpike Weld-Control, and Maven configuration for DeltaSpike OpenEJB / TomEE-Control .
+ <dependency>
+  <groupId>org.apache.deltaspike.cdictrl</groupId>
+  <artifactId>deltaspike-cdictrl-owb</artifactId>
+  <version>${ds.version}</version>
+  <scope>...</scope>
+</dependency>
+ <dependency>
+  <groupId>org.apache.deltaspike.cdictrl</groupId>
+  <artifactId>deltaspike-cdictrl-weld</artifactId>
+  <version>${ds.version}</version>
+  <scope>...</scope>
+</dependency>
+ <dependency>
+  <groupId>org.apache.deltaspike.cdictrl</groupId>
+  <artifactId>deltaspike-cdictrl-openejb</artifactId>
+  <version>${ds.version}</version>
+  <scope>...</scope>
+</dependency>
+
+=== Flexible rules of the game
+In a first step, we'll start using @Exclude to replace the previously used CDI extension called EntityVetoExtension . The goal of EntityVetoExtension is to veto all JPA entities so that they are not available as CDI beans. In IdeaFork we can achieve the same result, by offering the class BaseEntity with @Exclude annotate. For IdeaFork , this works because all JPA entities are derived from this base class. However, both solutions are not fully equivalent, as we now allow JPA entities as CDI beans, if not from BaseEntity derive and are not explicitly marked with @Exclude . In IdeaFork , however, we get the same result and can do without their own extension. At the same time we increase the readability of the application by explicitly specifying @Exclude . Excluding listing classes with @Exclude for CDI shows the simple usage of @Exclude just described . In addition to this addition, IdeaFork deletes the EntityVetoExtension class and removes the associated configuration entry .
+ @Exclude
+@MappedSuperclass
+public abstract class BaseEntity implements Serializable {
+  //...
+}
+Tip: For CDI itself, DeltaSpike is a kind of pool of ideas. For example, a part of @Exclude was taken over in CDI 1.1 and is available since this version under the name @Vetoed . However, @Exclude still makes sense because this annotation supports the use of additional conditions for disabling CDI beans.
+Conditions can also be used to disable CDI beans. An example of this are the project stages, which are also provided by DeltaSpike. In Java EE, the concept of the project stages is only available for JSF. DeltaSpike takes the basic idea and provides it with a type-safe and extensible mechanism for all parts of an application. Each project stage represents a different step in application development. Should the predefined Stages UnitTest , Development , SystemTest , IntegrationTest , Staging and ProductionFor an application not enough, then own types can be registered. When using stages, there is no difference between the predefined and self-defined stages.
+ 
+
+The combination of Project-Stages with the annotation @Exclude enables the deactivation of CDI beans in certain stages. Listing Conditional exclusion of CDI beans with @Exclude shows the simplest variant of such a combination. In this case we disable IdeaSavedObserver for all stages except Development and UnitTest .
+ @ApplicationScoped
+@Exclude(exceptIfProjectStage =
+  {ProjectStage.Development.class, ProjectStage.UnitTest.class})
+public class IdeaSavedObserver {
+  //...
+}
+If this concept is additionally combined, for example, with CDI beans annotated with @Alternative , alternative implementations for different stages can be activated without creating special versions of the application. In IdeaFork , we will add a mail service a little later, for which we implement a mocked alternative implementation. Additionally, we could annotate this alternative implementation with @Exclude to use this mocked implementation, for example, only during development and for unit testing. If the alternative CDI bean is later deactivated by such a condition in Project-Stage Production , then the original CDI bean automatically becomes active.
+Tip: By default, the CDI TestControl module activates the Project-Stage UnitTest . This default behavior can be overridden explicitly with the optional annotation @TestControl per test method or test class.
+The configuration of the current project stage can be done through the configuration mechanism of DeltaSpike. To do this, the corresponding name of a tag for the key org.apache.deltaspike.ProjectStage must be activated. In addition, rudimentary integration with JSF Project Stages is available, as long as the JSF project stage is configured via JNDI and one of the standard keys ( javax.faces.PROJECT_STAGE or faces.PROJECT_STAGE ).
+Tip: If you configure the JSF project stage with an entry in the web.xml file , then DeltaSpike deliberately ignores it because this configuration variant often causes problems in practice. Now and then it happens that such an entry has been forgotten or accidentally changed and applications have not been deployed on a productive system with Project-Stage Production. Because the configuration mechanism of DeltaSpike is extensible, this deliberate restriction can be bypassed if necessary by using its own implementation of org.apache.deltaspike.core.spi.config.ConfigSource .
+ 
+
+The configuration mechanism of DeltaSpike is very diverse. In combination with the @ConfigProperty qualifier , configured values ​​can be injected into CDI beans. A simple example is illustrated in Listing Injection of Configurations with @ConfigProperty .
+ 
+
+Originally, we used our own type-safe configuration in CurrentObjectConverterProducer . In simple cases, this is an elegant option. However, we had to manually load the value for this. To avoid this, we can use @ConfigProperty instead.
+ @ApplicationScoped
+public class CurrentObjectConverterProducer {
+  @Produces
+  @Default
+  @Dependent
+  protected ObjectConverter defaultConverter(
+      @ExternalFormat(XML) ObjectConverter objectConverterXml,
+      @ExternalFormat(JSON) ObjectConverter objectConverterJson,
+      @ConfigProperty(name = "defaultExternalFormat")
+        String defaultExternalFormat) {
+    switch (ExternalFormat.TargetFormat.valueOf(defaultExternalFormat)) {
+      case JSON:
+        return objectConverterJson;
+      default:
+        return objectConverterXml;
+    }
+  }
+}
+By default, DeltaSpike evaluates various configuration sources. System properties are queried before environment variables and before a JNDI lookup. As the last source, DeltaSpike loads all configurations named META-INF / apache-deltaspike.properties . Values ​​from a higher-priority config source override values ​​from downstream sources.
+Hint: The predefined order can be adapted as the priority of a config source can be changed. If, for example, JNDI has the highest priority, then the key deltaspike_ordinal must be set with the aid of the configuration source itself, in this case as a JNDI entry, with the highest ordinal value of the activated configuration sources. Specifically, for example, deltaspike_ordinal = 500 would have to be set via JNDI configuration.
+ 
+
+Normally we want to use an own configuration file for the configuration of an application. So, too, in IdeaFork configured values in a separate file called app-config.properties stored. Strictly speaking, DeltaSpike only knows the abstract concept of configuration sources and provides implementations for sources such as META-INF / apache-deltaspike.properties . The extensibility of the configuration mechanism allows integration of other configuration sources through implementations of the org.apache.deltaspike.core.spi.config.ConfigSource interface .
+ 
+
+For custom property files, DeltaSpike provides even easier integration. Listing Integrating Own Properties Files shows the use of the PropertyFileConfig base class . In addition to the name itself, it must be explicitly stated whether this is an optional configuration file. DeltaSpike looks for implementations of org.apache.deltaspike.core.api.config.PropertyFileConfig during application launch and automatically registers them in the bootstrapping phase AfterDeploymentValidation . Therefore, configured values ​​are only available at the end of the container startup.
+Tip: If a configured value is already available during the bootstrapping phase, then an implementation of the org.apache.deltaspike.core.spi.config.ConfigSource interface is required. Activation of an implementation of this interface follows the standard service loader rules and is thus independent of CDI.
+ public class IdeaForkConfigFile implements PropertyFileConfig {
+  @Override
+  public String getPropertyFileName() {
+    return "app-config.properties";
+  }
+
+  @Override
+  public boolean isOptional() {
+    return false;
+  }
+}
+IdeaForkConfigFile also allows us to inject values ​​from the configuration file app-config.properties using the qualifier annotation @ConfigProperty . Values ​​injected in this way do not have their own lifecycle. In many cases, these are strings and primitive data types, which means that DeltaSpike itself can not provide an automatic reload mechanism for such values. Here, however, we can fall back on board funds from CDI. In listing injection and caching of configured values a request-scoped bean is used to read the configured value once per request. Of course, this is a certain amount of overhead, which we will minimize in the next section through our own scope.
+ @RequestScoped
+public class MonitoringConfig {
+  @Inject
+  @ConfigProperty(name = "methodInvocationThreshold")
+  private Integer methodInvocationThreshold;
+
+  public Integer getMethodInvocationThreshold() {
+    return methodInvocationThreshold;
+  }
+}
+The CDI bean from listing injection and caching of configured values can then be injected anywhere and used to access the current values.
+ 
+
+If, on the other hand, a configured value is to be injected directly at several points in the application, it is possible to create your own qualifier to increase type safety and to encapsulate the string for the configuration key in a central location. Listing config qualifier for type-safe injection shows such a qualifier. Apart from the annotations for CDI qualifiers, such a qualifier is annotated with @ConfigProperty . Thus, in this example, @ConfigProperty (name = "name") is encapsulated centrally in the annotation @ApplicationName .
+ @ConfigProperty(name = "name")
+@Target({METHOD, FIELD, PARAMETER})
+@Retention(RUNTIME)
+@Qualifier
+public @interface ApplicationName {
+}
+Listing Type-safe injection of configuration values shows the matching injection point, where instead of @ConfigProperty the qualifier from Listing Config qualifier is used for type-safe injection . Since we use our own qualifier for the injection point, we also have to provide a corresponding producer.
+ @Inject
+@ApplicationName
+private String applicationName;
+Listing Producer for type-safe configuration values illustrates the required producer implementation, which can be kept very simple by using org.apache.deltaspike.core.spi.config.BaseConfigPropertyProducer . In the concrete example, you only have to delegate to BaseConfigPropertyProducer # getStringPropertyValue .
+ @ApplicationScoped
+public class ConfigProducer extends BaseConfigPropertyProducer {
+  @Produces
+  @ApplicationName
+  public String applicationName(InjectionPoint injectionPoint) {
+    return getStringPropertyValue(injectionPoint);
+  }
+
+  //...
+}
+Of course, such a simple delegation is not always possible. Listing default values ​​for type-safe configuration shows, for example, another producer method in the same class, which then processes the loaded result. The required qualifier is specified in Listing Config qualifier for type-safe injection with default value . The annotation attribute defaultValue is evaluated manually in the method ConfigProducer # maxNumberOfHighestRatedCategories and must therefore be marked with @Nonbinding .
+ @ConfigProperty(name = "maxNumberOfHighestRatedCategories")
+@Target({METHOD, PARAMETER, FIELD})
+@Retention(RUNTIME)
+@Qualifier
+public @interface MaxNumberOfHighestRatedCategories {
+  @Nonbinding
+  int defaultValue() default 15;
+}
+In addition, listing default values ​​for type-safe configuration show that your own qualifiers also offer an additional option for using your own annotation attributes.
+ @ApplicationScoped
+public class ConfigProducer extends BaseConfigPropertyProducer {
+  //...
+
+  @Produces
+  @MaxNumberOfHighestRatedCategories
+  public Integer maxNumberOfHighestRatedCategories(
+      InjectionPoint injectionPoint) {
+
+    String configuredValue = getStringPropertyValue(injectionPoint);
+
+    if (configuredValue == null || configuredValue.length() == 0) {
+      return getAnnotation(
+        injectionPoint, MaxNumberOfHighestRatedCategories.class)
+        .defaultValue();
+    }
+
+    return Integer.parseInt(configuredValue);
+  }
+}
+Tip: Since we need to evaluate information from the injection point, we can only generate dependent-scoped beans in the previous examples according to the CDI rules.
+ 
+
+For injection points with the qualifier @MaxNumberOfHighestRatedCategories , even the default value can be changed if necessary. Normally, however, this is not required, which means that the use of the qualifier at an injection point, as shown in Listing Type Safe Injection of configuration values ​​with default values , is usually sufficient.
+ @Repository
+public class IdeaJpaRepository
+  extends GenericJpaRepository<Idea>
+  implements IdeaRepository {
+
+    @Inject
+    @MaxNumberOfHighestRatedCategories
+    private Integer maxNumberOfHighestRatedCategories;
+
+    //...
+}
+In the background, BaseConfigPropertyProducer delegates to the class ConfigResolver of DeltaSpike, which of course can also be used manually. Listing Type-safe configuration without @ConfigProperty shows a traditional producer method without @ConfigProperty and without analyzing the injection point. Instead, ConfigResolver # getPropertyValue is used in combination with a fixed key, and the loaded result is provided as a structured object by the ApplicationVersion class .
+ @ApplicationScoped
+public class ConfigProducer extends BaseConfigPropertyProducer {
+  //...
+
+  @Produces
+  @Dependent
+  public ApplicationVersion applicationVersion() {
+    String configuredValue = ConfigResolver.getPropertyValue("version");
+    return new ApplicationVersion(configuredValue);
+  }
+}
+
+public class ApplicationVersion {
+  private final boolean released;
+  private final String versionString;
+
+  public ApplicationVersion(String versionString) {
+    this.released = !versionString.contains("SNAPSHOT");
+    this.versionString = versionString;
+  }
+
+  public boolean isReleased() {
+    return released;
+  }
+
+  @Override
+  public String toString() {
+    return versionString;
+  }
+}
+ApplicationVersion from Listing Type safe configuration without @ConfigProperty can thus be injected into other beans as usual. Listing Project-Stage dependent logic processes the information from ApplicationVersion if a particular project stage is active. The project stages introduced in the previous section can also be evaluated manually. The active project stage can be injected and checked with == or #equals .
+ @Named
+public class ApplicationInfo {
+  private String versionText = "Public";
+
+  @Inject
+  public ApplicationInfo(ApplicationVersion appVersion,
+                         ProjectStage projectStage) {
+
+    if (projectStage == Staging) {
+      if (appVersion.isReleased()) {
+        versionText = "Release ";
+      }
+      versionText += "v" + appVersion.toString();
+    }
+  }
+
+  public String getVersionText() {
+    return versionText;
+  }
+}
+So far, we have fixed the version number of IdeaFork in our configuration file and used it only to illustrate type-safe configuration classes. However, to use Project-Stage based logic in combination with methods such as # isReleased more useful, it is obvious to use the version number from the build configuration. As with any configuration file in a Maven-Build project, you can use the placeholder $ {project.version} . This allows Listing Project-Stage-dependent logic to use Project-Stage Staging to display the exact build version without manually waiting for it.
+ 
+
+In the IdeaFork XHTML template , therefore, a simple EL expression, in our case # {applicationInfo.versionText} , can be used to display different information depending on the current project stage.
+ 
+
+As mentioned in the previous section, the current project stage can be configured with the key org.apache.deltaspike.ProjectStage . Because VM parameter is one of the default configuration sources, -Dorg.apache.deltaspike.ProjectStage = Staging lets us display the version of IdeaFork .
+ 
+
+The Project-Stage mechanism of DeltaSpike is not only type-safe, but also extensible. To define an additional stage, the interface org.apache.deltaspike.core.api.projectstage.ProjectStageHolder must be implemented. Then we need to configure this class in the META-INF / services / org.apache.deltaspike.core.api.projectstage.ProjectStageHolder file using the traditional service loader rules. As can be seen in Listing's Own Project-Stage Value , the implementation must provide a (public static final) variable initialized. The type of variable is the added stage, which must be derived from org.apache.deltaspike.core.api.projectstage.ProjectStage .
+ public class CustomProjectStage implements ProjectStageHolder {
+  public static final class Debugging extends ProjectStage {
+    private static final long serialVersionUID = -2626602281649294170L;
+  }
+
+  public static final Debugging Debugging = new Debugging();
+}
+For example, we can use our new debugging stage in a DeltaSpike exception handler from Listing's own project stage in an exception handler to write IO exceptions to the log only when the debugging stage is enabled. The exception handler mechanism of DeltaSpike explicitly allows an ExceptionToCatchEvent to be fired via the Event API of CDI . Listing own project stage in an exception handler shows a corresponding Observer, which is not built on the Observer API of CDI, because among other things by a separate concept of DeltaSpike the execution order of the handler methods can be optionally set. This and other aspects require a slightly different implementation. The first step is to mark the handler class with @ExceptionHandler so that an exception handler is registered as such at all. When defining a handler method itself, we can follow the rules on CDI observer methods. Instead of @Observes we have to use @Handles . The event type is also different with ExceptionEvent, because with a CDI observer, the original event type ( ExceptionToCatchEvent) would be expected. ExceptionEvent must also be typed to the type of exception being monitored and provide additional methods for controlling the exception flow. Since LoggingExceptionHandler should only log exceptions, ExceptionEvent # throwOriginal is called at the end . If no handler method calls #handled after this, the original exception will be thrown after calling all responsible exception handlers.
+ @ApplicationScoped
+@ExceptionHandler
+public class LoggingExceptionHandler {
+  private static final Logger LOG =
+    Logger.getLogger(LoggingExceptionHandler.class.getName());
+
+  public void onUnhandledException(
+      @Handles ExceptionEvent<IOException> exceptionEvent,
+      ProjectStage projectStage) {
+
+    if (projectStage == CustomProjectStage.Debugging) {
+      LOG.log(Level.FINE,
+        "exception detected", exceptionEvent.getException());
+    }
+
+    exceptionEvent.throwOriginal();
+  }
+}
+DeltaSpike does not call exception handlers automatically when an exception occurs. Instead, the previously mentioned ExceptionToCatchEvent must be fired via the CDI Event API. Listing using ExceptionToCatchEvent indicates use in CustomJsonWriter .
+ @Provider
+@Produces(MediaType.APPLICATION_JSON)
+public class CustomJsonWriter implements MessageBodyWriter<Object> {
+  //...
+
+  @Inject
+  private BeanManager beanManager;
+
+  @Override
+  public void writeTo(Object o, Class<?> rawType,
+                      Type genericType,
+                      Annotation[] annotations,
+                      MediaType mediaType,
+                      MultivaluedMap<String, Object> httpHeaders,
+                      OutputStream entityStream) throws IOException {
+    //...
+
+    try {
+      //...
+    } catch (IOException e) {
+      ExceptionToCatchEvent exceptionToCatchEvent =
+        new ExceptionToCatchEvent(e);
+
+      beanManager.fireEvent(exceptionToCatchEvent);
+    }
+  }
+
+  //...
+}
+Since methods such as ExceptionEvent # abort can be aborted without throwing an exception, ExceptionToCatchEvent provides the #isHandled method . Thus, after firing ExceptionToCatchEvent, it can be checked whether the processing was aborted or whether the exception was actually handled by a handler. In addition, ExceptionToCatchEvent can be marked as optional before firing to notify the exception handlers, but to suppress the automatic throwing of the exception if it has not yet been handled after the call of the last handler.
+Tip: DeltaSpike offers further extensive options for dealing with exceptions. These should be used with caution, as the handling of exceptions can otherwise become confusing.
+
+=== Everything under control
+In the previous section, we used a request-scoped bean for caching and updating configured values. In practice, this can cause an unnecessarily high overhead. Configured values ​​are usually valid for a certain time and do not need to be reloaded all the time. However, it may be necessary to reload such values ​​at certain times or for certain events. We could use one of the available Scopes, which has the desired properties to store configuration values. If such a scope does not yet exist, then we can define and implement our own. Again, DeltaSpike can help with the abstract class org.apache.deltaspike.core.util.context.AbstractContext . For IdeaFork For example, we can implement our own config scope, which can be reset manually. If we would like to use a corresponding annotation with the name @ConfigScoped , we have to define it based on the CDI rules for normal scopes. The result is shown in Listing's own scope annotation . Since we do not need a passable context, it is sufficient to use the annotation @NormalScope without any changes.
+ @NormalScope
+@Target({TYPE, METHOD, FIELD})
+@Retention(RetentionPolicy.RUNTIME)
+@Inherited
+@Documented
+public @interface ConfigScoped {}
+An annotation alone is of course not sufficient and therefore we implement the appropriate context in the next step. Listing's own context implementation demonstrates that the use of AbstractContext makes it easy to implement your own implementation. The #getScope method returns the class of our newly created annotation, linking the context implementation to it. ContextualStorage is a pre-built data structure for storing the beans, which can be easily initialized in the constructor of the context implementation. Primarily, we have to decide by the second parameter whether the internal data structure should synchronize parallel access in order to support parallel accesses correctly. In our case we want this and therefore we use the value true . Finally , using the pre-defined getter method called #getContextualStorage , the AbstractContext implementation can access the currently valid ContextualStorage instance. The #isActive method always returns true in our case back because the context should always be active.
+ 
+
+Further methods are not prescribed by javax.enterprise.context.spi.Context or org.apache.deltaspike.core.util.context.AbstractContext and can therefore be chosen by you. Our config context is to provide a method for a complete reset, which can be called manually at any time. In Listing Own Context Implementation, the #reset method delegates to the static helper method AbstractContext # destroyAllActive , to which the currently valid ContextualStorage must be transferred in order to reset its contents.
+ public class ConfigContext extends AbstractContext {
+  private final ContextualStorage contextualStorage;
+
+  public ConfigContext(BeanManager beanManager) {
+    super(beanManager);
+    contextualStorage =
+      new ContextualStorage(beanManager, true, isPassivatingScope());
+  }
+
+  @Override
+  protected ContextualStorage getContextualStorage(
+      Contextual<?> contextual, boolean createIfNotExist) {
+
+    return this.contextualStorage;
+  }
+
+  @Override
+  public Class<? extends Annotation> getScope() {
+    return ConfigScoped.class;
+  }
+
+  @Override
+  public boolean isActive() {
+    return true;
+  }
+
+  public void reset() {
+    AbstractContext.destroyAllActive(this.contextualStorage);
+  }
+}
+Like any CDI context, the implementation of Listing Own Context Implementation must be registered using a CDI extension. Listing Register Your Own Context Implementation illustrates this mechanism. In an observer method for AfterBeanDiscovery -Event which is additionally BeanManager injected which then the constructor of ConfigContext is passed. The Context instance created in this way is finally registered via the AfterBeanDiscovery # addContext method .
+ public class ConfigContextExtension implements Extension {
+  public void registerDeltaSpikeContexts(
+      @Observes AfterBeanDiscovery afterBeanDiscovery,
+      BeanManager beanManager) {
+
+    ConfigContext configContext = new ConfigContext(beanManager);
+    afterBeanDiscovery.addContext(configContext);
+  }
+
+  public void shutdownConfigContext(
+      @Observes BeforeShutdown beforeShutdown,
+      BeanManager beanManager) {
+
+    ((ConfigContext)beanManager.getContext(ConfigScoped.class)).reset();
+  }
+}
+As usual with CDI, CDI extensions have to be entered fully qualified in the file META-INF / services / javax.enterprise.inject.spi.Extension . For the present CDI extension, the new content of the configuration file is: at.irian.cdiatwork.ideafork.core.impl.config.context.ConfigContextExtension
+ 
+
+In listing using its own scope annotation , the scope annotation of the CDI context registered with it can thus be used for our configuration cache named MonitoringConfig .
+ @ConfigScoped
+public class MonitoringConfig {
+  @Inject
+  @ConfigProperty(name = "methodInvocationThreshold")
+  private Integer methodInvocationThreshold;
+
+  public Integer getMethodInvocationThreshold() {
+    return methodInvocationThreshold;
+  }
+}
+ 
+
+In Listing my own context implementation , the #reset method of ConfigContext is called in the Observer method for the BeforeShutdown event to call any existing @PreDestroy callbacks of the stored beans. If this was the only call to the reset method, our newly implemented context would behave like the standard application context of CDI. In IdeaFork , the config context should be able to be reset using various mechanisms. In this section we want to use JMX for this. Delta spike Core allowed namely by the use of the Annotation @MBean Automatically register CDI beans as JMX beans. Specifying a bean name and category for JMX is optional. Enabling Listing CDI Bean as a JMX Bean demonstrates how we can explicitly set both pieces of information. This makes the CDI bean visible, for example, in the JMX console called jconsole . The class ConfigReloader defines only one method, which is additionally annotated with @JmxManaged . This annotation marks methods that should be accessible via JMX. In the method implementation we get over the injected BeanManager our self-implemented context to the method #RESET call.
+ @ApplicationScoped
+@MBean(name = "ConfigReloader", category = "IdeaFork")
+public class ConfigReloader {
+  @Inject
+  private BeanManager beanManager;
+
+  @JmxManaged
+  public void reloadConfig() {
+    ((ConfigContext)beanManager.getContext(ConfigScoped.class))
+      .reset();
+  }
+}
+As a result, it is now possible at any time to reset the buffer for configured values ​​via JMX, whereby all values stored in a @ConfigScoped CDI bean are reloaded on the next access.
+
+=== Helping hands
+DeltaSpike Core also provides some static helper methods in addition to base classes. In IdeaFork , for example , we implemented two static methods in CdiUtils , which we can replace. The first of these two methods is called #injectFields and is used in CustomJsonWriter , IdeaExporter, and RestApplicationConfig to manually fill injection points of the current instance. An equivalent method is provided by the so-called BeanProvider of DeltaSpike. Listing Manual Injecting shows usage in the IdeaExporter class , The conversion itself is very simple, since only the class name has to be changed from CdiUtils to BeanProvider .
+ private synchronized void init() {
+  if (ideaManager == null) {
+    BeanProvider.injectFields(this);
+  }
+}
+The BeanProvider class also provides many other helper methods. The second method named #getContextualReference , which we have implemented manually in CdiUtils so far , can also be replaced by a version of BeanProvider of the same name . Listing Manual Lookup shows the switch to BeanAwareConstraintValidatorFactory for an optional lookup via BeanProvider .
+ @Override
+public <T extends ConstraintValidator<?, ?>> T
+    getInstance(Class<T> validatorClass) {
+
+  T managedConstraintValidator =
+    BeanProvider.getContextualReference(validatorClass, true);
+
+  if (managedConstraintValidator == null) {
+    managedConstraintValidator =
+      this.defaultFactory.getInstance(validatorClass);
+  }
+  return managedConstraintValidator;
+}
+The method #getContextualReference is overloaded several times in BeanProvider , which allows you to use different parameter combinations . In addition to optional qualifiers, such a lookup can also take the name of a bean, if it has been defined. Nevertheless, a type-safe lookup should be preferred. However, manual lookups should be used with great care. Normal-scoped beans are unproblematic because only the contextual reference and not the contextual instance is given to the outside by the CDI container. However, this does not apply to dependent-scoped beans and therefore separate lookup methods are available under the name #getDependent . The result is called in a data structure DependentProvider packed so that a correct manual destruction of the dependent-scoped instance at a later time is possible. If a dependent-scoped bean were injected into a normal-scoped bean, then the CDI container would destroy the dependent-scoped bean as soon as the associated normal-scoped bean was destroyed. The CDI container can not automatically do this task in the case of a direct lookup of a dependent-scoped bean and therefore it is necessary to initiate this process explicitly.
+ 
+
+In class Active User Holder we throw in a session timeout in @PreDestroy a callback user action event . Since no (HTTP) request is active here, for example, request-scoped beans can not be used. Initially, MonitoringConfig was a request-scoped bean and would not be usable for such an application because of a ContextNotActiveException . By using @ConfigScoped we would not have to consider this case in IdeaFork .
+ 
+
+Since session timeouts and their consequences are often neglected in application tests , we can nevertheless make provisions in ActiveUserHolder that no problems can arise here at a later date. Listing Manual use of dependent-scoped beans contains several aspects that are of interest in such and similar cases.
+ 
+
+Instead of injecting the BeanManager , it can also be obtained via the BeanManagerProvider from DeltaSpike in a first step . This is especially suitable for use in static methods, as well as for use in instances that are not managed by the CDI container. Using BeanManager s and BeanProvider # getDependent , the next step is to get a dependent-scoped bean of type ContextControl . This interface is not included in DeltaSpike Core, but in a separate part of DeltaSpike called CDI Control. Purely technical would be the detour via DependentProvider not required because the available implementations do not use @PreDestroy callbacks. However, the use shown in Listing Manual Use of dependent-scoped beans makes sense because DeltaSpike will otherwise write warnings to the log.
+ 
+
+After the lookup via BeanProvider # getDependent , the contextual instance itself can be accessed via DependentProvider # get . In our case, we start the request context before UserActionEvent is fired and kill it before destroying the dependent-scoped instance of ContextControl using DependentProvider # destroy .
+Tip: In the background, a mocked request is connected to the current thread, which means that any request-scoped CDI beans can be reused until the request context is stopped. Through concepts such as these, all standard contexts can also be used in a CDI-based Java SE application or in unit tests. Indirectly we use this advantage since the first example, because the test control module internally also uses CDI-Control to start and stop the CDI container or to control the standard contexts as required.
+ public void onLogout(User user, boolean manualLogout) {
+  if (manualLogout) {
+    userActionEvent
+      .fire(new UserActionEvent(new UserAction(LOGOUT, user)));
+  } else {
+    BeanManager beanManager =
+      BeanManagerProvider.getInstance().getBeanManager();
+
+    DependentProvider<ContextControl> contextControlProvider =
+      BeanProvider.getDependent(beanManager, ContextControl.class);
+
+    try {
+      contextControlProvider.get().startContext(RequestScoped.class);
+
+      userActionEvent
+        .fire(new UserActionEvent(new UserAction(AUTO_LOGOUT, user)));
+    } finally {
+      contextControlProvider.get().stopContext(RequestScoped.class);
+      contextControlProvider.destroy();
+    }
+  }
+}
+Tip: Starting with version 1.1, CDI provides a replacement for the BeanManagerProvider with CDI.current (). GetBeanManager () .
+In addition to these very CDI-specific tools, DeltaSpike Core also includes more general tools such as ProxyUtils and AnnotationUtils . In IdeaFork , we've done the detection of proxy classes manually. Listing Manual Analyzes shows the previous procedure in DefaultMonitoredInterceptorStrategy , which can be replaced in Listing Utility methods of DeltaSpike by using ProxyUtils # getUnproxiedClass .
+ private Monitored extractMonitoredAnnotation(InvocationContext ic) {
+  Monitored result = ic.getMethod().getAnnotation(Monitored.class);
+
+  if (result != null) {
+    return result;
+  }
+
+  Class<?> targetClass = ic.getTarget().getClass();
+
+  if (targetClass.getName()
+        .startsWith(targetClass.getSuperclass().getName()) &&
+      targetClass.getName().contains("$$")) {
+
+    targetClass = targetClass.getSuperclass();
+  }
+
+  result = targetClass.getAnnotation(Monitored.class);
+
+  if (result == null) {
+    return findAnnotation(
+      beanManager, targetClass.getAnnotations(), Monitored.class);
+  }
+
+  return result;
+}
+
+private static <T extends Annotation> T findAnnotation(
+    BeanManager beanManager,
+    Annotation[] annotations,
+    Class<T> targetAnnotationType) {
+
+  for (Annotation annotation : annotations) {
+    if (targetAnnotationType.equals(annotation.annotationType())) {
+      return (T) annotation;
+    }
+    if (beanManager.isStereotype(annotation.annotationType())) {
+      T result = findAnnotation(
+        beanManager,
+        annotation.annotationType().getAnnotations(),
+        targetAnnotationType);
+      if (result != null) {
+        return result;
+      }
+    }
+  }
+  return null;
+}
+Another helper class used in DeltaSpike listing utility methods is AnnotationUtils . In DefaultMonitoredInterceptorStrategy , the manually implemented #findAnnotation method can be replaced with AnnotationUtils # findAnnotation . An additional advantage of AnnotationUtils # findAnnotation is the support of CDI stereotypes. This is also the reason why the BeanManager has to be passed as the first parameter.
+ private Monitored extractMonitoredAnnotation(InvocationContext ic) {
+  Monitored result = ic.getMethod().getAnnotation(Monitored.class);
+
+  if (result != null) {
+    return result;
+  }
+
+  Class<?> targetClass = ic.getTarget().getClass();
+
+  targetClass = ProxyUtils.getUnproxiedClass(targetClass);
+
+  result = targetClass.getAnnotation(Monitored.class);
+
+  if (result == null) {
+    return AnnotationUtils.findAnnotation(
+      beanManager, targetClass.getAnnotations(), Monitored.class);
+  }
+
+  return result;
+}
+DeltaSpike Core contains many interesting tools like these. A look at the package org.apache.deltaspike.core.util is highly recommended. Even for aids that are not directly related to CDI itself.
+
+=== Sure is safe
+In addition to CDI tools, DeltaSpike also provides new concepts for other specifications, such as JSF, to facilitate application development through additional type-safety and maintainability. An example of this is the view config. This mechanism allows the type-safe configurations of (JSF) pages.
+Tip: View configs are currently implemented specifically for JSF. However, the concept itself is independent of JSF and therefore DeltaSpike Core contains most interfaces and annotations. Thus, implementations for other UI frameworks based on DeltaSpike core are also possible. The JSF module of DeltaSpike provides an implementation for JSF and additionally allows the use of the optional annotations @View and @Folder .
+As described above, we now add the JSF module in IdeaFork so that we can create a type-safe view config for any JSF pages. Listing Minimal View Config illustrates the simplest variant without additional metadata.
+ public class Index implements ViewConfig {
+}
+Without additional use in the application, the configuration from Listing Minimal View Config only leads to path validation. The page configuration shown above defines the file path /index.xhtml . However , this file does not exist in IdeaFork . When an application with an invalid page configuration is started, DeltaSpike aborts the boot process and reports an invalid configuration. The file index.xhml is in our case stored in the directory pages . Correspondingly, the View config in Listing Minimal View-Config in a directory is required.
+ public interface Pages {
+  class Index implements ViewConfig {}
+}
+Directories are represented by nested interfaces and concrete pages by classes that directly or indirectly implement the ViewConfig interface. When converting to a JSF View ID, the first letter is converted to a lowercase letter and a suffix is ​​added to JSF pages, resulting in the path /pages/index.xhtml in the case of Listing Minimal View-Config in a directory .
+ 
+
+Apart from the automatic validation of the paths, this type-safe configuration can already be usefully used without additional metadata. In fact, view configs can also be used for a type-safe JSF navigation. Listing Minimal type-safe JSF navigation illustrates this using an action method that does not use a string as the return type, unlike a traditional action method.
+ public Class<? extends ViewConfig> onJsfAction() {
+  //...
+  return Pages.Index.class;
+}
+DeltaSpike automatically converts Pages.Index.class to /pages/index.xhtml , which gives the JSF implementation a normal View ID as the navigation target , and thus behaves like a standard implicit JSF navigation supported by the specification since JSF 2.0 ,
+ 
+
+The View-Config concept in combination with additional metadata really makes sense. Listing directory hierarchy with view configs shows a configuration as it is often used in practice. With @View to JSF-specific information such as the navigation mode can define and assign explicit names. However, @View does not need to be redefined for every page, but can be inherited through the inheritance hierarchy. Because one side only indirectly ViewConfig must implement, is in Listing directory hierarchy with View configs Pages of ViewConfig which means that all other configurations do not need a direct connection to any of the DeltaSpike interfaces. The inheritance hierarchy inherits @View to all page configurations that directly or indirectly implement the Pages interface.
+ 
+
+The specification of REDIRECT as navigation mode changes the generated navigation strings . Thus, for example. From /pages/index.xhtml the value /pages/index.xhtml?faces-redirect=true . The same applies to all other pages except Pages.User.Login.class , since only this page configuration does not implement the Pages interface.
+ 
+
+Pages.User.Login.class instead extends the class org.apache.deltaspike.core.api.config.view.DefaultErrorView . This marker class for the error page of an application may only be extended by one configuration class. DeltaSpike needs this marker to navigate generically to the default error page of an application if an unhandled error occurs in the application. If a page other than the Error page is to be used at a later time, then only the configuration classes concerned need to be adapted accordingly.
+ 
+
+In Listing Directory Hierarchy with View-Configs, it can also be seen that User is the Interface in PagesInterface is nested. This is required whenever there is a subfolder in the file system. Thus, the structure of the file system is reflected in the configuration. If we later rename only one of the orders and the type-safe configuration does not follow suit, then the next application start would end with an exception. Since the path configuration view config is interfaces and classes, updating is very easy. All modern Java IDEs can automatically update class or interface names throughout the project. At the latest the Java compiler checks if all references were changed correctly.
+ @View(navigation = REDIRECT)
+public interface Pages extends ViewConfig {
+  class Index implements Pages {}
+
+  interface User extends Pages {
+    class Login extends DefaultErrorView {}
+
+    class Registration implements User {}
+
+    class Profile implements User {}
+  }
+}
+Tip: The naming convention described above can be customized. A simple adaptation will be discussed in the next section of this chapter.
+Listing IdeaFork page configurations shows the IdeaFork page configuration for the existing JSF pages. We would not have to create a view config for each page, but for each configuration class, the associated JSF page must exist. Therefore, it is basically possible to dispense with the configuration of specific pages. If only directories are configured, it is possible, for example, to define security constraints for entire folders. In IdeaFork , we will use a combination as a next step by defining folder level security constraints and adding metadata to certain pages.
+ @View(navigation = REDIRECT)
+public interface Pages extends ViewConfig {
+  class Index implements Pages {}
+
+  interface User extends Pages {
+    class Login extends DefaultErrorView {}
+
+    class Registration implements User {}
+
+    class Profile implements User {}
+  }
+
+  interface Idea extends Pages {
+    class Overview implements Idea {}
+
+    class Create implements Idea {}
+    class Edit implements Idea {}
+
+    class List implements Idea {}
+    class Details implements Idea {}
+  }
+
+  interface Search extends Pages {
+    class Fork implements Search {}
+  }
+
+  interface Import extends Pages {
+    class Upload implements Import {}
+    class Summary implements Import {}
+  }
+}
+Since directories are represented by interfaces and thus have their own type, the navigation destination can even be restricted by the return type of action methods. Listing Restrict navigation target via Return type shows one of the modified action methods of IdeaFork . Instead of Class <? extends ViewConfig> becomes Class <? extends Pages.Idea> uses. Since our own interfaces are used here, the implementation becomes more readable and additionally the Java compiler ensures that the navigation target must be in the directory / pages / idea .
+ @ViewController
+public class IdeaCreateViewCtrl implements Serializable {
+  //...
+
+  public Class<? extends Pages.Idea> save() {
+    //...
+    ideaService.save(ideaToSave);
+    return Pages.Idea.Overview.class;
+  }
+}
+Technically mixtures are possible. Listing options for return types is the correspondingly adapted version of the class MenuController . Here it becomes apparent that, as with the #home method, specifying Class <? extends Pages> the topmost home directory can be set as the navigation destination. The navigation itself can be performed to a page in this directory or to a page in one of the subdirectories. As an alternative, the complete path can already be specified by the return type. This is implemented , for example, in the method #login . In contrast, the methods #logout and #start where you can navigate to any valid view config configuration.
+ @Named("menuBean")
+@Model
+public class MenuController {
+  @Inject
+  private ActiveUserHolder userHolder;
+
+  public Class<? extends Pages> home() {
+    return Pages.Index.class;
+  }
+
+  public Class<Pages.User.Login> login() {
+    return Pages.User.Login.class;
+  }
+
+  public Class<? extends ViewConfig> logout() {
+    userHolder.setAuthenticatedUser(null);
+    return Pages.User.Login.class;
+  }
+
+  public Class<? extends ViewConfig> start() {
+    if (userHolder.isLoggedIn()) {
+      return Pages.Idea.Overview.class;
+    }
+    return Pages.User.Login.class;
+  }
+
+  public Class<? extends Pages.User> register() {
+    return Pages.User.Registration.class;
+  }
+}
+Apart from JSF action methods, type-safe folder and page configurations can also be used outside of JSF, for example for type-safe navigation. Listing Using ViewConfigResolver illustrates how IdeaImportServlet in IdeaFork can benefit from this concept. Compared to the previous implementation of this servlet , a so-called ViewConfigResolver can be injected. Using the #getViewConfigDescriptor method , we can query the corresponding configuration including all metadata with a path specification as a string or a class of type ViewConfig . In our case we get the configuration for Pages.Import.Summary.class and call the #getViewId method on the resulting descriptor to get the path as a string.
+ @WebServlet("/idea/import")
+@MultipartConfig
+public class IdeaImportServlet extends HttpServlet {
+  @Inject
+  private ActiveUserHolder userHolder;
+
+  @Inject
+  private FileUploadService fileUploadService;
+
+  @Inject
+  private ViewConfigResolver viewConfigResolver;
+
+  protected void doPost(HttpServletRequest request,
+                        HttpServletResponse response)
+        throws ServletException, IOException {
+
+    fileUploadService.storeUploadedFiles(
+      request.getParts(), userHolder.getAuthenticatedUser());
+
+    ViewConfigDescriptor viewConfigDescriptor =
+      viewConfigResolver.getViewConfigDescriptor(
+        Pages.Import.Summary.class);
+
+    request.getRequestDispatcher(viewConfigDescriptor.getViewId())
+      .forward(request, response);
+  }
+}
+For future refactorings, we no longer have to manually retrace a fixed string. In addition, modern Java IDEs not only simplify refactoring itself, but also search for specific page references. In IdeaFork's Git repository , all changes to this topic are consolidated and the entire application is converted to view configs.
+Tip: Inherited metadata can be overridden or expanded. For example, it is possible to use @View for a specific page configuration in order to adapt the behavior for individual pages or to extend the inherited information with additional information.
+We have not explicitly used the previously defined error page in IdeaFork . An obvious application is the error handling of certain exceptions. In a short example, we already got to know the exception-handling concept of DeltaSpike. In the next step, we want to combine these and other mechanisms to display the specified error page for unhandled IllegalStateException exceptions .
+ 
+
+In Listing Exception handlers with navigation to DefaultErrorView , unhandled exceptions of type IllegalStateException are marked as handled. In addition, in the request-scoped exception handler, the exceptionDetected flag is set to true in such a case . The zero check for the FacesContext is required because request-scoped CDI beans can also be activated outside of a JSF request. Finally, @Handles (ordinal = Integer.MIN_VALUE) ensures that the handler method is called at the end of the handler chain.
+ 
+
+In a further step, the class ErrorViewAwareExceptionHandler receives a CDI observer with the qualifier @BeforePhase (JsfPhaseId.RENDER_RESPONSE) for the event type PhaseEvent . If the flag exceptionDetected has been set to true in the current request , then ViewNavigationHandler # navigateTo in combination with a configuration class can be used to navigate to a JSF page. However, we do not want to navigate to a fixed page but to the currently configured error page. Because of this, DefaultErrorView.class passed as an argument. Since DeltaSpike knows this marker, the page configuration that derives from this marker class is searched in the background. If such a page configuration exists, internally the path represented by the configuration is used for effective navigation.
+Tip: DeltaSpike uses @BeforePhase and @AfterPhase to define two qualifiers that can be used in combination with any phase of the JSF request lifecycle.
+ @RequestScoped
+@ExceptionHandler
+public class ErrorViewAwareExceptionHandler {
+  private boolean exceptionDetected = false;
+
+  public void onUnhandledException(
+      @Handles(ordinal = Integer.MIN_VALUE)
+      ExceptionEvent<IllegalStateException> exceptionEvent) {
+
+    FacesContext facesContext = FacesContext.getCurrentInstance();
+
+    if (facesContext == null) {
+      return;
+    }
+
+    if (!exceptionEvent.isMarkedHandled()) {
+      exceptionEvent.handled();
+      exceptionDetected = true;
+    }
+  }
+
+  protected void navigateOnDetectedException(
+      @Observes @BeforePhase(JsfPhaseId.RENDER_RESPONSE)
+      PhaseEvent phaseEvent,
+      ViewNavigationHandler viewNavigationHandler) {
+
+    if (exceptionDetected) {
+      viewNavigationHandler.navigateTo(DefaultErrorView.class);
+    }
+  }
+}
+In addition to the metadata for view configs introduced so far, the JSF module also integrates the @Secured annotation of the security module of DeltaSpike. Basically, this is a kind of interceptor with which classes or individual methods can be annotated. This interceptor must specify at least one implementation of AccessDecisionVoter , which is used to check access to the method to be executed. In conjunction with the View Config concept, no method call is backed up, but the respectively configured directory or individual pages.
+ 
+
+In Listing Securing Pages with @Secured , IdeaFork's View Config adds an additional marker interface called SecuredPages . SecuredPages looks like the configuration of a directory. In fact, it is an interface for collecting metadata. Technically, this interface could also be defined separately. In our case, SecuredPages extends the Pages interface to take over its metadata. In addition, SecuredPages is provided with the annotation @Secured . All directory configurations derived from SecuredPages are defined by the UserAwareAccessDecisionVoter secured, since this is specified at @Secured and inherited accordingly. If classes for the page configuration exist in such directories and implement a directory configuration saved with @Secured , these page configurations also inherit the definition of @Secured according to the general View Config rule . In these cases, not only access to the directory is checked, but also to individual pages, which are mapped with View-Config classes. Listing Securing Pages with @Secured illustrated by Pages.User.Profil.class that even individual pages can be secured, even if they are not contained in a secure directory.
+ @View(navigation = REDIRECT)
+public interface Pages extends ViewConfig {
+  class Index implements Pages {}
+
+  @Secured(UserAwareAccessDecisionVoter.class)
+  interface SecuredPages extends Pages {}
+
+  interface User extends Pages {
+    class Login extends DefaultErrorView {}
+
+    class Registration implements User {}
+
+    class Profile implements SecuredPages {}
+  }
+
+  interface Idea extends SecuredPages {
+    class Overview implements Idea {}
+
+    class Create implements Idea {}
+    class Edit implements Idea {}
+
+    class List implements Idea {}
+    class Details implements Idea {}
+  }
+
+  interface Search extends SecuredPages {
+    class Fork implements Search {}
+  }
+
+  interface Import extends SecuredPages {
+    class Upload implements Import {}
+    class Summary implements Import {}
+  }
+}
+Also SecuredPages can implement the indirect extension of ViewConfig be used to restrict navigation destinations. Listing SecuredPages as a navigation destination is the rearranged to view configs Navigation Controller of IdeaFork . The #toUserProfile method defines Class <? extends Pages.SecuredPages> as a return type, allowing only pages in secured directories to be navigated.
+ @Named
+@ApplicationScoped
+public class NavigationController {
+  public Class<? extends Pages.Idea> toNewIdea() {
+    return Pages.Idea.Create.class;
+  }
+
+  public Class<? extends Pages.Idea> toIdeaList() {
+    return Pages.Idea.List.class;
+  }
+
+  public Class<? extends Pages.Import> toIdeaImport() {
+    return Pages.Import.Upload.class;
+  }
+
+  public Class<? extends Pages.SecuredPages> toUserProfile() {
+    return Pages.User.Profile.class;
+  }
+}
+An AccessDecisionVoter can either delegate its own security logic like UserAwareAccessDecisionVoter or forward the check to any security framework. In Listing AccessDecisionVoter with type-safe messages, we delegate to the ActiveUserHolder bean of IdeaFork .
+ 
+
+Is @Secured inherited a directory configuration by side configurations, then each AccessDecisionVoter , by @Secured is referenced, called several times. The first call is made for the page itself, and then, depending on the directory level that @Secured has inherited, it has its own call. For each call, a manual bean lookup is performed with the specified AccessDecisionVoter class. For example, in the case of Pages.Idea.Overview.class, the UserAwareAccessDecisionVoter # checkPermission method is used for Pages.Idea.Overview.class and Pages.Idea.class called on the found CDI bean. The access-control calls to directories and pages are differentiated only by the content of the metadata that can be accessed using the AccessDecisionVoterContext # getMetaData method .
+ @RequestScoped
+public class UserAwareAccessDecisionVoter
+    extends AbstractAccessDecisionVoter {
+
+  @Inject
+  private ActiveUserHolder activeUserHolder;
+
+  @Inject
+  private UserMessage userMessage;
+
+  @Override
+  protected void checkPermission(
+      AccessDecisionVoterContext accessDecisionVoterContext,
+      Set<SecurityViolation> securityViolations) {
+
+    if (!activeUserHolder.isLoggedIn()) {
+      securityViolations.add(
+        newSecurityViolation(userMessage.pleaseLogin()));
+    }
+  }
+}
+Listing AccessDecisionVoter with type-safe messages also shows the use of type-safe messages in addition to a simple AccessDecisionVoter . UserMessage is an own interface, which is annotated with @MessageBundle . Listing Definition of type-safe messages shows a section of UserMessage . Each method defines a key that must exist in a resource bundle. If the name of the resource bundle is not explicitly specified, the name of the bundle corresponds to the fully qualified name of the interface. If the name of the key should be different, this can also be specified explicitly. If the key is eg. please_login instead of pleaseLogin , then the method can be annotated with @MessageTemplate ("{please_login}") . Alternatively, texts can be specified as in Listing Definition of type-safe messages .
+ @MessageBundle
+public interface UserMessage {
+    @MessageTemplate("Welcome %s!")
+    String welcomeNewUser(String nickName);
+
+    @MessageTemplate("Login failed!")
+    String loginFailed();
+
+    @MessageTemplate("Please login")
+    String pleaseLogin();
+
+    //...
+}
+The method #welcomeNewUser additionally illustrates that message parameters can be filled using method parameters. Any number of placeholders ("% s") are allowed in the message text , which are replaced in order with the values ​​passed to the method as arguments. If a parameter type is not a string, the #toString method is called. Thus, a type-safe parameterization is possible.
+ 
+
+For JSF, there is also an extension of this concept, which is illustrated in listing- type secure JSF messages . In contrast to directly injecting UserMessage and using #pleaseLogin from the previous example, in this case an interface provided by the JSF module named JsfMessage is injected, which is typed on UserMessage . This allows the implicit creation of corresponding Faces messages via methods such as #addInfo and #addError . In our example, the text for #welcomeNewUser displayed on the interface as an informational message. In the background, DeltaSpike uses the locale that is active for the current JSF request and adds the created FacesMessage instance to the current FacesContext .
+ @ViewController
+public class LoginViewCtrl {
+  //...
+
+  @Inject
+  private JsfMessage<UserMessage> userMessage;
+
+  public Class<? extends Pages.Idea> login() {
+    userService.login(email, password);
+
+    final Class<? extends Pages.Idea> navigationTarget;
+    if (userHolder.isLoggedIn()) {
+      userMessage.addInfo()
+        .welcomeNewUser(
+          userHolder.getAuthenticatedUser().getNickName());
+      navigationTarget = Pages.Idea.Overview.class;
+    } else {
+      userMessage.addError().loginFailed();
+      navigationTarget = null;
+    }
+
+    return navigationTarget;
+  }
+
+  //...
+}
+Type-safe messages can also be used in EL expressions. For this purpose, the interface annotated with @MessageBundle must also be annotated with @Named . Listing EL Integration for type-safe messages shows the corresponding part of UserMessage , which can be addressed with the EL expression # {userMessage.warning ()} .
+ @Named
+@MessageBundle
+public interface UserMessage {
+  //...
+
+  @MessageTemplate("Warning!")
+  String warning();
+}
+Tip: With @MessageBundle annotated interfaces can additionally @MessageContextConfig be provided. With this annotation it is possible to change the default behavior via corresponding SPI implementations. For example, you can implement your own locale logic with a LocaleResolver or reference any message source or integrate your own MessageResolver .
+ 
+
+JSF pages can not only be improved with type-safe messages. Also POST -REQUESTS can use a component called preventDoubleSubmit be made "safer". Available in the http://deltaspike.apache.org/jsf namespace, this component ensures that a POST request can not be sent multiple times. To do this, as in listing using preventDoubleSubmit , the component must be embedded in a JSF form. In the background, a unique request token is used, which is checked by the server.
+ <h:form>
+  <!-- ... -->
+  <ds:preventDoubleSubmit/>
+</h:form>
+Tip: For Ajax requests via POST , according to JSF specification, the appropriate management is responsible. Therefore, no check of a request token is performed for such requests.
+
+=== Improve existing
+DeltaSpike generally enriches CDI and Java EE. In addition, existing concepts will be improved. An example of this is the annotation @JsfPhaseListener , which is used as a CDI bean in Listing PhaseListener . JSF phase listeners can be marked with this annotation to automatically activate them. Therefore, the usual configuration is omitted in the file faces-config.xml . Optionally, a priority can be specified via @ JsfPhaseListener # ordinal and other CDI beans can be injected into the phase listener.
+ @JsfPhaseListener
+public class DebugPhaseListener implements PhaseListener {
+  //...
+}
+In addition, @JsfPhaseListener can be combined with @Exclude . The JSF phase listener conditionally enabled in Listing PhaseListener is enabled by using @Exclude (exceptIfProjectStage = ProjectStage.Development.class) only if the Development level for the Project stage is set.
+ @JsfPhaseListener
+@Exclude(exceptIfProjectStage = ProjectStage.Development.class)
+public class DebugPhaseListener implements PhaseListener {
+  private static final Logger LOG =
+    Logger.getLogger(DebugPhaseListener.class.getName());
+
+  @Override
+  public void beforePhase(PhaseEvent event) {
+    LOG.info("before " + event.getPhaseId());
+  }
+
+  @Override
+  public void afterPhase(PhaseEvent event) {
+    LOG.info("after " + event.getPhaseId());
+  }
+
+  @Override
+  public PhaseId getPhaseId() {
+    return PhaseId.ANY_PHASE;
+  }
+}
+We also improve the window management, which can be optionally activated since JSF 2.2. The goal of this functionality is the correct handling of different browser windows / tabs, as this is not supported by the session scope. The abstract class javax.faces.lifecycle.ClientWindow was defined on the basis of experiences from frameworks like MyFaces CODI and served as a template for the interface of the same name org.apache.deltaspike.jsf.spi.scope.window.ClientWindow , which also works with JSF 2.0 or 2.1 can be used. Prior to JSF 2.2, for fully-accurate window management, the windowId component from the http://deltaspike.apache.org/jsf namespace must be included in each page. In IdeaFork we insert this component at the end of the template. Activate Listing Window Management shows the crucial part of the file main-template.xhtml .
+ <!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://java.sun.com/jsf/html"
+      xmlns:ui="http://java.sun.com/jsf/facelets"
+      xmlns:ds="http://deltaspike.apache.org/jsf">
+
+<!-- ... -->
+
+<h:body>
+    <!-- ... -->
+    <ds:windowId/>
+</h:body>
+</html>
+Since JSF 2.2, you can choose between the standard window management of the JSF implementation and that of DeltaSpike. If JSF's ClientWindow functionality is explicitly enabled by configuration, then DeltaSpike uses the Window ID, which can be queried with javax.faces.lifecycle.ClientWindow # getId , and automatically disables its own window management. Otherwise, DeltaSpike itself handles the window management and forwards the information internally to JSF via javax.faces.lifecycle.Lifecycle # attachWindow , allowing JSF implementations to internally make some tweaks in managing the server-side state of the components.
+ 
+
+Correct server-side mapping of browser windows / tabs is required for DeltaSpike to provide additional scopes. The simplest of these scopes is the window scope, which is comparable to one session per browser window / tab. The JSF module of DeltaSpike activates the underlying window context before passing the JSF request lifecycle via the method org.apache.deltaspike.core.spi.scope.window.WindowContext # activateWindow . Listing window management with WindowContext makes it clear that the WindowContext interface can also be used to, for example, logout a window-scoped bean using the WindowContext # closeWindow method to destroy. Then the window context for the current window can be activated again via the method WindowContext # activateWindow . The previous window ID can be reused for this because it is no longer used after the call to WindowContext # closeWindow and is thus no worse than a newly generated ID. The advantage here is that we do not have to worry about updating the client-side Window ID. Depending on which implementation of ClientWindow is active, this could be very time-consuming.
+ @Named("menuBean")
+@Model //or just @RequestScoped, since @Named is overruled
+public class MenuController {
+  @Inject
+  private WindowContext windowContext;
+
+  //...
+
+  public Class<? extends ViewConfig> logout() {
+    resetWindowContext();
+    userHolder.setAuthenticatedUser(null);
+    return Pages.User.Login.class;
+  }
+
+  //...
+
+  private void resetWindowContext() {
+    String currentWindowId = windowContext.getCurrentWindowId();
+    windowContext.closeWindow(currentWindowId);
+    windowContext.activateWindow(currentWindowId);
+  }
+}
+In IdeaFork , enabling window management ensures that the window ID is not lost on manual calls. We have such a call, for example, in IdeaImportServlet . Listing Explicit Window Management demonstrates how to manually pass the Window ID.
+ @WebServlet("/idea/import")
+@MultipartConfig
+public class IdeaImportServlet extends HttpServlet {
+  @Inject
+  private ActiveUserHolder userHolder;
+
+  @Inject
+  private FileUploadService fileUploadService;
+
+  @Inject
+  private ViewConfigResolver viewConfigResolver;
+
+  @Inject
+  private WindowContext windowContext;
+
+  protected void doPost(HttpServletRequest request,
+                        HttpServletResponse response)
+        throws ServletException, IOException {
+
+    fileUploadService.storeUploadedFiles(
+      request.getParts(), userHolder.getAuthenticatedUser());
+
+    ViewConfigDescriptor viewConfigDescriptor = viewConfigResolver
+      .getViewConfigDescriptor(Pages.Import.Summary.class);
+
+    request.getRequestDispatcher(
+      viewConfigDescriptor.getViewId() +
+      "?dswid=" + request.getParameter("dswid"))
+      .forward(request, response);
+  }
+}
+The same applies to our manual form on the page upload.xhtml . For manually defined forms and links, we must explicitly add the current Window ID, as neither DeltaSpike nor JSF can handle this, as implemented with the equivalent JSF components. In the Listing Window ID in EL expressions , the current Window ID with the EL expression # {dsWindowContext.currentWindowId} is added to the markup of the page.
+ <ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                template="/templates/main-template.xhtml">
+
+  <ui:define name="content-container">
+    <div class="panel panel-default">
+      <!-- ... -->
+      <div class="panel-body">
+        <form method="post" enctype="multipart/form-data"
+          action="#{jsf.contextPath}/idea/import?dswid=
+                  #{dsWindowContext.currentWindowId}">
+                 <!-- ... -->
+        </form>
+      </div>
+    </div>
+  </ui:define>
+</ui:composition>
+In IdeaFork we also have a self-generated HTML link in a second place. Listing Window ID for HTML links shows that we also need to extend this with the current Window ID, so that the window management is reliable on the server side.
+ <ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                template="/templates/main-template.xhtml">
+  <!-- ... -->
+
+  <ui:define name="content">
+    <!-- ... -->
+    <a href="#{jsf.contextPath}/public/idea/export/all?dswid=
+        #{dsWindowContext.currentWindowId}" class="btn">
+      <span class="glyphicon glyphicon-import"/> Export My Ideas
+    </a>
+
+    <!-- ... -->
+  </ui:define>
+</ui:composition>
+Tip: The explicit specification of the Window ID can be omitted if JSF components are used instead of HTML tags. If, on the other hand, this is intentionally not done, then, for example, a JSF Command component must be embedded in the DeltaSpike component disableClientWindow . The rendered link or button does not receive a window ID.
+Which beans the window scope makes sense depends heavily on the specific requirements. In IdeaFork , we can introduce an additional concept to illustrate a potential use case. Previously, navigations to the previous page were also defined. We can implement this generically by introducing a BackNavigator that records the previous navigation history per browser window / tab on the server side. Listing Using @WindowScoped and PreViewConfigNavigateEvent shows a first version of BackNavigator , which is annotated with @WindowScoped . This allows us to use a CDI observer for the event PreViewConfigNavigateEvent can save the navigation history per browser window / tab. DeltaSpike fires this event for every JSF navigation that uses a type-safe view config. In IdeaFork there for each JSF page already a type-safe configuration, which we can use this event to implement the use case without any problems. This event can even be used to change the navigation destination in the Observer method. In the method BackNavigator # onNavigation No change is required as this method only needs to record the navigation history. Since we do not have an explicit back button on every page, we can restrict the recorded navigation history to, for example, 10 entries to avoid a memory leak. A little later we will replace this fixed maximum value with a more elegant concept.
+ 
+
+The class BackNavigator additionally contains a second observer method called #onFacesRequestEnd , which is called before the FacesContext is destroyed at the end of a request. This is made possible by the qualifier org.apache.deltaspike.core.api.lifecycle.Destroyed , which can be used here as an event type in combination with FacesContext . Such an observer method is a simple alternative to a @PreDestroy callback of a request-scoped bean and additionally offers the advantage that the current faces context can still be accessed if necessary . In our case we set the flag backNavigationActive , because otherwise it could still have the old state for a subsequent request.
+ @Named
+@WindowScoped
+public class BackNavigator implements Serializable {
+  private Stack<Class<? extends ViewConfig>> previousViewStack =
+    new Stack<Class<? extends ViewConfig>>();
+
+  private boolean backNavigationActive;
+
+  public Class<? extends ViewConfig> toPreviousView() {
+    backNavigationActive = true;
+    return previousViewStack.pop();
+  }
+
+  protected void onNavigation(
+      @Observes PreViewConfigNavigateEvent navigateEvent) {
+
+    Class<? extends ViewConfig> previousView =
+      navigateEvent.getFromView();
+
+    if (previousView != null && !this.backNavigationActive &&
+       (previousViewStack.isEmpty() ||
+        !previousViewStack.peek().equals(previousView))) {
+
+      previousViewStack.push(previousView);
+
+      if (previousViewStack.size() > 10) {
+        previousViewStack.remove(0);
+      }
+    }
+  }
+
+  protected void onFacesRequestEnd(
+      @Observes(notifyObserver = IF_EXISTS) @Destroyed
+      FacesContext facesContext) {
+
+    this.backNavigationActive = false;
+  }
+}
+Tip: The Observer #onFacesRequestEnd method is called only if BackNavigator has already been used. This is only necessary because BackNavigator is stored in the window context and this must not be active on the first request in a browser window / tab. The reason for this is purely technical. Depending on the configured window management mode, it is possible that a redirect will cause an initial request to be aborted to the same URL so that the newly requested window ID can be added to the requested URL. This is necessary, for example, in order not to lose the window ID during a browser refresh of a page.
+In JSF pages, this mechanism can be used with the EL expression # {backNavigator.toPreviousView} . Listing Using BackNavigator displays a corresponding button that is used in IdeaFork on the profile.xhtml page .
+ <h:commandButton class="btn btn-default" value="Back"
+                 action="#{backNavigator.toPreviousView}"/>
+Tip: The window context stores beans grouped by the window ID in the current session. Thus, window-scoped beans are also replicated as soon as session replication is performed in a cluster. As a result, window-scoped beans are also automatically destroyed as soon as a session is closed.
+An even more convenient alternative to @WindowScoped is a scope based on the window scope, which enables more efficient memory usage. This is the so-called View-Access Scope. In a nutshell , @ViewAccessScoped exists Beans for a JSF page as soon as they are accessed and are not disposed of until they are no longer accessed after a JSF navigation to another page. This is very similar to the view scope of JSF itself. The main difference is that View-Access-scoped beans are not destroyed by navigating to another page before the rendering process. Only when a bean is no longer accessed during the rendering of the new page will the destruction of that one contextual instance take place. Thus, every instance stored in this context can have its own lifetime.
+ 
+
+If, for example, a @ViewAccessScoped Bean is used as a wizard controller in a wizard and thus addressed at each wizard step, the @ViewAccessScoped Bean is available for the entire wizard and is automatically disposed of by DeltaSpike as soon as the wizard is ended and the subsequent one Page no longer uses the wizard controller. In the background, the view-access context collects the contextual instances in a @WindowScoped bean. For this reason, @ViewAccessScoped beans are per definition managed per browser window / tab and as soon as the session or the window context is ended, all @ViewAccessScoped beans are also destroyed.
+ 
+
+In the previous step, in the IdeaFork page template , we 've already used the windowId component to ensure that window management is fully enabled. Therefore, without further preparation, we can convert the view controller beans in IdeaFork to the view access scope. For this purpose, we implement the stereotype annotation @ViewController . Listing Using @ViewAccessScoped shows the new implementation of this annotation, in which we use the annotation @ViewAccessScoped instead of @RequestScoped . Since the view access scope and the session scope are passable, we have to follow the CDI rules that we have in chapter CDI basic concepts , all @ViewController Beans provided with the marker interface java.io.Serializable . Also, in IdeaFork , we've modified some @ViewController beans by explicitly defining them as @SessionScoped Beans. This is no longer necessary because we initially wanted to extend the life of these view controllers only slightly.
+ @Target(TYPE)
+@Retention(RUNTIME)
+
+@Stereotype
+
+@ViewAccessScoped
+@Named
+public @interface ViewController {
+}
+In IdeaFork we use two listeners for the PreRenderView event of JSF, which are integrated with the tag f: event in the pages index.xhtml and list.xhtml . As a type-safe alternative, DeltaSpike's @PreRenderView annotation can be used for such callback methods. Since there are usually several view controllers in an application, a connection between a page and the responsible view controller must be defined. For example, the annotation @ViewControllerRef used by DeltaSpike. It is obvious that the configuration of the view controller is also done in the view config of the application. Listing Using @ViewControllerRef displays a correspondingly expanded section of the IdeaFork View Config . The value is referenced by the view controller class.
+ @View(navigation = REDIRECT)
+public interface Pages extends ViewConfig {
+  @ViewControllerRef(IndexViewCtrl.class)
+  class Index implements Pages {}
+
+  //...
+
+  interface Idea extends SecuredPages {
+    //...
+
+    @ViewControllerRef(IdeaListViewCtrl.class)
+    class List implements Idea {}
+  }
+
+  //...
+}
+This configuration enables type-safe callback methods in the specified CDI bean. Listing using @PreRenderView representatively shows the implementation in IdeaListViewCtrl , wherein the method #onPreRenderView with @PreRenderView is annotated. This allows the associated f: event tag to be removed from the JSF page. In the case of @PreRenderView it is checked at runtime before the rendering process whether there is a view config for the page to be rendered, which is annotated with @ViewControllerRef . If this is the case, then the @PreRenderView called annotated method, if one exists.
+ @ViewController
+public class IdeaListViewCtrl implements Serializable {
+  @Inject
+  private IdeaService ideaService;
+
+  @Inject
+  private ActiveUserHolder userHolder;
+
+  private List<Idea> ideaList;
+
+  @PreRenderView
+  public void onPreRenderView() {
+    ideaList = ideaService.loadAllOfAuthor(
+      userHolder.getAuthenticatedUser());
+  }
+  //...
+}
+Tip: @PreRenderView is the most common view controller annotation. There are also the view controller annotations @InitView , @PreViewAction and @PostRenderView . @InitView callback methods are called before or after a JSF request-lifecycle phase if the view ID is set or if the value of the view ID has changed. @PreViewAction Callback methods are executed before an action method, where the following action method is independent of the configured callback method. @PostRenderView Callback methods are called as soon as the rendering process of the associated page is finished. For example, resources can be released without increasing the latency from the browser's point of view.
+So far, we have come to know some aspects of the View Config concept that can be used directly without any additional effort. In addition, DeltaSpike allows you to define custom view-config metadata to implement your own concepts. Own metadata is created in the same way as the already available metadata of DeltaSpike itself. The only difference lies in the evaluation. While DeltaSpike evaluates the provided annotations and contains the corresponding implementations, self-defined metadata is added to the metadata model based on the same rules, which can then be queried. Of course, since this is your own metadata, appropriate logic must be implemented,
+ 
+
+In IdeaFork , for example, we can create our own annotation @EntryPoint . In this case, the standard Java rules for annotations must always be followed. As can be seen in listing usage of @ViewMetaData , the @EntryPoint annotation must also be marked with the annotation @ViewMetaData so that DeltaSpike generates a corresponding entry in the ViewConfig metadata model.
+ @Target({TYPE})
+@Retention(RUNTIME)
+@Documented
+
+@ViewMetaData
+public @interface EntryPoint {
+}
+As mentioned before, it is not enough to create an annotation. In addition, the associated functionality must be implemented. The @EntryPoint annotation in IdeaFork is meant to mark all pages that are stand-alone. Therefore, certain accumulated data can be reset as soon as such pages are navigated. Listing Using own view metadata shows a section of the IdeaFork view config where some page configurations have been extended with the @EntryPoint annotation .
+ @View(navigation = REDIRECT)
+public interface Pages extends ViewConfig {
+  @ViewControllerRef(IndexViewCtrl.class)
+  class Index implements Pages {}
+
+  @Secured(UserAwareAccessDecisionVoter.class)
+  interface SecuredPages extends Pages {}
+
+  interface User extends Pages {
+    @EntryPoint
+    class Login extends DefaultErrorView {}
+
+    @EntryPoint
+    class Registration implements User {}
+
+    class Profile implements SecuredPages {}
+  }
+
+  interface Idea extends SecuredPages {
+    @EntryPoint
+    class Overview implements Idea {}
+
+    class Create implements Idea {}
+    class Edit implements Idea {}
+
+    @ViewControllerRef(IdeaListViewCtrl.class)
+    class List implements Idea {}
+    class Details implements Idea {}
+  }
+
+  //...
+}
+The previous implementation of BackNavigator can use this new marker annotation to reset the navigation history, instead of setting an upper limit for the entries in the navigation history. Listing Using EntryPointNavigationEvent displays a snippet from the Advanced BackNavigator . In the #onNavigation method , the review of the fixed upper limit is omitted. As compensation, there is an Observer method for the newly created (marker) Event EntryPointNavigationEvent , in which the previous navigation history is reset and then the current page is added.
+ @Named
+@WindowScoped
+public class BackNavigator implements Serializable {
+  //...
+
+  protected void onNavigation(
+      @Observes PreViewConfigNavigateEvent navigateEvent) {
+
+    Class<? extends ViewConfig> previousView =
+      navigateEvent.getFromView();
+
+    if (previousView != null && !this.backNavigationActive &&
+       (previousViewStack.isEmpty() ||
+        !previousViewStack.peek().equals(previousView))) {
+
+      previousViewStack.push(previousView);
+    }
+  }
+
+  protected void onEntryPointNavigation(
+      @Observes EntryPointNavigationEvent entryPointNavigationEvent) {
+
+    this.previousViewStack.clear();
+    this.previousViewStack.push(entryPointNavigationEvent.getView());
+  }
+
+  //...
+}
+Since EntryPointNavigationEvent is also a separate event, it must be generated when navigating to a page marked @EntryPoint . Therefore, in IdeaFork, we create a class named EntryPointHandler , which contains the #checkEntryPoints observer method shown in Listing's own view metadata . EntryPointNavigationEvent is fired as usual via the injected interface javax.enterprise.event.Event . For this event to be fired at all, it must be checked whether the page configuration with @EntryPoint is marked. For such evaluations, DeltaSpike provides the injectable interface ViewConfigResolver . The #getViewConfigDescriptor method can be passed the current view ID, which contains the current FacesContext or the current View root. If there is a view config entry, the method ViewConfigDescriptor # getMetaData can be used to check whether the annotation @EntryPoint has been stored in the ViewConfigDescriptor of this page . Since we do not want to fire this event when the current request comes from the same entry point page, we can remember the View Config class from the last entry point. Therefore, it is obvious To manage the EntryPointHandler from the Window context, which is why we annotate the class with @WindowScoped .
+ @WindowScoped
+public class EntryPointHandler implements Serializable {
+  private Class<? extends ViewConfig> previousEntryPoint;
+
+  @Inject
+  private ViewConfigResolver viewConfigResolver;
+
+  @Inject
+  private Event<EntryPointNavigationEvent> entryPointEvent;
+
+  protected void checkEntryPoints(
+      @Observes @BeforePhase(JsfPhaseId.RENDER_RESPONSE)
+      PhaseEvent phaseEvent) {
+
+    UIViewRoot viewRoot = phaseEvent.getFacesContext().getViewRoot();
+
+    if (viewRoot == null) {
+      return;
+    }
+    String viewIdToRender = viewRoot.getViewId();
+    ViewConfigDescriptor viewConfigDescriptor =
+      viewConfigResolver.getViewConfigDescriptor(viewIdToRender);
+
+    if (viewConfigDescriptor == null) {
+      return;
+    }
+
+    if (viewConfigDescriptor.getConfigClass()
+        .equals(this.previousEntryPoint)) {
+
+      return;
+    }
+
+    if (!viewConfigDescriptor
+        .getMetaData(EntryPoint.class).isEmpty()) {
+
+      this.previousEntryPoint =
+        viewConfigDescriptor.getConfigClass();
+
+      this.entryPointEvent.fire(
+        new EntryPointNavigationEvent(
+          viewConfigDescriptor.getConfigClass()));
+    }
+  }
+}
+It does not always need its own metadata to make adjustments. If, for example, only the name of a directory or a file is to be changed, this can be done directly with the aid of @Folder or @View . In order to use further functionalities of DeltaSpike we create a wizard with which own ideas can be promoted. For this purpose, a PromotionRequest should be generated. Promotion requests can be searched and promoted by other users. Promoted ideas should then be visible on the start page for all users.
+ 
+
+The wizard for creating a promotion request should consist of the pages pages / promotion / step1.xhtml , pages / promotion / step2.xhtml and pages / promotion / summary.xhtml . Listing Explicit assignment of names illustrates the customization of directory and file names. The configuration interface for the directory of the wizard is called PromotionWizard . However, the path for this directory is pages / promotion / instead of pages / promotionWizard , since the interface is annotated with @Folder (name = "promotion") . The configuration class for the last page of the wizard is called Listing Explicit name assignment Pages.PromotionWizard.FinalStep.class and is annotated with @View (name = "summary") , which will also change the path for this page to pages / promotion / summary.xhtml . Pages.PromotionWizard.FinalStep.class implements the interface PromotionWizard , which extends SecuredPages . Since SecuredPages itself extends the Pages interface, FinalStep inherits the metadata from Pages via this inheritance hierarchy. @View (navigation = REDIRECT) is not used by @View (name = "summary") DeltaSpike automatically merges the information, which results in the result @View (name = "summary", navigation = REDIRECT) at runtime . However, information is merged only if a value is not explicitly specified. If we were to annotate FinalStep with @View (name = "summary", navigation = FORWARD) , then we would override the navigation mode originally defined by the Pages interface.
+ @View(navigation = REDIRECT)
+public interface Pages extends ViewConfig {
+  //...
+
+  @Secured(UserAwareAccessDecisionVoter.class)
+  interface SecuredPages extends Pages {}
+
+  @Folder(name = "promotion")
+  interface PromotionWizard extends SecuredPages {
+    @EntryPoint
+    @ViewControllerRef(PromotionWizardCtrl.class)
+    class Step1 implements PromotionWizard {}
+
+    class Step2 implements PromotionWizard {}
+
+    @View(name = "summary")
+    class FinalStep implements PromotionWizard {}
+  }
+}
+If required, even a completely separate naming convention can be introduced. JsfBaseConfig defined in addition to some other configuration options also options for default name Builder s such as. JsfBaseConfig.ViewConfigCustomization.CUSTOM_DEFAULT_FOLDER_NAME_BUILDER . The stored configuration key is called org.apache.deltaspike.jsf.api.config.view.Folder $ DefaultFolderNameBuilder and allows for a custom implementation of org.apache.deltaspike.jsf.api.config.view.Folder $ NameBuilderwhich can be activated via the already presented configuration mechanism of DeltaSpike and used for the entire application. Alternatively, the naming can be adapted for part of the view config. For directories, this is possible through @ Folder # folderNameBuilder . Listing Changing individual paths shows how the view configuration of IdeaFork can be extended for the second new area, if the structure of the view config does not correspond to the actual directory structure in the application. The interface PromotionSelectionArea is with @Folder (folderNameBuilder = PromotionSelectionArea.CustomFolderNameBuilder.class) annotates to change the naming convention for this directory configuration. Our goal is to put JSF pages in the directory / pages / promotion / selection . The directory configuration will change to Listing Individual Paths, however, represented by Pages.PromotionSelectionArea.class .
+ @View(navigation = REDIRECT)
+public interface Pages extends ViewConfig {
+  //...
+
+  @Folder(folderNameBuilder =
+    PromotionSelectionArea.CustomFolderNameBuilder.class)
+  interface PromotionSelectionArea extends SecuredPages {
+    //...
+
+    class CustomFolderNameBuilder
+        extends Folder.DefaultFolderNameBuilder {
+
+      //...
+    }
+  }
+}
+CustomFolderNameBuilder in Listing Folder-NameBuilder is the simplest way to change a single directory. Before DeltaSpike stores the final definitions of a view config as an invariable viewConfigDescriptor , the view config is available as a modifiable node structure, with ViewConfigNode being the type of a node. We will look at how View-Config metadata can be changed later. Since we only want to change the path of a directory, it suffices to have the class Pages.PromotionSelectionArea.class with the result of the method ViewConfigNode # getSource to compare. If the source is the configuration class in question, the customPathUsed flag is set to true so that the #isDefaultValueReplaced method can later provide this information. In addition, the string "/ pages / promotion / selection" is returned. The creation of the remaining directory names is delegated to DefaultFolderNameBuilder , which does not change the result for the other directory configurations .
+ class CustomFolderNameBuilder extends Folder.DefaultFolderNameBuilder {
+  private boolean customPathUsed = false;
+
+  @Override
+  public String build(Folder folder, ViewConfigNode viewConfigNode) {
+    if (Pages.PromotionSelectionArea.class
+        .equals(viewConfigNode.getSource())) {
+
+      this.customPathUsed = true;
+      return "/pages/promotion/selection";
+    }
+    return super.build(folder, viewConfigNode);
+  }
+
+  @Override
+  public boolean isDefaultValueReplaced() {
+    return super.isDefaultValueReplaced() || this.customPathUsed;
+  }
+}
+Custom NameBuilders usually implement their own naming conventions and not just replace single names. Such NameBuilder implementations are globally enabled as previously mentioned. On the other hand, combining an implementation like Name Matched in Listing can make sense if an application does not yet follow a uniform naming convention and a corresponding conversion is only carried out step by step. NameBuilder implementations can be customized not only for directories but also for files. Name builders for directories and files are independent of each other, and therefore the View config can combine with them as in Listing @View can be extended to additionally specify the names of the files explicitly.
+ @View(navigation = REDIRECT)
+public interface Pages extends ViewConfig {
+  //...
+
+  @Folder(folderNameBuilder =
+    PromotionSelectionArea.CustomFolderNameBuilder.class)
+  interface PromotionSelectionArea extends SecuredPages {
+
+    @View(name = "list")
+    @ViewControllerRef(PromotionRequestListViewCtrl.class)
+    class ListPromotions implements PromotionSelectionArea {}
+
+    @View(name = "promote")
+    class SelectPromotion implements PromotionSelectionArea {}
+
+    //...
+  }
+}
+Since JSF 2.0, JSF actions are also possible via GET requests. To automatically accept request parameters, the marker "includeViewParams = true" can be added to the navigation string . For this, @View also provides a type-safe configuration, which can be seen in listing navigation parameters via View-Config . Parameters can also be specified by using @NavigationParameter at view config level. The parameter value can be a fixed string or an EL expression. Alternatively, you can use action methods with @NavigationParameter or @ NavigationParameter.List be annotated to restrict parameters to certain action methods.
+ @View(navigation = REDIRECT)
+public interface Pages extends ViewConfig {
+  //...
+
+  @Folder(folderNameBuilder =
+    PromotionSelectionArea.CustomFolderNameBuilder.class)
+  interface PromotionSelectionArea extends SecuredPages {
+
+    @View(name = "list", viewParams = INCLUDE)
+    @NavigationParameter(key = "searchHint", value = "*")
+    @ViewControllerRef(PromotionRequestListViewCtrl.class)
+    class ListPromotions implements PromotionSelectionArea {}
+
+    @View(name = "promote")
+    class SelectPromotion implements PromotionSelectionArea {}
+
+    //...
+  }
+}
+Tip: If parameters are to be added dynamically, then we would have to inject NavigationParameterContext, for example, into a view controller and dynamically call its methods.
+After successfully adjusting individual paths, we take a closer look at the controllers of the two new sections. In the view configuration for the new wizard, we have set up a view controller for Pages.PromotionWizard.Step1.class . The wizard should be controlled continuously by a controller called PromotionWizardCtrl . This can be done using the previously presented View Access Scope. However, in our case we want to explicitly define the lifetime of the controller. At the end of the wizard, the controller instance should be destroyed immediately. If this were the only requirement, then we could use the conversation scope of CDI itself. However, this one has some limitations and it can even be unexpected at worst BusyConversationException come with Ajax requests. For these and other reasons, DeltaSpike implemented its own conversation concept, which was adopted by MyFaces CODI just like @WindowScoped and @ViewAccessScoped . In DeltaSpike, however, the name of the annotation has been renamed and thus CODI conversations are available in DeltaSpike under the name of grouped conversations. Similarly, the associated annotation is @GroupedConversationScoped and is used in listing use of clustered conversations for PromotionWizardCtrl .
+ 
+
+Grouped conversations differ in some aspects from standard CDI conversations. Each bean exists in a separate conversation, which does not have to be started explicitly. In contrast, the CDI conversation scope only has a large conversation that must be started explicitly. The section of PromotionWizardCtrl shown in Listing Using Grouped Conversations also shows how the bean's current grouped conversation can be ended. GroupedConversation provides only the #close method , which in our case is the current instance of PromotionWizardCtrl immediately removed from the grouped conversation context. The current instance then exists only for the remaining execution time of the method in which GroupedConversation # close was called. For the next (external) method call, a new instance of the class is created and stored in the grouped conversation context.
+ @Named
+@GroupedConversationScoped
+public class PromotionWizardCtrl implements Serializable {
+    @Inject
+    private GroupedConversation conversation;
+
+    //...
+
+    public Class<? extends Pages> savePromotionRequest() {
+        this.ideaService.requestIdeaPromotion(this.promotionRequest);
+        this.conversation.close();
+        return Pages.Index.class;
+    }
+}
+Since by default every @GroupedConversationScoped Bean is stored in an isolated conversation, there can be several parallel and independent conversations. Should it be necessary to terminate all active grouped conversations, then GroupedConversationManager can be used. Listing Using GroupedConversationManager shows a possible extension of EntryPointHandler to close all grouped conversations on each entry point page.
+ @WindowScoped
+public class EntryPointHandler implements Serializable {
+  private Class<? extends ViewConfig> previousEntryPoint;
+
+  @Inject
+  private ViewConfigResolver viewConfigResolver;
+
+  @Inject
+  private GroupedConversationManager conversationManager;
+
+  @Inject
+  private Event<EntryPointNavigationEvent> entryPointEvent;
+
+  protected void checkEntryPoints(
+      @Observes @BeforePhase(JsfPhaseId.RENDER_RESPONSE)
+      PhaseEvent phaseEvent) {
+
+    //...
+
+    if (!viewConfigDescriptor.getMetaData(EntryPoint.class).isEmpty()) {
+      this.previousEntryPoint = viewConfigDescriptor.getConfigClass();
+      this.conversationManager.closeConversations();
+      this.entryPointEvent.fire(
+        new EntryPointNavigationEvent(
+          viewConfigDescriptor.getConfigClass()));
+    }
+  }
+}
+Tip: If a bean is not destroyed by an explicit method call, this happens as soon as the window context or the underlying session is closed.
+In the new page area, which is defined by Pages.PromotionSelectionArea.class , one should not use one controller for all pages, but one each. If an idea is promoted on the page /pages/promotion/selection/promote.xhtml , then not all (grouped) conversations should be terminated, not just the controller of this page. Therefore, we can define a group for all controller beans in the page area Pages.PromotionSelectionArea.class , which allows all beans of a group to be collected in a collective manner. If there are other active @GroupedConversationScoped beans that are assigned to another group, they will remain active. listing Explicit grouping of conversations shows a section of the classes PromotionRequestListViewCtrl and PromotionRequestSelectionViewCtrl . Both classes are annotated in addition to the annotation @GroupedConversationScoped with the CDI qualifier @ConversationGroup , which specifies the group type-safe. Any class or (marker) interface can be used for this purpose.
+ @Named
+@GroupedConversationScoped
+@ConversationGroup(Pages.PromotionSelectionArea.class)
+public class PromotionRequestListViewCtrl implements Serializable {
+
+    //...
+}
+
+@Named
+@GroupedConversationScoped
+@ConversationGroup(Pages.PromotionSelectionArea.class)
+public class PromotionRequestSelectionViewCtrl implements Serializable {
+
+    //...
+}
+Our goal was to finish collecting all view controllers of the Pages.PromotionSelectionArea.class page area . Thus, it is obvious to reuse this interface for grouping the beans in listing ends of grouped conversations . Finally, an idea is promoted by the method PromotionRequestSelectionViewCtrl # promote , in which the entire (conversation) group is terminated by calling GroupedConversationManager # closeConversationGroup . The parameter used here again is the type-safe group, in this case Pages.PromotionSelectionArea.class .
+Tip: Technically, any class or interface can be used to group @GroupedConversationScoped beans. Normally, however, it is obvious, for example, to use the type-safe view config here as well.
+ @Named
+@GroupedConversationScoped
+@ConversationGroup(Pages.PromotionSelectionArea.class)
+public class PromotionRequestSelectionViewCtrl implements Serializable {
+
+  @Inject
+  private GroupedConversationManager conversationManager;
+
+  public Class<? extends Pages> promote() {
+    conversationManager
+      .closeConversationGroup(Pages.PromotionSelectionArea.class);
+
+    ideaService.promoteIdea(this.selectedPromotionRequest);
+    return Pages.Index.class;
+  }
+
+  //...
+}
+The previously created wizard for creating a promotion request works in principle. However, there is no guarantee that the wizard will be started from the specified entry point. By bookmarking or manually entering the URL you can jump directly to any wizard step. This can lead to an inconsistent state in the application. To avoid this, we can create another custom annotation for the view config. Change Listing View metadata shows a possible variant named @Wizard . In contrast to @EntryPoint , this annotation is not only marked with @ViewMetaData , but also becomes a ConfigPreProcessor used to find the page configuration of a wizard annotated with @EntryPoint , unless the entry point is specified explicitly with Wizard # entryPoint . So that the subsequent logic does not have to cover different constellations, a new instance of @Wizard is created using AnnotationInstanceProvider # of and the page configuration annotated with @EntryPoint is set as the value for Wizard # entryPoint . The same result can be achieved with a separate literal class for @Wizard . By using AnnotationInstanceProvider We therefore save ourselves the creation of such a literal class.
+ @Target({ TYPE })
+@Retention(RUNTIME)
+@Documented
+
+@ViewMetaData(preProcessor = Wizard.EntryPointProcessor.class)
+public @interface Wizard {
+  Class<? extends ViewConfig> entryPoint() default ViewConfig.class;
+
+  class EntryPointProcessor implements ConfigPreProcessor<Wizard> {
+    @Override
+    public Wizard beforeAddToConfig(
+        Wizard wizard, ViewConfigNode viewConfigNode) {
+
+      if (!ViewConfig.class.equals(wizard.entryPoint())) {
+        return wizard;
+      }
+
+      for (ViewConfigNode childNode : viewConfigNode.getChildren()) {
+        for (Annotation childMetaData : childNode.getMetaData()) {
+          if (EntryPoint.class.equals(childMetaData.annotationType())) {
+            Map<String, Object> values = new HashMap<String, Object>();
+            values.put("entryPoint", childNode.getSource());
+
+            return AnnotationInstanceProvider.of(Wizard.class, values);
+          }
+        }
+      }
+      return wizard;
+    }
+  }
+}
+Listing using changeable view metadata shows the use of @Wizard in the Pages.PromotionWizard interface . The aforementioned metadata change results in the @Wizard (entryPoint = Pages.PromotionWizard.Step1.class) information at runtime , which is passed through the metadata inheritance to Pages.PromotionWizard.Step1.class , Pages.PromotionWizard.Step2.class, and Pages .PromotionWizard.FinalStep.class is inherited.
+ @View(navigation = REDIRECT)
+public interface Pages extends ViewConfig {
+  //...
+
+  @Folder(name = "promotion")
+  @Wizard
+  interface PromotionWizard extends SecuredPages {
+    @EntryPoint
+    @ViewControllerRef(PromotionWizardCtrl.class)
+    class Step1 implements PromotionWizard {}
+
+    class Step2 implements PromotionWizard {}
+
+    @View(name = "summary")
+    class FinalStep implements PromotionWizard {}
+  }
+}
+As with @EntryPoint , @Wizard must also be evaluated at the appropriate location. This can also be implemented in the EntryPointHandler class . The original method #checkEntryPoints is called in Listing Combined evaluation of own metadata #checkEntryPointsAndWizardSteps and extended by an additional block in which an existing @Wizard annotation for the current page is checked to see if the wizard was originally entered via the referenced entry point. If this is not the case then it will be over the injected ViewNavigationHandler a navigation performed at this entry point. Thus, there can be no inconsistent state in the application, since the Wizard is always entered via the specified entry point.
+ @WindowScoped
+public class EntryPointHandler implements Serializable {
+  private Class<? extends ViewConfig> previousEntryPoint;
+
+  @Inject
+  private ViewConfigResolver viewConfigResolver;
+
+  @Inject
+  private ViewNavigationHandler viewNavigationHandler;
+
+  @Inject
+  private GroupedConversationManager conversationManager;
+
+  @Inject
+  private Event<EntryPointNavigationEvent> entryPointEvent;
+
+  protected void checkEntryPointsAndWizardSteps(
+      @Observes @BeforePhase(JsfPhaseId.RENDER_RESPONSE)
+      PhaseEvent phaseEvent) {
+
+    //...
+
+    if (!viewConfigDescriptor.getMetaData(EntryPoint.class).isEmpty()) {
+      this.previousEntryPoint = viewConfigDescriptor.getConfigClass();
+      this.conversationManager.closeConversations();
+      this.entryPointEvent.fire(
+        new EntryPointNavigationEvent(
+          viewConfigDescriptor.getConfigClass()));
+    } else if (!viewConfigDescriptor
+                  .getMetaData(Wizard.class).isEmpty()) {
+
+      Wizard wizard =
+        viewConfigDescriptor.getMetaData(Wizard.class).iterator().next();
+
+      Class<? extends ViewConfig> entryPointOfWizard =
+        wizard.entryPoint();
+
+      if (!entryPointOfWizard.equals(this.previousEntryPoint)) {
+        this.viewNavigationHandler.navigateTo(entryPointOfWizard);
+      }
+    }
+  }
+}
+However, the logic implemented for @Wizard does not ensure that a wizard actually has a defined entry point. To check this during the application start, a ConfigDescriptorValidator can be implemented and activated as in listing using @ViewConfigRoot via @ViewConfigRoot .
+ @ViewConfigRoot(
+  configDescriptorValidators = IdeaForkViewMetaDataValidator.class)
+@View(navigation = REDIRECT)
+public interface Pages extends ViewConfig {
+  //...
+
+  @Folder(name = "promotion")
+  @Wizard
+  interface PromotionWizard extends SecuredPages {
+    @EntryPoint
+    @ViewControllerRef(PromotionWizardCtrl.class)
+    class Step1 implements PromotionWizard {}
+
+    class Step2 implements PromotionWizard {}
+
+    @View(name = "summary")
+    class FinalStep implements PromotionWizard {}
+  }
+
+  //...
+}
+Implementations of the ConfigDescriptorValidator interface can validate logical relationships of View Config metadata , as in ConfigDescriptorValidator's listing implementation . In IdeaForkViewMetaDataValidator , it is validated whether there is at most one @Wizard instance per ViewConfigDescriptor instance and the default value for Wizard # entryPoint has been replaced with a specific entry point. Either by specifying explicitly with the @Wizard annotation itself or by combining it with @EntryPoint , which we initially implemented in Wizard $ EntryPointProcessor .
+ public class IdeaForkViewMetaDataValidator
+    implements ConfigDescriptorValidator {
+
+  @Override
+  public boolean isValid(ConfigDescriptor configDescriptor) {
+    List<Wizard> wizardMetaData =
+      configDescriptor.getMetaData(Wizard.class);
+
+    if (wizardMetaData.isEmpty()) {
+      return true;
+    }
+
+    if (wizardMetaData.size() > 1) {
+      throw new IllegalStateException("...");
+    }
+
+    Wizard wizardAnnotation = wizardMetaData.iterator().next();
+
+    if (ViewConfig.class.equals(wizardAnnotation.entryPoint())) {
+      throw new IllegalStateException("...");
+    }
+
+    return true;
+  }
+}
+Tip: With @ViewConfigRoot not only the View-Config concept can be extended or adjusted, but in combination with eg @ApplicationScoped this annotation is required if the bean-discovery-mode annotated available since CDI 1.1 is activated.
+In this chapter we learned about some view-config mechanisms and how they can be combined with other functionalities of DeltaSpike. In addition, further customization options and annotations are available. For example, the configuration of view controller can be decentralized with @ViewRef . In the next part we will take a closer look at the integration with other libraries, alternative concepts for Java EE mechanisms and the early use of EE7 functionalities in an EE6 application.
+=== Flexibility with alternatives
+So far, we have primarily used DeltaSpike in this chapter to extend standard CDI concepts or other Java EE specifications such as JSF. Apart from such enhancements, DeltaSpike also provides alternatives to existing Java EE concepts. Some alternatives, such as type-safe project stages and the type-safe JSF navigation, we have already met. However, this section discusses alternatives, each of which is available as a separate module from DeltaSpike. The main difference to the equivalent mechanisms of Java EE is the higher flexibility. All alternatives can, for example, also be used outside Java EE servers. In addition, additional extension points offer new possibilities for expanding or completely changing the standard behavior.
+ 
+
+We're starting to automate an area in IdeaFork that we've added in this chapter. Until now, our config context can only be reset manually via JMX in order to read in any changed values ​​from the configuration sources. In addition to this possibility, we can perform an automatic reset of the beans in the config context at regular intervals so that the corresponding CDI beans and thus the loaded configuration values ​​are regularly updated. 
+In Java EE we would use the EJB annotation @ javax.ejb.Schedule use. The advantage of this annotation is high portability between Java EE servers. As soon as we want to deploy an application outside of a Java EE server, we would have to use an additional container, such as the embedded version of Apache OpenEJB. Alternatively, the DeltaSpike scheduler module allows the use of Quartz jobs as CDI beans. Listing Quartz Job as a CDI Bean demonstrates the use of the annotation @ org.apache.deltaspike.scheduler.api.Scheduled . In this example, the ConfigReloaderJob class is an implementation of org.quartz.Job . Through the annotation @Scheduled This Quartz job is automatically activated and CDI-based injection available. For this reason, no additional configuration is required and the ConfigReloader -Bean can be simply injected as usual. Specifying a CDI scope for the Quartz job is optional. In principle, every active scope can be selected.
+ @ApplicationScoped
+@Scheduled(cronExpression = "0 0/10 * * * ?")
+public class ConfigReloaderJob implements Job {
+  @Inject
+  private ConfigReloader configReloader;
+
+  @Override
+  public void execute(JobExecutionContext context)
+    throws JobExecutionException {
+      configReloader.reloadConfig();
+  }
+}
+In addition to the control of the execution times with the help of a CRON expression, the context control can also be adapted. The default value for @Scheduled # startScopes is SessionScoped.class and RequestScoped.class . Without an explicit specification of other scope annotations, the request and session scope is automatically started in the background for each started quartz job and terminated after the #execute method has been executed . The specified contexts are started and stopped using DeltaSpike CDI-Control, which we will get to know in more detail when using the Test-Control module.
+ 
+
+The explicit control of the scheduler and individual scheduler jobs can optionally be implemented via the org.apache.deltaspike.scheduler.spi.Scheduler -SPI. For example, with @Scheduled (onStartup = false) it is possible to deactivate the automatic configuration of a scheduling job in order, for example, to inject a contextual reference on schedulers into any CDI bean and to schedule such a scheduling job depending on one Manually configure via scheduler # startJobManually .
+Tip: The -SPL scheduler can even be used to replace Quartz as a scheduling framework. If the preferred scheduling framework supports at least scheduling jobs based on CRON expressions, an implementation of org.apache.deltaspike.scheduler.spi.Scheduler can serve as an adapter to this scheduling framework.
+ 
+
+ 
+
+Another module created primarily as a CDI-based alternative to EJBs is the JPA module from DeltaSpike. The annotations @ org.apache.deltaspike.jpa.api.transaction.Transactional , @ org.apache.deltaspike.jpa.api.transaction.TransactionScoped and @PersistenceUnitName are the central components of this module. The first two annotations have been available since Java EE 7 (or JTA v1.2) equivalents of the same name, although both @Transactional variants basically have the same goal, but implement this differently in detail.
+ 
+
+In IdeaFork , transactions have been implicitly driven by service-level EJBs. In summary, a proxy entity for the EntityManager in the EntityManagerProducer class is injected by the EE server. The self-defined CDI Producer method allows us to inject this EntityManager into EJBs or CDI beans in a type-safe manner. In the background, the EJB container generates a new EntityManager instance for each transaction .
+ 
+
+Listing EntityManager Producer independent of EJBs shows how we can use the JPA module of DeltaSpike to implement the same behavior without EJBs.
+ @ApplicationScoped
+public class EntityManagerProducer {
+  @PersistenceUnit(unitName = "ideaForkPU")
+  private EntityManagerFactory entityManagerFactory;
+
+  @Produces
+  @Default
+  @TransactionScoped
+  protected EntityManager exposeEntityManagerProxy() {
+    return entityManagerFactory.createEntityManager();
+  }
+
+  protected void onTransactionEnd(
+    @Disposes @Default EntityManager entityManager) {
+      if (entityManager.isOpen()) {
+        entityManager.close();
+      }
+  }
+}
+Since we do not have the EJB support, we have to switch to the thread-safe EntityManagerFactory . In an EE server, EntityManagerFactory is injected through the container itself in combination with @PersistenceUnit . Outside of an EE server, we would need to use plug-ins for the CDI container. For example, OpenWebBeans provides a corresponding plugin with the resource module. However, this is not portable and therefore only usable with OpenWebBeans. We can get a portable result outside the EE server with the annotation @ org.apache.deltaspike.jpa.api.entitymanager.PersistenceUnitName .
+ 
+
+Before we use this annotation, we consider the previous procedure in our tests. In IdeaFork , we use in-memory repositories for unit testing. Such a procedure is often recommended unless the repositories themselves are tested. However, if too many central classes are exchanged for testing, errors often can not be detected early enough. In the tests of IdeaFork we have symbolically illustrated this in the test class EventTest . Specifically, we call the method UserManager # createUserFor in various test methods on. Then ideas for this user are generated and saved. However, the in-memory repositories in the test code did not notice that the created user instance was not saved. This is only noticeable if we also use the productive repository implementations in the tests. To maintain our normal JPA repositories in tests as well, we simply delete the specialized repository implementations, which automatically re-enable the productive implementations. As mentioned earlier, the EntityManager CDI producer described in Listing EntityManager Producer independently of EJBs can not be deployed portably outside an EE server. Instead we can use the test module in Listing Portable Test EntityManager Producer Introduce the specialized version of the EntityManagerProducer class. By using the qualifier annotation @PersistenceUnitName , we can continue to automatically fill the injection point for EntityManagerFactory . The rest of the producer logic is equivalent to EntityManagerProducer .
+ @Specializes
+public class TestEntityManagerProducer extends EntityManagerProducer {
+  @Inject
+  @PersistenceUnitName("ideaForkPU")
+  private EntityManagerFactory entityManagerFactory;
+
+  //...
+}
+The corresponding changes are commited in the IdeaFork Git repository . This commit also indicates that additional test dependencies for JPA in unit tests and a custom JPA configuration (see META-INF / persistence.xml ) are required. Both are independent of CDI or DeltaSpike and therefore we do not go into detail about these details.
+ 
+
+At this point, we changed the EntityManagerProducer and the EntityManager instance created is stored by @TransactionScoped in the Transaction context for the current thread. However, the transaction context is not automatically active, but is enabled by the @Transactional -Interceptor of DeltaSpike because this interceptor controls the transactions. For this reason, @TransactionScoped can only be used in conjunction with @Transactional .
+ 
+
+In IdeaFork , we have defined transaction handling in the EE6 module through EJBs. So we did not have any transactional beans in the core of IdeaFork . Our switch from in-memory repositories to JPA repositories therefore requires transactional beans in IdeaFork core. Listing extension of a stereotype shows the required extension of the @Repository stereotype annotation. As soon as we add the @Transactional annotation in our @Repository annotation, all repository implementations in IdeaFork are transactional.
+ @Target(TYPE)
+@Retention(RUNTIME)
+
+@Stereotype
+@ApplicationScoped
+@Monitored
+
+@Transactional
+public @interface Repository {
+}
+However, this requires CDI 1.1 or Java EE7. With CDI 1.0 and thus also with EE6 we have to specify the interceptor in the file META-INF / beans.xml . In some EE6 servers, such as Apache TomEE, this can already be dispensed with and in others the BDA rules are implemented so strictly that the interceptor must be reactivated in each CDI archive. In such cases, the org.apache.deltaspike.jpa.impl.transaction.TransactionalInterceptor class must be added as an Interceptor class, as seen in Listing Activation of TransactionalInterceptor for EE6 Server . Without this activation, the annotation @Transactional would simply be ignored. 
+listing Activation of TransactionalInterceptor for EE6 server shows the required configuration entry .
+ <beans>
+  <!-- ... -->
+
+  <interceptors>
+    <!-- ... -->
+    <class>
+      org.apache.deltaspike.jpa.impl.transaction.TransactionalInterceptor
+    </class>
+  </interceptors>
+
+  <!-- ... -->
+</beans>
+We can follow a similar path in the service implementations of the IdeaFork EE6 module . However, we first have to create a stereotype annotation here. Listing stereotypes for transactional services illustrates this stereotype annotation called @Service .
+ @Target(TYPE)
+@Retention(RUNTIME)
+
+@Stereotype
+@ApplicationScoped
+
+@Transactional
+public @interface Service {
+}
+Beans marked with this new @Service stereotype automatically become transactional application-scoped beans. @Transactional can be used either at the class level or at the method level. By using @Transactional in the two stereotype annotations @Repository and @Service , all methods of the annotated CDI bean become transactional. Instead , if we explicitly annotate individual methods with @Transactional , then only these methods would be executed in one transaction.
+ 
+
+In IdeaFork , both repository beans and service beans are transactional, so that repository beans can be tested finely-granularly and without additional constructs, or IdeaFork Core can be used as a stand-alone module. In the EE6 module, we optimize transaction boundaries for the JSF application by defining transactional service beans. In addition to the EE6 module, we could thus also implement modules for other UI technologies, which, for example, have different transaction boundary requirements. In each of the possible cases IdeaFork introduces-Core sure that at least repository beans are running in the context of an active transaction. When calling a transactional method, DeltaSpike automatically checks whether a transaction is already active for the current thread. When a transactional service method calls one or more transactional repository methods, only one service-level transaction is started and terminated after the call. All repository calls are executed in this constellation in the transaction context of the service method and therefore do not receive their own transaction. Conversely, when transactional repository methods are invoked by a non-transactional (CDI) bean, each repository method executes in a separate transaction. This results, that a transaction is always started and stopped by the outermost transactional method. The result is very similar to the concepts defined by EJBs. One big difference is that transactional CDI beans are explicitly named @Transactional must be marked. In addition, DeltaSpike's transaction strategy can be customized as needed. 
+With this information, we can change our existing EJBs to transactional CDI beans. Listing Transactional CDI beans instead of EJBs exemplifies this transition as a proxy for IdeaService .
+ //old
+@Stateless
+public class IdeaService {
+  @Inject
+  private IdeaManager ideaManager;
+
+  //...
+}
+
+//new
+@Service
+public class IdeaService {
+  @Inject
+  private IdeaManager ideaManager;
+
+  //...
+}
+Any exceptions that may occur are also covered at this top level. If a transactional method is called by another transactional method, then the transaction is rolled back only if the outermost transactional method does not catch and handle or throw an exception.
+ 
+
+The commit in the git repository also contains a change in the AppStructureValidationExtension class . This change is required because the service implementations in IdeaFork are no longer EJBs, but are now to be annotated with @Service.
+ 
+
+When managing transactions, DeltaSpike provides several variants and also allows you to implement your own concepts. This is possible through the org.apache.deltaspike.jpa.spi.transaction.TransactionStrategy -SPI. In TransactionalInterceptor a CDI bean is injected that implements this interface. By default, an implementation called ResourceLocalTransactionStrategy is active, which requires "RESOURCE_LOCAL" as the value for "transaction-type" for persistence units . That's why @Transactional can be used inside and outside Java EE servers. In addition, DeltaSpike introduces two more implementations of the TransactionStrategy interfaces available. BeanManagedUserTransactionStrategy allows the use of "JTA" as the value for "transaction-type" and EnvironmentAwareTransactionStrategy supports both configurations by determining the transaction type for each active transaction.
+ 
+
+If the active implementation is to be changed, the desired alternative class can be configured in the file META-INF / beans.xml . Especially with Weld-based EE6 servers this is not possible due to the stricter interpretation of the BDA rules. In order to activate an alternative implementation globally for such servers, we can use the global alternative concept of DeltaSpike. In our case we create the file META-INF / apache-deltaspike.properties and add the line from Listing Global Alternatives with CDI 1.0 .
+ globalAlternatives.org.apache.deltaspike.jpa
+.spi.transaction.TransactionStrategy=org.apache.deltaspike.jpa
+.impl.transaction.EnvironmentAwareTransactionStrategy
+This configuration file, like any other configuration source, is embedded in the DeltaSpike configuration mechanism and is internally loaded by the PropertyFileConfigSource class . In this chapter we have already gotten to know the prioritization of configuration sources. PropertyFileConfigSource defaults to 100 for configuration files named META-INF / apache-deltaspike.properties . The same applies to configuration files that are automatically integrated by implementations of the PropertyFileConfig interface . Any configuration source , including any file named META-INF / apache-deltaspike.properties, can set the predefined priority itself. For this we need to add a configuration entry with the key deltaspike_ordinal . As value we choose the desired place in the configuration chain. DeltaSpike uses the values ​​100, 200, 300, and 400 for its own configuration sources. If we want to ensure that our newly defined configuration for the global transaction strategy always takes precedence over values ​​in the standard sources, then we must set a value higher than 400. In our case, the configuration entry deltaspike_ordinal = 1000 is added in the file META-INF / apache-deltaspike.properties .
+Tip: Although the annotation @Transactional is intended as an alternative to EJBs, it can also be combined with them. If @Transactional uses the current UserTransaction, and thus JTA, then a transactional CDI bean can take over the UserTransaction of an EJB, as long as the EJB calls a transactional method of a CDI bean.
+=== Own concepts
+In IdeaFork , we have previously encountered several accessibility options to configured values, which were implemented on the basis of DeltaSpike. The options shown illustrate some concepts that are directly supported by DeltaSpike. Each of the variants described had at least one aspect that could be improved. In many cases, this is in the nature of the matter, because we want to access untyped configuration values ​​as securely as possible. So requires the use of @ConfigPropertythat the key must be specified at each injection point and updated when changes are made. Here we could of course, for example, resort to an interface that defines the keys as static strings. Nevertheless, the implementation requires a correspondingly high level of discipline. In the second variant, the producer classes derived from BaseConfigPropertyProducer , we need a separate producer method for each key. Although such methods are trivial in implementation, each implementation requires an implementation and in many cases also a CDI qualifier. The situation is similar with own configuration beans. The advantage of MonitoringConfig was the optional use of any scope, yet we had to implement a separate method for each configuration key.
+ 
+
+However, we can overcome the above-mentioned limitations in just a few steps by implementing our own concept. To accomplish this, we can use the Partial Bean module from DeltaSpike. This module allows the implementation of interfaces and abstract classes for which there is only one generic handler instead of concrete implementations. The connection of interfaces or abstract classes with the associated generic handler is performed via a self-defined binding annotation. Such a binding annotation can be seen in Listing Partial Bean Binding and must be marked with the annotation @ org.apache.deltaspike.partialbean.api.PartialBeanBinding .
+ @PartialBeanBinding
+
+@Retention(RUNTIME)
+@Target(TYPE)
+public @interface TypedConfig {
+}
+Both interfaces and abstract classes as well as the handler class must be provided with the same binding annotation to make a connection. In IdeaFork , we introduced the @MaxNumberOfHighestRatedCategories qualifier in this chapter to inject the configured value in a type-safe way. Although a qualifier per configuration key improves the security during use, it also increases the effort during the initial implementation. Prior to this qualifier we had a class called ApplicationConfig, which provided several configuration values ​​type-safe. However, we had to load the configuration ourselves and prepare the individual properties, or in the case of several configuration sources even a prioritization per source would be necessary. Independent of the preceding steps in this case, we consumed the result via the #getMethodInvocationThreshold method . Apart from the manual processing of the configuration, this approach was quite practical. Therefore, we want to refine our original approach with the partial bean concept based on the configuration infrastructure of DeltaSpike.
+ 
+
+As a first simplification, we remove the qualifier @MaxNumberOfHighestRatedCategories again and this time create ApplicationConfig as an interface with the method #maxNumberOfHighestRatedCategories . We connect the interface shown in Listing Minimal Partial-Bean with the @TypedConfig annotation with a generic handler. As a result, we get our first partial bean.
+ @TypedConfig
+public interface ApplicationConfig {
+  Integer maxNumberOfHighestRatedCategories();
+}
+So far we have created a binding annotation and an interface. The aforementioned generic handler is realized in the next step. This handler must implement java.lang.reflect.InvocationHandler and be annotated with our binding annotation. Listing Minimal Partial Bean Handler shows a simplified variant of a handler. The method name is passed as the key to the previously introduced method ConfigResolver # getPropertyValue . Then the value loaded by DeltaSpike is parsed based on the return type of the method. This result is therefore the result of the partial bean method.
+ @TypedConfig
+public class TypedConfigHandler implements InvocationHandler {
+  public Object invoke(Object proxy, Method method, Object[] args)
+    throws Throwable {
+
+      String key = method.getName();
+      Class<?> configType = method.getReturnType();
+
+      String loadedValue = ConfigResolver.getPropertyValue(key);
+      return parseValue(loadedValue, configType);
+  }
+
+  private Object parseValue(String loadedValue, Class<?> configType) {
+    //...
+  }
+}
+With no additional configuration or activation, our first partial bean is ready to go and we can inject ApplicationConfig into other CDI beans like a traditional CDI bean. With every method call , in our case by the #maxNumberOfHighestRatedCategories method , the generic handler for this partial bean is called in the background. 
+Listing using partial beans demonstrates that there are no other aspects to consider when using a partial bean. Alone by considering the use, for example, in IdeaJpaRepositorywe can not tell the difference to a conventional CDI bean. Only when searching for the associated implementation would we find out that there is no explicit implementation of the interface.
+ @Repository
+public class IdeaJpaRepository extends GenericJpaRepository<Idea>
+  implements IdeaRepository {
+
+    @Inject
+    private ApplicationConfig applicationConfig;
+
+    //...
+
+    @Override
+    public List<CategoryView> getHighestRatedCategories() {
+      return entityManager.createQuery("...")
+        .setMaxResults(
+          applicationConfig.maxNumberOfHighestRatedCategories())
+        .getResultList();
+    }
+}
+In our case, we only have one method in ApplicationConfig so the effort seems disproportionately high. The goal of partial beans is, of course, to use interfaces with multiple methods, or to connect multiple partial beans with a generic handler.
+ 
+
+In the definition of further configuration beans, we benefit directly from the underlying idea. Listing MonitoringConfig as a simple CDI bean shows the class MonitoringConfig , which we have added in this chapter.
+ @ConfigScoped
+public class MonitoringConfig {
+  @Inject
+  @ConfigProperty(name = "methodInvocationThreshold")
+  private Integer methodInvocationThreshold;
+
+  public Integer getMethodInvocationThreshold() {
+    return methodInvocationThreshold;
+  }
+}
+Although the procedure is very direct, we can considerably simplify this configuration class. Listing MonitoringConfig as PartialBean shows the conversion from MonitoringConfig to a partial bean. Since we have already implemented both the partial bean binding and the generic handler, the creation effort for all other partial beans or the addition of additional methods is minimal.
+ @TypedConfig
+public interface MonitoringConfig {
+  Integer methodInvocationThreshold();
+}
+However, when we migrated MonitoringConfig , we lost a mechanism. The loaded values ​​are no longer stored in our config context and therefore have to be reloaded by DeltaSpike with every access. We could again provide our partial bean with the @ConfigScoped annotation. However, in this case we would only put the internally generated instance in this context. Method calls would continue to be passed to the generic handler, which reloads the value on each access. For this reason we need to save the generic handler in the config context and cache the loaded values ​​locally. Capping listing configuration values ​​in TypedConfigHandler illustrates the required changes in the class TypedConfigHandler .
+ @TypedConfig
+@ConfigScoped
+public class TypedConfigHandler implements InvocationHandler {
+  private Map<String, Object> loadedValues =
+    new ConcurrentHashMap<String, Object>();
+
+  public Object invoke(Object proxy, Method method, Object[] args)
+    throws Throwable {
+
+      String key = method.getName();
+      Object result = loadedValues.get(key);
+
+      if (result != null) {
+        return result;
+      }
+
+      String loadedValue = ConfigResolver.getPropertyValue(key);
+
+      Class<?> configType = method.getReturnType();
+      result = parseValue(loadedValue, configType);
+
+      loadedValues.put(key, result);
+      return result;
+  }
+
+  //...
+}
+Tip: If it becomes necessary to implement individual methods of a partial bean manually, abstract classes can be used for this purpose. Abstract methods will continue to be passed to the corresponding generic handler. Explicitly implemented methods, on the other hand, execute normally, bypassing the handler in such cases.
+This approach also has the advantage that we can implement changes centrally. Instead of annotating each configuration class individually with @ConfigScoped , this is now only required for the class TypedConfigHandler . Other changes could be made centrally for all configurations. For example, as Listing converted to Project-Stage dependent configuration values , we could use the ConfigResolver # getProjectStageAwarePropertyValue method instead of the ConfigResolver # getPropertyValue method to bind configuration values to a project stage.
+ @TypedConfig
+@ConfigScoped
+public class TypedConfigHandler implements InvocationHandler {
+  //...
+
+  public Object invoke(Object proxy, Method method, Object[] args)
+    throws Throwable {
+
+    //...
+    String loadedValue =
+      ConfigResolver.getProjectStageAwarePropertyValue(key);
+
+    //...
+    return result;
+  }
+
+  //...
+}
+This change allows you to override configuration values ​​for specific project stages. For example, for the key maxNumberOfHighestRatedCategories , our configuration entry is maxNumberOfHighestRatedCategories = 10 . This entry is still valid unless there is an explicit entry for the current project stage. If we were to activate the Project Stage Development , then we could use the entry maxNumberOfHighestRatedCategories = 10, for example, with maxNumberOfHighestRatedCategories.Development = 100 override. For example, during development, we could experiment with how the page behaves when displaying a large number of categories without the risk of erroneously changing a productive configuration.
+ 
+
+Some configurations do not necessarily require regular updates. In IdeaFork , for example, we have created a CDI qualifier called ApplicationName in this chapter , which was also annotated with @ConfigProperty , so that the configured application name can be injected safely and at the same time the associated producer logic can generically load the configured value based on @ConfigProperty , The conversion of the configuration classes in IdeaFork to partial beans, however, does not consider any CDI qualifiers. If we replace the previously used ConfigProducer , we would use a partial bean named ApplicationConfig as seen in Listing Partial Bean without Producer .
+ @TypedConfig
+public interface ApplicationConfig {
+  Integer maxNumberOfHighestRatedCategories();
+
+  String name();
+
+  ApplicationVersion version();
+
+  ExternalFormat.TargetFormat defaultExternalFormat();
+}
+Accordingly, we could, for example, no longer inject the application name as a string in combination with the @ApplicationName qualifier. In order to continue to use this possibility, a small extension of the partial bean is required. As shown in Listing Partial Bean with Producer , we can also annotate methods in a partial bean with @Produces and optionally with a qualifier annotation. Producer methods in partial beans act like conventional CDI producers with the only difference that here too, the partial bean handler takes over the execution of the methods. A positive additional aspect is that we no longer use qualifiers, as in our case the @ApplicationName annotation Need to highlight @ConfigProperty .
+ @TypedConfig
+public interface ApplicationConfig {
+  Integer maxNumberOfHighestRatedCategories();
+
+  @Produces
+  @ApplicationName
+  String name();
+
+  @Produces
+  ApplicationVersion version();
+
+  @Produces
+  ExternalFormat.TargetFormat defaultExternalFormat();
+}
+Since we do not use a scope annotation on any producer method in ApplicationConfig , the result here is always a dependent-scoped bean. As before, configuration values ​​generated in this way can only be updated if the corresponding injection point is refilled. Of course we could also inject ApplicationConfig and access all methods directly. However, for information such as the application name, we do not rely on using the current cached value through the direct call to ApplicationConfig # name, so we can use that information directly without going through ApplicationConfig in other CDI beans.
+ 
+
+In ApplicationConfig we also defined the result of defaultExternalFormat as a dependent-scoped bean. However, there is a technical reason for this because enum values ​​can not be proxyed, so we can not use CDI normal scopes. In our case, we would like to simplify CurrentObjectConverterProducer because so far the configured value was injected using @ConfigProperty and the string was evaluated manually. Listing activation of implementations after configuration changes shows the modified implementation of CurrentObjectConverterProducer . By the producer for ExternalFormat.TargetFormat we can inject the current value directly. The previous version of CurrentObjectConverterProducer has made the selected ObjectConverter available as a dependent-scoped bean for the @Default qualifier. If we continue to do so, refreshing the configuration would not be consistent across the application. For example , if we inject the @Default ObjectConverter into an application-scoped bean, then that bean would use the dependent-scoped ObjectConverter until the application is restarted. Injecting into a request-scoped bean, on the other hand, would result in us getting a new reference to the current one for each request Obtain ObjectConverter . If the configured value for the defaultExternalFormat key changes during runtime, then the request-scoped bean would receive this new value as soon as the cache is updated in TypedConfigHandler . The application-scoped bean, on the other hand, would continue to work with the original ObjectConverter . In order to avoid such inconsistencies at runtime, we can additionally extend the Producer method in listing activation of implementations after configuration changes by the annotation @ConfigScoped . This change will cause the current ObjectConverter updated for all injection points as soon as the config context is reset. This means at the same time that all beans always use the current ObjectConverter regardless of their scope.
+ @ApplicationScoped
+public class CurrentObjectConverterProducer {
+  @Produces
+  @Default
+  @ConfigScoped
+  protected ObjectConverter defaultConverter(
+    @ExternalFormat(XML) ObjectConverter objectConverterXml,
+    @ExternalFormat(JSON) ObjectConverter objectConverterJson,
+    ExternalFormat.TargetFormat defaultFormat) {
+      switch (defaultFormat) {
+        case JSON:
+          return objectConverterJson;
+        default:
+          return objectConverterXml;
+      }
+    }
+}
+The result of our transition is a simple, consistent and updatable configuration that is also type-safe. For each new configuration entry, in the simplest case, only one method must be added in an interface. If the key of the configuration entry changes, then only this one method needs to be renamed accordingly. All modern Java IDEs automatically convert the associated method calls during such refactoring. If this is not done correctly, then at the latest the Java compiler would report an error. The entire logic for loading, parsing and caching the values ​​can be done centrally in a handler. Changes can therefore also be carried out centrally.
+ 
+
+Nevertheless, we have not yet eliminated an important source of error in our type-safe configuration. Although we have ensured that we can access the configured values ​​in a type-safe manner, we do not know whether each interface method really leads to a configured value. For example, the key of an entry could change and our application would continue to start normally, even if the associated method was not renamed. Consequently, the effect is only visible at runtime when accessing the method.
+ 
+
+To avoid this, we can implement the org.apache.deltaspike.core.spi.config.ConfigValidator interface and enable it in the META-INF / services / org.apache.deltaspike.core.spi.config.ConfigValidator file . In order to find the interfaces that are annotated with our self-created annotation @TypedConfig , our validator additionally implements javax.enterprise.inject.spi.Extension and must also be in the file META-INF / services / javax.enterprise.inject.spi. Extension to be added. In Listing Extension for validation of type-safe configuration , this implementation becomes TypedConfigValidationExtension called. The method #findTypedConfigClasses checks whether the bean found is an implementation of InvocationHandler , which is additionally annotated with @TypedConfig . In this case, the found class is added to a list used in the #processValidation method for validation. During validation, each method name is used as the key for the getPropertyValue method call . If no configured value can be found for a key, a suitable error message is generated. If we had optional configurations, then we would have to introduce an additional annotation for methods. This could, for example. @OptionalKey and methods with such an annotation would simply be skipped during validation.
+ public class TypedConfigValidationExtension
+  implements ConfigValidator, Extension {
+
+  private static List<Class> foundConfigClasses =
+    new CopyOnWriteArrayList<Class>();
+
+  public void findTypedConfigClasses(@Observes ProcessAnnotatedType pat) {
+    Class<?> beanClass = pat.getAnnotatedType().getJavaClass();
+    TypedConfig typedConfig = beanClass.getAnnotation(TypedConfig.class);
+
+    if (typedConfig != null &&
+        !InvocationHandler.class.isAssignableFrom(beanClass)) {
+      foundConfigClasses.add(beanClass);
+    }
+  }
+
+  @Override
+  public Set<String> processValidation() {
+    Set<String> violations = new HashSet<String>();
+    for (Class configClass : foundConfigClasses) {
+      validateConfigKeys(configClass.getMethods(), violations);
+    }
+
+    foundConfigClasses.clear();
+    return violations;
+  }
+
+  private void validateConfigKeys(
+    Method[] methods, Set<String> violations) {
+
+      for (Method method : methods) {
+        String key = method.getName();
+        String configuredValue = ConfigResolver.getPropertyValue(key);
+
+        if (configuredValue == null) {
+          violations.add("missing config-key: " + key);
+        }
+      }
+  }
+}
+Tip: Some servers are not compliant, which means that we need to use a static variable in the TypedConfigValidationExtension class . In specification-compliant servers, we could also use an instance variable, making it easier to use such extensions in shared modules for multiple modules. In this case we would have to use a bean lookup on TypedConfigValidationExtension in the method #processValidation , so that we get the extension instance with the filled list.
+=== Further increase flexibility
+In many projects, it is also possible to load configured values ​​from a database so that, if necessary, a configuration can be changed at runtime without redeploying the application. This concept is usually easy and quick to implement. In our case we want to keep this implementation as minimalistic as possible and additionally integrate it with the previously presented configuration mechanism of DeltaSpike.
+ 
+
+In the first step, we'll create a simple JPA entity called ConfigEntry , which can be seen in the Listing JPA entity for dynamic configurations . We could use this entity as usual with the help of a repository implementation. With GenericJpaRepository we already have a base implementation in the core of IdeaFork with which we would only have to type a concrete implementation on our new entity type. In DeltaSpike, a similar approach is provided by the Data module, which allows us to dispense with our own base implementation and benefit from additional functionality.
+ @Entity
+public class ConfigEntry extends BaseEntity {
+  @Column(unique = true, nullable = false)
+  private String entryKey;
+
+  @Column
+  private String value;
+
+  //+ getter and setter ...
+}
+Listing entity repository based on DeltaSpike-Data shows a partial bean, which is brought to life by a generic handler in the data module of DeltaSpike. The annotation @ org.apache.deltaspike.data.api.Repository marks this interface as a partial bean, causing the DeltaSpike handler to generate queries based on the method names or optional metadata. In our case, with @Query (singleResult = OPTIONAL) we add metadata that allows for an optional result. In addition, ConfigRepository derives from the org.apache.deltaspike.data.api.EntityRepository interface , which uses methods such as #save , #remove, #count , #findAll and many more can be used. When typing, we also specify the type of the primary key in addition to the entity type. In our case, the entity type is the ConfigEntry class, and the primary key is defined as a string in BaseEntity .
+ @org.apache.deltaspike.jpa.api.transaction.Transactional
+@org.apache.deltaspike.data.api.Repository
+public interface ConfigRepository
+  extends EntityRepository<ConfigEntry, String> {
+
+    @Query(singleResult = OPTIONAL)
+    ConfigEntry findByEntryKey(String key);
+}
+We could inject our repository into EJBs or transactional services as usual with @Inject without further annotation . Then we can call the predefined or self-defined methods.
+ 
+
+If the repository itself is to be transactional, then it must be additionally marked with @Transactional . However, partial beans have small limitations because, for example, no CDI decorators can be used. If decorators are needed we would have to stick to GenericJpaRepository from IdeaFork -Core. For this reason, we will not redeploy the remaining repositories of IdeaFork -Core.
+ 
+
+In IdeaFork we want to include ConfigRepository with an additional ConfigSource . The DataBaseAwareConfigSource class from Listing Config-Source for loading values ​​from a database now directly implements the org.apache.deltaspike.core.spi.config.ConfigSource interface . As ordinal value, we choose a high value that ensures that this config source is the first to be questioned in the chain. The #getProperties method does not need to be implemented properly unless the #isScannable method is true. returns. This is only necessary if we need the method ConfigResolver # getAllProperties in our application . The method #getConfigName is primarily needed for log entries, so that, for example, a possible troubleshooting easier. The body of DataBaseAwareConfigSource can be found in the #getPropertyValue method . With BeanManagerProvider # isActive we can check if BeanProvider can already be used. We need this for a dynamic lookup of ConfigRepository . In addition, we can still keys that with "deltaspike." start filtering out because we do not want to load the configuration from DeltaSpike itself from the database. As soon as our partial bean named ConfigRepository is found, we can use the method #findByEntryKey to load the configuration entry in the database for the key you are looking for. If a corresponding entry is found, then we use the result of the #getValue method .
+ public class DataBaseAwareConfigSource implements ConfigSource {
+  private final static int ordinal = 2000;
+
+  @Override
+  public int getOrdinal() {
+    return ordinal;
+  }
+
+  @Override
+  public String getPropertyValue(String key) {
+    if (!BeanManagerProvider.isActive() ||
+        key.startsWith("deltaspike.")) {
+
+          return null;
+    }
+
+    ConfigRepository configRepository =
+      BeanProvider.getContextualReference(ConfigRepository.class, true);
+
+    if (configRepository != null) {
+      ConfigEntry configEntry = configRepository.findByEntryKey(key);
+
+      if (configEntry != null) {
+        return configEntry.getValue();
+      }
+    }
+    return null;
+  }
+
+  @Override
+  public String getConfigName() {
+    return "config-db";
+  }
+
+  @Override
+  public boolean isScannable() {
+    return false;
+  }
+
+  @Override
+  public Map<String, String> getProperties() {
+    return Collections.emptyMap();
+  }
+}
+Implementations of org.apache.deltaspike.core.spi.config.ConfigSource are not used by DeltaSpike as CDI beans, as this mechanism was originally designed primarily to configure parts of DeltaSpike that need to be fixed during container startup. As a result, this is a classic Java SPI and we need to fully qualify our class in the META-INF / services / org.apache.deltaspike.core.spi.config.ConfigSource file .
+ 
+
+With this last step, we have extended our type-safe configuration with an additional configuration source , without making any further adjustments in IdeaFork . We can continue to store default values ​​in the static configuration sources. If a change is required at runtime, we can store the new value in the database. Once the cached configuration is updated manually or automatically, the new values ​​from the database are favored by the higher ordinal of our configuration source and thus become active.
+ 
+
+In IdeaFork , we can simulate this when launching the application when using the Project Stage Development . There are many ways to implement initialization code in Java EE. For example, the @Startup annotation for EJBs, the ServletContainerInitializer interface for servlets, or the JSF event PostConstructApplicationEvent can be used. Since CDI 1.1 and thus Java EE 7, observer methods can also be used to monitor standard scopes. An Observer method that uses @Observes @Initialized (ApplicationScoped.class) used, for example, is called as soon as the application context has been initialized. All variants have in common that only a part of the server is started. However, none of these variants guarantees the implementation of a portable initialization logic, which is executed after the complete server start. For Java EE applications with JSF pages, such as IdeaFork , we can use a JSF add-on for DeltaSpike. This add-on executes the initialization logic on the first JSF request, which guarantees that the entire Java EE container is fully initialized. This add-on also illustrates the configuration mechanism of DeltaSpike. The add-on defines the configuration key first-faces-request_event-classto set the class of the startup event. By default, this sets the FirstFacesRequestEvent class . This configuration entry is stored in the META-INF / apache-deltaspike.properties file of the add-on. In the same file, deltaspike_ordinal = 1 defines a very low ordinal value. Because the default value is higher, we would have in META-INF / apache-deltaspike.properties of IdeaFork no value for deltaspike_ordinal so that the default configuration is overridden. However, when configuring a gobal transaction strategy, we have already set the value 1000, which of course we can also maintain. In IdeaFork , we want to use the class IdeaForkStartedEvent and therefore add a corresponding entry in the META-INF / apache-deltaspike.properties file from IdeaFork . The add-on for DeltaSpike also uses the previously introduced method ConfigResolver # getProjectStageAwarePropertyValue , which allows us, for example, to define a separate event for the Project Stage Development . Listing Stage-dependent startup event illustrates both configuration entries. Both classes are simple (marker) classes without additional logic. In the case of Project-Stage Development , first the value for first-faces-request_event-class.Development is searched. Only if this is not present, then the value for first-faces-request_event-class is loaded.
+ first-faces-request_event-class=
+  at.irian.cdiatwork.ideafork.core.api.startup.IdeaForkStartedEvent
+first-faces-request_event-class.Development=
+  at.irian.cdiatwork.ideafork.ee.infrastructure.DevStartupEvent
+Listing Track-dependent startup event monitoring shows how we can use such a startup event. In this case, we change a configured value in Project-Stage Development by storing the desired value in the database using the ConfigEntry entity . For all subsequent accesses to maxNumberOfHighestRatedCategories , the value configured in the database is used.
+ public class DataImporter {
+  @Inject
+  private ConfigRepository configRepository;
+
+  protected void init(@Observes DevStartupEvent devStartupEvent) {
+    configRepository.save(
+      new ConfigEntry("maxNumberOfHighestRatedCategories", "2"));
+  }
+}
+As an alternative to DevStartupEvent , we could define an observer for the IdeaForkStartedEvent event in a bean annotated with @Exclude (exceptIfProjectStage = ProjectStage.Development.class) .
+ 
+
+In our application, we can use the class DevStartupEvent addition of IdeaForkStartedEvent derived, which during the firing of events DevStartupEvent also Observer for the event IdeaForkStartedEvent be called. The observer in Listing Observer for a portable startup event is thus called in both Project-Stage Development and Project-Stage Production . In our case, we use this observer to dynamically add DataBaseAwareConfigSource .
+ @ApplicationScoped
+public class IdeaForkCoreStartupObserver {
+    protected void onStartup(
+      @Observes IdeaForkStartedEvent ideaForkStartedEvent,
+      DataBaseAwareConfigSource configSource) {
+
+        ConfigResolver.addConfigSources(
+          Arrays.<ConfigSource>asList(configSource));
+    }
+}
+Dynamic registration eliminates the need to configure the config source implementation in the META-INF / services / org.apache.deltaspike.core.spi.config.ConfigSource file . Another advantage is the simpler implementation of DataBaseAwareConfigSource , which can be seen in the listing modification of DataBaseAwareConfigSource . Instead of manually using BeanManagerProvider and BeanProvider we can ConfigRepository via as usual @Inject inject because DataBaseAwareConfigSource is now managed by the CDI container.
+ @ApplicationScoped
+public class DataBaseAwareConfigSource implements ConfigSource {
+  //...
+
+  @Inject
+  private ConfigRepository configRepository;
+
+  @Override
+  public String getPropertyValue(String key) {
+    if (key.startsWith("deltaspike.")) {
+      return null;
+    }
+
+    ConfigEntry configEntry = configRepository.findByEntryKey(key);
+
+    if (configEntry != null) {
+      return configEntry.getValue();
+    }
+    return null;
+  }
+
+  //...
+}
+=== Better sooner than later
+As we've already seen in this chapter, DeltaSpike expands the Java EE platform with diverse and innovative concepts. Another aspect of DeltaSpike is the early deployment of new Java EE concepts for older versions of Java EE.
+ 
+
+Examples are the servlet and bean validation modules. For example, the servlet module provides a portable injection of the current HttpServletResponse instance. In a Java EE6 server this is already supported with @Context . Only from Java EE7 can @Inject be used. The DeltaSpike Servlet module allows injecting via @Inject in conjunction with the @DeltaSpike qualifier , Due to the qualifier, the injection point can be used not only with Java EE6 and in a servlet container with CDI, but also without modification in a Java EE7 server and any subsequent version. The functionality is therefore already available before EE7 and is also completely portable. Listing Injection via @DeltaSpike Qualifier shows a section of IdeaExporter that has been adapted accordingly. Once the DeltaSpike servlet module is added, the injection point can be filled into IdeaExporter .
+ @Path("/idea/")
+@Produces(MediaType.APPLICATION_JSON)
+public class IdeaExporter {
+    @Inject
+    @DeltaSpike
+    private HttpServletResponse response;
+
+  //...
+}
+In addition to injecting (Http) ServletResponse , the servlet module still supports injecting the current ServletContext , (Http) ServletRequest , HttpSession , and Principal instances.
+ 
+
+A similar benefit is provided by the Bean Validation module of DeltaSpike. In the previous chapter, we implemented BeanAwareConstraintValidatorFactory , which enabled CDI-based injection into constraint validators. Exactly this functionality is also provided by DeltaSpike. To do this, we must add the bean validation module and change the configuration entry in the validation.xml file . Listing activation of CDIAwareConstraintValidatorFactory illustrates the new contents of this configuration file.
+ <validation-config>
+  <constraint-validator-factory>
+    org.apache.deltaspike.beanvalidation.impl
+      .CDIAwareConstraintValidatorFactory
+  </constraint-validator-factory>
+</validation-config>
+Unlike the original implementation called BeanAwareConstraintValidatorFactory , DeltaSpike's CDIAwareConstraintValidatorFactory can also be used with Java EE7. Although EE7 already provides this functionality automatically, its additional compatibility with EE7 makes IdeaFork compatible with EE7 servers without modification. With EE7 we could completely remove this configuration and the associated module from IdeaFork , but in this case IdeaFork would no longer be compatible with EE6.
+=== Safe ways
+We conclude this chapter with a page bean test. In our case, we would like to test the promotion wizard type-safe. Apart from the page-bean logic, the persisted result should also be checked. Unlike frameworks such as JBoss Arquillian, we do not create micro-test deployments that can be deployed and tested in a complete EE server. So far we have used CdiTestRunner from the Test Control module. This module starts the respective desired CDI container with the help of the CDI-Control module of DeltaSpike, but not a complete EE-server. For page bean tests, however, we also need a started JSF container. To integrate other containers such as a mock JSF container, the org.apache.deltaspike.testcontrol.spi.ExternalContainer -SPI. The DeltaSpike Test Control module includes several MyFaces test adapters. For example, we can enable org.apache.deltaspike.testcontrol.impl.jsf.MyFacesContainerAdapter in the META-INF / services / org.apache.deltaspike.testcontrol.spi.ExternalContainer file . This configuration and the corresponding test dependencies for MyFaces test not only automatically start a mocked JSF container, but also start the request and session scope as for CDI.
+ 
+
+In Listing User Registration and Login via Page Bean Test , we register a new user via the RegistrationViewCtrl -Bean of IdeaFork . Our page beans are defined with our own stereotype annotation @ViewController . This stereotype specifies the view access scope of DeltaSpike as default scope. Since this scope is based on the window scope, we must activate the associated window context before each test method, if methods of a page bean are called in the test. In our test, this is in the @Before callback named #initTestWindow calling the #activateWindow method implemented. Thus, in our test, for example, we can call RegistrationViewCtrl # getNewUser . As a window ID, we can use any string. For page bean tests, this call generates a simulated browser window with the ID "testWindow" before each test method . As before, CdiTestRunner will of course continue to restart the request and session scope for each test method. In the background, the window context stores all data under the specified window ID in the session. These two aspects ensure that each test method can assume a new window context.
+ 
+
+For the tests of the promotion wizard beans we need a registered and logged in user . We could do this manually with the help of the responsible services and beans or also with page beans of these pages. We decide on the second variant and start our test method called #flowFromRegistrationToIdeaPromotion by calling the setter methods, which are normally filled automatically by JSF based on the value bindings in the registration.xhtml page . Then we call the action method #register and check the navigation result. By using the type-safe View-Config as the navigation result, we can also benefit from the type-safety and the associated advantages in tests. We end the review of this first part with the call of the JSF-API, to check whether not only the navigation result meets the expectations, but also a message was added. This is also one of the major differences from page bean testing to complete UI testing. The advantage is the easier creation of the tests. However, at least some of the operations that are normally performed automatically must be manually reset. In addition, some results can not be evaluated in a rendered response, but through the appropriate JSF APIs.
+ @RunWith(CdiTestRunner.class)
+public class IdeaForkBaseFlowTest {
+  @Inject
+  private WindowContext windowContext;
+
+  @Inject
+  private RegistrationViewCtrl registrationViewCtrl;
+
+  @Before
+  public void initTestWindow() {
+    windowContext.activateWindow("testWindow");
+  }
+
+  @Test
+  public void flowFromRegistrationToIdeaPromotion() {
+    registrationViewCtrl.getNewUser().setNickName("os890");
+    registrationViewCtrl.getNewUser().setEmail("os890@test.org");
+    registrationViewCtrl.getNewUser().setPassword("test");
+    Class<? extends ViewConfig> navigationResult =
+      registrationViewCtrl.register();
+
+    Assert.assertEquals(Pages.User.Login.class, navigationResult);
+    Assert.assertFalse(
+      FacesContext.getCurrentInstance().getMessageList().isEmpty());
+
+    //...
+  }
+}
+If we want to use a test method to test a use case that spans multiple pages, it is necessary to divide the test method into several logical requests. Listing Restart of the request scope in a test method demonstrates how to use the CDI-Control API to restart the request scope. After the request context is stopped, it can be restarted immediately afterwards. Normally, the DeltaSpike JSF module automatically makes sure that the Window ID is restored at the beginning of each request. We also have to emulate this aspect manually by calling the #initTestWindow method presented earlier in the #newRequest method .
+ @RunWith(CdiTestRunner.class)
+public class IdeaForkBaseFlowTest {
+  //...
+  @Inject
+  private ContextControl contextControl;
+
+  @Test
+  public void flowFromRegistrationToIdeaPromotion() {
+    //...
+
+    newRequest();
+
+    //...
+  }
+
+  private void newRequest() {
+    contextControl.stopContext(RequestScoped.class);
+    contextControl.startContext(RequestScoped.class);
+    initTestWindow();
+  }
+}
+After successfully registering a test user, we start a new logical request to log in the newly created user via the LoginViewCtrl page bean. We proceed in a similar way as when registering. After calling the appropriate setter methods and finally the action method, we can check the navigation result. Again, we can then use the JSF API to check if a message has been added. To check whether this is not the message of the previous request, we start in Listing Checking messages in a logical request with the check for an empty message list.
+ @RunWith(CdiTestRunner.class)
+public class IdeaForkBaseFlowTest {
+  //...
+
+  @Inject
+  private LoginViewCtrl loginViewCtrl;
+
+  @Test
+  public void flowFromRegistrationToIdeaPromotion() {
+    //...
+
+    Assert.assertTrue(
+      FacesContext.getCurrentInstance().getMessageList().isEmpty());
+
+    loginViewCtrl.setEmail("os890@test.org");
+    loginViewCtrl.setPassword("test");
+    navigationResult = loginViewCtrl.login();
+    Assert.assertEquals(Pages.Idea.Overview.class, navigationResult);
+
+    Assert.assertFalse(
+      FacesContext.getCurrentInstance().getMessageList().isEmpty());
+
+    //...
+  }
+
+  //...
+}
+In the previous example, however, we ignored one aspect. Between the execution of the action method and the rendering of the added message, a redirect is performed in the real application. We could simulate this by calling the #newRequest method again . Had we done this before checking the news, it would fail. The reason for this is that DeltaSpike saves JSF messages only via a true redirect. If it's not about handling messages, we can still use the #newRequest method to simulate a redirect. For example, in listing testing with view-controller methods , we can #save after calling the action method Call the method #newRequest to start a new logical request before calling the callback method #onPreRenderView manually and checking the result of the method #getSelectableIdeaList .
+ @RunWith(CdiTestRunner.class)
+public class IdeaForkBaseFlowTest {
+  //...
+
+  @Inject
+  private IdeaCreateViewCtrl ideaCreateViewCtrl;
+
+  @Inject
+  private NavigationController navigationController;
+
+  @Inject
+  private PromotionWizardCtrl promotionWizardCtrl;
+
+  @Test
+  public void flowFromRegistrationToIdeaPromotion() {
+    //...
+
+    newRequest();
+
+    final String topic = "Test Page-Beans";
+    final String category = "test";
+
+    ideaCreateViewCtrl.setTopic(topic);
+    ideaCreateViewCtrl.setCategory(category);
+    navigationResult = ideaCreateViewCtrl.save();
+    Assert.assertEquals(Pages.Idea.Overview.class, navigationResult);
+
+    newRequest();
+
+    navigationResult = navigationController.toIdeaPromotionWizard();
+    Assert.assertEquals(
+      Pages.PromotionWizard.Step1.class, navigationResult);
+
+    newRequest(); //simulates a redirect
+
+    promotionWizardCtrl.onPreRenderView();
+
+    List<SelectableEntity<Idea>> selectableIdeas =
+      promotionWizardCtrl.getSelectableIdeaList();
+    Assert.assertNotNull(selectableIdeas);
+    Assert.assertEquals(1, selectableIdeas.size());
+
+    //...
+  }
+
+  //...
+}
+In IdeaFork we use a table for the selection of ideas that can be promoted. Again, we need to pick an idea in our page bean test and pass it manually to the action method called #select . In the previous listing, we have already assigned the result of the page bean method #getSelectableIdeaList to the local variable selectableIdeas . In Listing Selection of an entry , we select an entry from this list and pass it to the method promotionWizardCtrl # select . Then we navigate as usual with the following request to the next page of the wizard. By calling the action method # toStep2 we confirm this wizard step to select an idea. In the remaining wizard steps we give a description for the promotion request and finally save it.
+ @RunWith(CdiTestRunner.class)
+public class IdeaForkBaseFlowTest {
+  //...
+
+  @Test
+  public void flowFromRegistrationToIdeaPromotion() {
+    //...
+
+    newRequest();
+
+    promotionWizardCtrl.select(selectableIdeas.iterator().next());
+
+    newRequest();
+
+    navigationResult = promotionWizardCtrl.toStep2();
+    Assert.assertEquals(
+      Pages.PromotionWizard.Step2.class, navigationResult);
+
+    newRequest(); //simulates a redirect
+
+    promotionWizardCtrl.onPreRenderView();
+
+    newRequest();
+
+    promotionWizardCtrl.getPromotionRequest()
+      .setDescription("promote it");
+    navigationResult = promotionWizardCtrl.showConfirmation();
+    Assert.assertEquals(
+      Pages.PromotionWizard.FinalStep.class, navigationResult);
+
+    newRequest(); //simulates a redirect
+
+    promotionWizardCtrl.onPreRenderView();
+
+    newRequest();
+
+    promotionWizardCtrl.savePromotionRequest();
+
+    //...
+  }
+
+  //...
+}
+How to implement page bean tests in detail can be adapted to the specific circumstances. Also in page bean tests we can use any CDI beans from a technical point of view as before. In Listing Direct access to services , we choose an abbreviation for the last step via the IdeaService -Bean. Since a different user is needed to confirm promotion requests, we would have to re-register and log in with a user-only page bean test. Only then could we use PromotionRequestListViewCtrl to check the promotion requests of other users.
+ @RunWith(CdiTestRunner.class)
+public class IdeaForkBaseFlowTest {
+  //...
+
+  @Inject
+  private IdeaService ideaService;
+
+  @Test
+  public void flowFromRegistrationToIdeaPromotion() {
+    //...
+
+    newRequest();
+
+    User testUser = new User("tester", null, null);
+    List<PromotionRequest> foundPromotionRequests =
+      ideaService.loadRecentIdeaPromotions(testUser, "*");
+    Assert.assertNotNull(foundPromotionRequests);
+    Assert.assertEquals(1, foundPromotionRequests.size());
+
+    PromotionRequest loadedPromotionRequest =
+      foundPromotionRequests.iterator().next();
+
+    Assert.assertEquals("promote it",
+      loadedPromotionRequest.getDescription());
+    Assert.assertEquals(topic,
+      loadedPromotionRequest.getIdeaForPromotion().getTopic());
+    Assert.assertEquals(category,
+      loadedPromotionRequest.getIdeaForPromotion().getCategory());
+
+    //...
+    newRequest();
+
+    foundPromotionRequests =
+      ideaService.loadRecentIdeaPromotions(testUser, "x");
+    Assert.assertNotNull(foundPromotionRequests);
+    Assert.assertTrue(foundPromotionRequests.isEmpty());
+  }
+
+  //...
+}
+Tipp: Im Git-Repository von IdeaFork sind neben den beiden Überprüfungen zu #loadRecentIdeaPromotions noch weitere Varianten enthalten, welche verschiedene Parameterwerte überprüfen.
+In our review, we showed a complete walkthrough from registering a new user to reviewing promotion requests from other users. We got to know different aspects such as the simulation of new requests, the use of page-beans and the type-safe checking of navigation results in tests. In practice, test procedures tend to test smaller sections of the application. For such cases as well, for example, data can first be generated with other CDI beans in order to test individual page beans with the state thus generated in the application.
+ 
+
+Hint: Tests that check complete use cases from UI logic to the data access layer usually take a bit longer than simple unit tests, so IdeaFork's Git repository uses its own test profile called DeltaSpikeTest for these tests.
+In this chapter, we have got a rough idea of ​​the functionality of Apache DeltaSpike. In addition, we have extended the available mechanisms with our own type-safe configuration. In the next chapter, we will use DeltaSpike to integrate other containers such as Spring and Akka with CDI.

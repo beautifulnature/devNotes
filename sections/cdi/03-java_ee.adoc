@@ -1,0 +1,723 @@
+== CDI and Java EE
+CDI was first released with Java EE6 as a fixed part of the Java EE platform. Initially, CDI was primarily intended as a link between JSF and EJB. This is also due to the original name of the specification (web beans). But CDI quickly became a full-fledged component model, which is much more than just a link. Although not intended in the first revision of the specification, both Apache OpenWebBeans and JBoss Weld, using proprietary APIs, can be used in Java SE applications. Since CDI 1.1 this is supported by the specification itself. In the chapter Apache DeltaSpike we will take a closer look at the compatibility with Java SE. In this chapter we focus on the standard integration in Java EE6 and EE7.
+=== The first steps towards Java EE
+
+In Java EE6, some basic integration points were defined directly in the CDI and platform specification. As a general rule, CDI-based injection via @Inject can be used in any managed instance of a class where resource injection was already possible with Java EE5 . This rule supports CDI injection into artifacts that are not explicitly listed in the Platform Specification. In addition, EE Server supports injection points for predefined EE artifacts. These include UserTransaction , javax.validation.ValidationFactory , javax.validation.Validator, and javax.security.Principal .
+Due to the close integration of CDI, EJB and JSF, in many cases the limits of the integration points are reached late. In subsequent revisions of Java EE these limits will be further postponed. Thanks to the proliferation of CDI, integration with CDI has also been extended in other EE specifications since EE7. But already EE6 itself offers many integration points. We will look at some of them in the following parts of this chapter. Before we create a web interface for IdeaFork and extend its functionality, let's take a look at the restructuring possibilities in CDI based applications. In IdeaFork For example, we can move all classes to another package. Every modern Java IDE supports such changes in a few steps. Due to the type safety of Java, the result is checked by the compiler at the latest. Many projects use the beans.xml configuration file as a simple marker, which eliminates the need for CDI changes. In IdeaFork However, we use some configuration options. Some IDEs provide superior CDI support, which automatically updates even these configuration entries. If this is not the case and one or more entries are no longer up-to-date after the restructuring, this is checked by the CDI container at the latest at the next application start and recognized as an error. The start process will be aborted in such a case with a corresponding error message. Technical errors that only occur after the application has been deployed are thereby reduced to an absolute minimum. Dynamic bean lookups, which are only recommended in exceptional cases or in conjunction with the EL (Expression Language), must be considered here.
+=== Web Applications with CDI
+
+Both JSF and JAX-RS are based on servlets. For servlet-based technologies, the same rules apply to the configuration of CDI. The file beans.xml we could deposit as before in the directory META-INF . In web applications, WEB-INF is additionally supported as a configuration directory. However, some EE servers do not support META-INF / beans.xml correctly in web applications. That's why we use the WEB-INF directory . After we created WEB-INF / beans.xml as an empty marker file, CDI is activated in the web module of our application and we can implement the first functionalities.
+Tip: Our primary runtime environment is Apache TomEE 1.7+. In addition, IdeaFork is also tested with other EE6 servers such as JBoss AS7 and Oracle Glassfish 3. However, basic compatibility exists with any server that supports Java EE6 in compliance with specifications.
+The central theme of stateful Web applications in the Java EE environment in the context of CDI is the handling of server-side scopes. The request and session scope are relevant for all servlet-based technologies. The correct treatment of both scopes is ensured by the CDI container. Thus, no additional integrations are required in the other specifications here. Application developers can provide CDI beans with the appropriate scope annotations, and the CDI container ensures the proper administration of the beans as usual. In order to reuse our previous implementation independently, we are creating a new Java EE6 specific web module. In this we define the Java EE6 API and our previous module as dependency.
+Tip: Since EE6, using Enterprise archives (EARs) has few advantages over simple Web archives (WARs), but in many application servers, the different interpretation of the Bean Deployment Archive (BDA) rules creates unnecessary disadvantages. In IdeaFork there is no need for EARs and therefore we can increase the portability by using a Web archive.
+=== JSF with CDI
+
+In Java EE6, CDI integration with JSF is primarily defined by the CDI specification. Because JSF beans are components that need to support injection in the EE6 platform specification, CDI beans can easily be injected into JSF beans in an EE server.
+ 
+
+Injection into other JSF artifacts, such as in phase listeners, is not yet supported in EE6. In addition to Java classes, so-called View Declaration Languages ​​(VDL) also play a central role in JSF. Both JSP and the more advanced alternative called facelets use expression language (EL) to access beans. By @Named (from JSR-330) can be addressed in an EL-expression with their name CDI beans. As usual in JSF, this is implemented internally with a dedicated EL resolver. CDI implementations automatically register this EL resolver, which enables integration without manual configuration steps. This resolver is responsible for finding the appropriate contextual reference or null return them. Dependent-scoped beans, however, once again occupy a special position. They exist in this context for the evaluation time of a complete EL expression, even if they are addressed several times in the expression. Only after the complete evaluation of EL expression are dependent-scoped beans destroyed again. In addition to dependent-scoped beans, beans with any CDI scopes can be addressed directly via EL expression, provided the corresponding scope is active at the time of the evaluation. In this context, the CDI Conversation Scope occupies a special position because it has a special rule defined in connection with JSF. Details about the conversation scope will be found in the chapter Apache DeltaSpike take a closer look, as we will also get to know alternative conversation concepts here. Thus, we already got to know the most important integration points between CDI and JSF theoretically and it is time to expand IdeaFork with a simple web interface. In our web application, in addition to a simple XHTML file for JSF, we also create the configuration file WEB-INF / web.xml and configure the Faces servlet for JSF. In our case, we additionally define the newly created XHTML file as a starting point.
+ 
+
+The next step is to use Twitter Bootstrap (http://getbootstrap.com) to make our page template more visually appealing. For this purpose, HTML tags are used primarily. Only in places where it is essential, we use JSF standard components. Thus, in IdeaFork we remain independent of an additional component library for JSF. Of course, you can use any JSF component library because integration with CDI attaches to an independent extension point. This first step is independent of CDI and therefore we will skip the details. IdeaFork's Git repository summarizes the changes required and is easy to understand.
+ 
+
+Regardless of the layout, one of the first steps should be to add a "Messages" component so that messages such as error messages can be displayed. In IdeaFork we want to improve the news area visually and display global messages in a message panel. For this we embed the standard component h: messages in a panel, which is formatted with the help of Twitter bootstrap. In order not to display an empty panel, if there are no messages, we can hide this area by default. Accessing a CDI Bean in Listing Via EL Expression clearly shows that we are here the renderedAttribute. Within the panel group, therefore, in addition to some formatting tags, the h: messages component can also be found. However, the crucial part for us is the content of rendered . The EL expression # {messageController.globalMessageAvailable} does not yet reveal that messageController references a CDI bean. Only by listing CDI bean with name this becomes clear.
+ <h:panelGroup layout="block" class="panel"
+  rendered="#{messageController.globalMessageAvailable}">
+    <!-- message panel content -->
+</h:panelGroup>
+ @javax.enterprise.inject.Model
+public class MessageController {
+  public boolean isGlobalMessageAvailable() {
+    return !FacesContext.getCurrentInstance()
+      .getMessageList(null).isEmpty();
+  }
+}
+
+Through the stereotypical annotation @Model we define in Listing CDI bean with name a @ javax.inject.Named and @ javax.enterprise.context.RequestScoped CDI bean. The naming convention is the same as classic JSF managed beans. The EL expression # {messageController.globalMessageAvailable} thus references a CDI bean that provides the isGlobalMessageAvailable method . Using this method, we can evaluate whether there are global Faces messages or not and consequently show or hide the corresponding message panel.
+ 
+
+Next we want to fill our menu with life. For this we replace the HTML links, which served as placeholders, with h: commandLink components. This menu links use a CDI bean named menuBean , which is equivalent to message controller with @Model is annotated. In our case, the Java class is called MenuController . In order to be able to use the name menuBean and thus adapt the default naming convention, we must change the name given by @Model with the explicit use of @Named ('' menuBean '') .
+ 
+
+Listing CDI bean with a custom name shows that in some places we need to check or reset the logged in user for the menu to behave as expected. We store the logged-in user in the session-scoped ActiveUserHolder -Bean, which we inject and use in the MenuController -Bean. The class ActiveUserHolder itself is annotated with @Model . In addition, we override the scope specified by @Model by explicitly using @ javax.enterprise.context.SessionScoped .
+Tip: @Model customizations greatly reduce the benefits of this stereotype, as the number of annotations does not decrease. The examples shown are primarily intended to illustrate that such adjustments are possible in principle. The explicit use of @Named can reduce the effort involved in refactoring, since the name of the bean remains unchanged, at least in the first step, and the name of the class can still change. In general, overriding the bean name and scope in your own stereotype annotation makes more sense, as a stereotype annotation defines the primary properties of each bean category or role and, ideally, adds meaningfulness. In exceptional cases, these requirements can be overridden for individual beans. Nevertheless, at least the advantage of the higher informative value remains.
+ @Named("menuBean")
+@Model
+public class MenuController {
+  @Inject
+  private ActiveUserHolder userHolder;
+
+  public String home() {
+    return "/pages/index.xhtml";
+  }
+
+  public String login() {
+    return "/pages/user/login.xhtml";
+  }
+
+  public String logout() {
+    userHolder.setAuthenticatedUser(null);
+    return "/pages/user/login.xhtml";
+  }
+
+  public String start() {
+    if (userHolder.isLoggedIn()) {
+      return "/pages/idea/overview.xhtml";
+    }
+    return "/pages/user/login.xhtml";
+  }
+
+  public String register() {
+    return "/pages/user/registration.xhtml";
+  }
+}
+ @Named
+@SessionScoped
+public class ActiveUserHolder implements Serializable {
+  private User authenticatedUser;
+
+  public void setAuthenticatedUser(User authenticatedUser) {
+    this.authenticatedUser = authenticatedUser;
+  }
+
+  public boolean isLoggedIn() {
+    return authenticatedUser != null && !authenticatedUser.isTransient();
+  }
+
+  public User getAuthenticatedUser() {
+    return authenticatedUser;
+  }
+}
+
+The method isTransient has been added to BaseEntity and evaluates if the version number is already set. This becomes relevant later, especially in combination with JPA, because we only want to accept persistent user entities for the login. In the class MenuController we already refer to pages as navigation destinations , which are currently not available. Therefore, in the next step we will create the pages login.xhtml and registration.xhtml . Each side we use a separate controller, which is responsible for this page. For now, most of our controllers are request-scoped and must, as previously mentioned, be @Named be annotated so that they can be addressed in an EL expression. We could also use @Model here instead of these two annotations . However, a separate stereotype called @ViewController is much more meaningful. Apart from that, this stereotype annotation is a substantive copy of @Model . Listing CDI beans as view controller shows the controller implementations LoginViewCtrl for login.xhtml , as well as RegistrationViewCtrl for registration.xhtml .
+ @ViewController
+public class LoginViewCtrl {
+  @Inject
+  private UserService userService;
+
+  @Inject
+  private ActiveUserHolder userHolder;
+
+  private String email;
+  private String password;
+
+  public String login() {
+    userService.login(email, password);
+
+    final String message;
+    final String navigationTarget;
+    FacesMessage.Severity severity = FacesMessage.SEVERITY_INFO;
+    if (userHolder.isLoggedIn()) {
+      message = "Welcome " +
+        userHolder.getAuthenticatedUser().getNickName() + "!";
+      navigationTarget = "/pages/idea/overview.xhtml";
+    } else {
+      message = "Login failed!";
+      severity = FacesMessage.SEVERITY_ERROR;
+      navigationTarget = null;
+    }
+
+    FacesContext.getCurrentInstance()
+      .addMessage(null, new FacesMessage(severity, message, message));
+    return navigationTarget;
+  }
+
+  //+ getter and setter
+}
+
+@ViewController
+public class RegistrationViewCtrl {
+  @Inject
+  private UserService userService;
+
+  private User newUser = new User();
+
+  public String register() {
+    User registeredUser = userService.registerUser(this.newUser);
+
+    final String message;
+    final String targetPage;
+    FacesMessage.Severity severity = FacesMessage.SEVERITY_INFO;
+    if (registeredUser != null) {
+      message = "Registration successful!";
+      targetPage = "/pages/user/login.xhtml";
+    } else {
+      message = "Registration failed!";
+      severity = FacesMessage.SEVERITY_ERROR;
+      targetPage = null;
+    }
+
+    FacesContext.getCurrentInstance()
+      .addMessage(null, new FacesMessage(severity, message, message));
+    return targetPage;
+  }
+
+  public User getNewUser() {
+    return newUser;
+  }
+}
+
+The logic implemented here is very simple. Currently we still use our in-memory repositories. As soon as we add EJBs this will change. In preparation for this change, we create the UserService class , which is responsible for registration and login, combining various UserManager methods , and using a newly added PasswordManager, calculates the password hash and compares it to the stored value. We are also expanding our previous implementations and tests. The entity User becomes a password field and UserRepository the method loadByEmail extended. Accordingly, the method must createUserFor of User Manager to be extended. The associated implementations and changes are clearly summarized in the Git repository in a commit and can be easily understood with the knowledge acquired so far.
+Tip: Although UserService uses an injected field, the implementation is implicitly stateless because only one Contextual Reference is injected as a proxy. The proxy instance itself is thread-safe and can be de / serialized if necessary or, if necessary, restored by manual injection at any time. If thread security is relevant, then it must be ensured in all injected beans. If we were to inject a session-scoped bean at this point, then only UserService including the Contextual-Reference would be thread-safe. A session-scoped bean would need to take action itself to make its methods thread-safe.
+ @ApplicationScoped
+public class UserService {
+  @Inject
+  private UserManager userManager;
+
+  @Inject
+  private ActiveUserHolder userHolder;
+
+  public User registerUser(User newUser) {
+    if (userManager.loadByEmail(newUser.getEmail()) == null) {
+      User result = userManager.createUserFor(
+        newUser.getNickName(), newUser.getEmail(), newUser.getPassword());
+      userManager.save(result);
+      return userManager.loadById(result.getId());
+    }
+    return null;
+  }
+
+  public void login(String email, String password) {
+    User registeredUser = userManager.loadByEmail(email);
+
+    if (registeredUser != null) {
+      if (password.equals(registeredUser.getPassword())) {
+        userHolder.setAuthenticatedUser(registeredUser);
+        return;
+      }
+    }
+
+    userHolder.setAuthenticatedUser(null);
+  }
+}
+
+=== Servlets with CDI
+
+IdeaFork currently consists of a CDI-based base module, which can be used for different surfaces regardless of a specific UI technology. In the previous section, we developed the first part of a JSF / CDI application. Although JSF is based on servlets, this is primarily implemented internally. Even in JSF applications, there are still application areas where servlets can be used. One such example is the file upload. In IdeaFork we want to use this functionality to import ideas via file upload. So that we can reuse our page template here, we create another JSF page called upload.xhtml . As in listing In this case we can use a normal HTML form. As action , we enter the path to the upload servlet.
+ <form method="post" enctype="multipart/form-data"
+      action="#{jsf.contextPath}/idea/import ">
+  <!-- ... -->
+</form>
+
+Listing injection into a servlet demonstrates that CDI-based injection in an EE6 + server can also be used in servlets. IdeaImportServlet uses the already known session-scoped bean ActiveUserHolder , as well as an application-scoped FileUploadService , which delegates to IdeaManager and the result (success or failure) of the import in a request-scoped bean ( ImportSummary). This again illustrates the benefit of contextual references. Since only proxies are used for the injection points, the CDI container can always redirect to the correct contextual instance, and we do not have to worry about bean scopes, as is the case with JSF managed beans, for example. After the import we redirect to the page summary.xhtml , on which we show the result. As before, we can create a JSF page that accesses a CDI bean, in this case ImportSummary . Therefore, once a CDI Bean can be used, it is possible to use it as a kind of intermediate or transfer storage for data.
+Tip: Only asynchronous processing, as is possible with servlets since version 3.0, requires a little more care. If a new thread is not managed by the EE server, only scopes that are independent of a thread (and therefore a request) can be used. Alternatively it is possible to manually start and stop scopes via proprietary APIs of the containers. Even if the container launches the new thread and thus handles the correct handling of the scopes, all the required information must be transferred by parameter, since there is no automatism in this area, which, for example, transfers data from the original request context to the new one.
+ @WebServlet("/idea/import ")
+@MultipartConfig
+public class IdeaImportServlet extends HttpServlet {
+  @Inject
+  private ActiveUserHolder userHolder;
+
+  @Inject
+  private FileUploadService fileUploadService;
+
+  protected void doPost(HttpServletRequest request,
+                        HttpServletResponse response)
+        throws ServletException, IOException {
+
+    fileUploadService.storeUploadedFiles(
+      request.getParts(), userHolder.getAuthenticatedUser());
+    request.getRequestDispatcher("/pages/import/summary.xhtml")
+      .forward(request, response);
+  }
+}
+
+CDI beans can also be injected into servlet filters. We can create a simple filter ( UserAwareFilter ) to protect individual areas or different actions. Listing injection in a servlet filter shows that using ActiveUserHolder , we can do a simple check to see if the current user is already logged in. If this is not or no longer the case, the login page ( login.xhtml ) will be redirected instead of the actual destination .
+ @WebFilter(urlPatterns = {"/pages/import/*", "/idea/import"})
+public class UserAwareFilter implements Filter {
+  @Inject
+  private ActiveUserHolder userHolder;
+
+  @Override
+  public void doFilter(ServletRequest request,
+                       ServletResponse response,
+                       FilterChain chain)
+      throws IOException, ServletException {
+    if (userHolder.isLoggedIn()) {
+      chain.doFilter(request, response);
+    } else {
+      request.getRequestDispatcher("/pages/user/login.xhtml")
+        .forward(request, response);
+    }
+  }
+  //...
+}
+
+=== JAX-RS with CDI
+
+The EE specification for RESTful Services (JAX-RS) is primarily used for applications that want to provide REST (Representational State Transfer) based communication with the outside world. In IdeaFork we use JAX-RS for exporting ideas in JSON format. Due to the basic rule mentioned above, EE6 servers already support CDI-based injection into JAX-RS resources, although the JAX-RS specification itself does not mention CDI in version 1.1. As is usual with JAX-RS, we start with Listing Configuration JAX-RS Application with the registration of a base path and the configuration of the resources. As basic path we choose public . We also provide a class ( IdeaExporter ).
+ @ApplicationPath("/public")
+public class RestApplicationConfig extends Application {
+  @Override
+  public Set<Class<?>> getClasses() {
+    return new HashSet<Class<?>>() {{
+      add(IdeaExporter.class);
+    }};
+  }
+}
+
+Listing JAX-RS Resource with CDI Injection Points illustrates that in addition to the JAX-RS specific injection via @Context, we can also use CDI based injection. However, we must distinguish at which injection points we use @Context and at which @Inject . If you accidentally use @Inject instead of @Context for JAX-RS artifacts such as HttpServletResponse , then you will notice this at the latest at the next application start, since this is aborted with an UnsatisfiedResolutionException .
+ @Path("/idea/")
+@Produces(APPLICATION_JSON)
+public class IdeaExporter {
+  @Inject
+  private IdeaManager ideaManager;
+
+  @Inject
+  private UserManager userManager;
+
+  @Inject
+  private ActiveUserHolder userHolder;
+
+  @Context
+  private HttpServletResponse response;
+
+  @GET
+  @Path("/export/all")
+  public Response allIdeasOfCurrentUser() {
+    User authenticatedUser = userHolder.getAuthenticatedUser();
+
+    if (authenticatedUser == null) {
+      try {
+        return Response.temporaryRedirect(
+          UriBuilder.fromPath("../pages/user/login.xhtml").build())
+          .build();
+      } catch (Exception e) {
+        return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+          .build();
+      }
+    }
+    return Response.ok(ideaManager.loadAllOfAuthor(authenticatedUser))
+      .header(/*...*/)
+      .build();
+  }
+
+  @GET
+  @Path("/export/{nickname}")
+  public List<Idea> allIdeasOfUser(
+    @PathParam("nickname") String nickName) {
+      response.setHeader(/*...*/);
+      User loadedUser = userManager.loadByNickName(nickName);
+      return ideaManager.loadAllOfAuthor(loadedUser);
+  }
+}
+
+IdeaExporter defines two endpoints. Via / public / idea / export / all , all ideas of the currently logged-in user are loaded with the help of IdeaManager and passed on as a response to the JAX-RS container, which ensures the conversion to JSON. If this endpoint is called by an anonymous source, then a temporary redirect to the login page ( login.xhtml ) is initiated. Again, we can rely on ActiveUserHolder as before . Regardless of an upstream login is the second endpoint. With this all ideas of a certain user can be queried. This requires the endpoint's address ( / public / idea / export / {nickname}) can only be parameterized with a valid username. This is forwarded to IdeaManager , which provides a corresponding result list. This list of results is then converted back to JSON by the JAX-RS container. When exporting, however, we do not want to completely transfer all internal information into the result. Instead of a manual post-processing, we can use a data projection. However, this is not supported by JAX-RS itself. Therefore, we have to fall back on the proprietary functionality of Jackson. For this we extend the existing ObjectConverter by one method. Listing JSON Conversion with View displays a section of the custom converter.
+ @ExternalFormat(ExternalFormat.TargetFormat.JSON)
+@JacksonConverter
+public class JSONConverterJackson implements ObjectConverter {
+  //...
+
+  @Override
+  public String toString(Object entity, Class typeSafeDataView) {
+    try {
+      ObjectMapper objectMapper = new ObjectMapper();
+      if (typeSafeDataView != null) {
+        objectMapper.configure(
+          MapperFeature.DEFAULT_VIEW_INCLUSION, false);
+
+        return objectMapper.writerWithView(typeSafeDataView)
+          .writeValueAsString(entity);
+      }
+      return objectMapper.writeValueAsString(entity);
+    } catch (JsonProcessingException e) {
+      throw new IllegalArgumentException(e);
+    }
+  }
+}
+
+So that this ObjectConverter is also used by JAX-RS, we have to provide an adapter. Listing Manual CDI Injection in Message Body Writer displays the required MessageBodyWriter for JAX-RS. As a view for the data projection , we pass the self-created marker class ExportView.Public.class to the ObjectConverter . In order to use only part of the data for the export, we have to mark the corresponding getter methods in the classes Idea and User with @JsonView (ExportView.Public.class) .
+ @Provider
+@Produces(MediaType.APPLICATION_JSON)
+public class CustomJsonWriter implements MessageBodyWriter<Object> {
+  @Inject
+  @ExternalFormat(JSON)
+  private ObjectConverter objectConverter;
+
+  @Override
+  public boolean isWriteable(Class<?> rawType,
+                             Type genericType,
+                             Annotation[] annotations,
+                             MediaType mediaType) {
+    return true;
+  }
+
+  @Override
+  public void writeTo(Object o,
+                      Class<?> rawType,
+                      Type genericType, Annotation[] annotations,
+                      MediaType mediaType,
+                      MultivaluedMap<String, Object> httpHeaders,
+                      OutputStream entityStream) throws IOException {
+    entityStream.write(
+      objectConverter.toString(o, ExportView.Public.class).getBytes());
+  }
+
+  @Override
+  public long getSize(Object o,
+                      Class<?> rawType,
+                      Type genericType,
+                      Annotation[] annotations,
+                      MediaType mediaType) {
+    return -1;
+  }
+}
+
+CustomJsonWriter defines an injection point for ObjectConverter as we used it before. However, because MessageBodyWriter implementations do not support injection points, we need to do this ourselves. We can do this in RestApplicationConfig . Listing Extended JAX-RS Application (not portable) displays the getSingletons method as a section of RestApplicationConfig . In this method, a new instance of the CustomJsonWriter class is created manually, followed by the injectFields helper method in which the manual injection is carried out. Finally, the instance is added to the result set, which will later be used unchanged by the JAX-RS container. However, the minimal implementation shown in Advanced JAX-RS Application (not portable) is not fully portable. In Git repository IdeaFork so the output is in a set cached. This trick works for the tested EE servers. Full portability is not guaranteed because JAX-RS in version 1.1 does not consider such an application.
+ @Override
+public Set<Object> getSingletons() {
+  final CustomJsonWriter jsonWriter = new CustomJsonWriter();
+  CdiUtils.injectFields(jsonWriter); //not portable at this point
+  return new HashSet<Object>() {{
+    add(jsonWriter);
+  }};
+}
+
+The above-mentioned helper method injectFields can also be implemented in just a few steps. An EE container must make the BeanManager available via JNDI under java: comp / BeanManager . This lookup is required only if we are in an area of ​​the application that is not managed by the CDI container. Using the BeanManager , we manually create an instance of the InjectionTarget type , which we can use to finally delegate manual injection to the CDI container using the inject method .
+ public class CdiUtils {
+  public static <T> T injectFields(T instance) {
+    if (instance == null) {
+      return null;
+    }
+
+    BeanManager beanManager = resolveBeanManagerViaJndi();
+
+    if (beanManager == null) {
+      return instance;
+    }
+
+    CreationalContext creationalContext =
+      beanManager.createCreationalContext(null);
+
+    AnnotatedType annotatedType =
+      beanManager.createAnnotatedType(instance.getClass());
+    InjectionTarget injectionTarget =
+      beanManager.createInjectionTarget(annotatedType);
+    injectionTarget.inject(instance, creationalContext);
+    return instance;
+  }
+
+  private static BeanManager resolveBeanManagerViaJndi() {
+    try {
+      return (BeanManager) new InitialContext()
+        .lookup("java:comp/BeanManager");
+    } catch (NamingException e) {
+      return null;
+    }
+  }
+}
+
+Tip: Implementing injectFields is portable and complete. However, this approach can not be used portably at all points of an application. Different EE servers and sometimes also different versions of a server act when called within getSingletons very different. Among other things, there is no guarantee that a valid CDI container will be available at this time. However, this is not due to CDI itself, but to the integration of different EE specifications in the servers. This example illustrates that even correct implementations in exceptional cases do not always lead directly to the desired result. In a real application, such a restriction would make it easier to use CdiUtils # getContextualReference because it will not access the CDI container until the last possible time.
+ 
+
+The conversion and manual initialization of a MessageBodyWriter is thus completed. In the next step, we can address one of the endpoints directly in a JSF page. For this, the simple HTML link shown in Listing HTML link on JAX-RS Endpoint is sufficient .
+ <a href="#{jsf.contextPath}/public/idea/export/all" class="btn">
+  <span class="glyphicon glyphicon-import"/> Export My Ideas
+</a>
+
+If we started the server at this point, the export would already work. However, we do not get the same result for every EE server. The reason for this are the so-called BDA rules, which we will get to know in detail in this chapter. Some details of these rules are not clearly defined or highly controversial. For us, for now, they mean we have to duplicate a configuration entry to keep our application portable. Specifically, we need to re-enable the alternative stereotype @JacksonConverter in WEB-INF / beans.xml so that the alternative implementations in the web application are also active. More details on this topic will be discussed in [Bean Deployment Archive with Java EE] .
+=== EJB with CDI
+
+From J2EE times, EJBs still have a bad reputation. At least since Java EE6 this is hardly justified. EE6 servers themselves are almost always very fast at startup. Long waiting times during development are therefore a thing of the past. The programming model also became much more efficient. Now, in the simplest case, it is sufficient to use an annotation to turn a POJO into an EJB. EJBs can be compared with CDI beans with additional services, such as transactions. In IdeaFork , we can start converting our services to EJBs. So far we have FileUploadService and UserService defined as an application-scoped CDI bean. The equivalent EJB type is a singleton EJB. Therefore, we can replace @ApplicationScoped with @ javax.ejb.Singleton . With this change we not only get default transaction beans, which we will benefit from later on, but all additional functionalities defined for @Singleton . Here is also a pitfall buried. One of these additional functionalities is the synchronization of method calls, which can become an unwanted bottleneck in the application. To avoid this, we still need @ConcurrencyManagement (ConcurrencyManagementType.BEAN) Add. In our case we can do without the synchronization because we do not manage a state in the bean instances. Because contextual references to CDI beans are only set by the CDI container and do not change after the bean is created. Of course, the injected proxy instance itself can handle parallel method calls without restrictions. Only in the referenced Contextual instance must attention be paid to whether parallel calls need to be specially treated. In our case this is not true and therefore no further change is required. Listing EJB with CDI Injection Points shows that we can continue to use CDI based injection. In our previous application-scoped CDI beans, the methods could also be called in parallel without problems. This aspect does not change as a result of our changeover.
+ @Singleton
+@ConcurrencyManagement(BEAN)
+public class FileUploadService {
+    private static final Charset UTF8 = Charset.forName("UTF-8");
+
+    @Inject
+    private IdeaManager ideaManager;
+
+    @Inject
+    private ImportSummary importSummary;
+
+    public void storeUploadedFiles(Collection<Part> parts, User user) {
+      for (Part part : parts) {
+        String fileName = getFileName(part);
+        try {
+          BufferedReader bufferedReader = new BufferedReader(
+            new InputStreamReader(part.getInputStream(), UTF8));
+          String ideaToImportString = bufferedReader.readLine();
+
+          while (ideaToImportString != null) {
+            try {
+              Idea importedIdea =
+                ideaManager.importIdea(user, ideaToImportString);
+              importSummary.addImportedIdea(importedIdea);
+            } catch (Exception e) {
+              importSummary.addFailedImport(ideaToImportString);
+            }
+            ideaToImportString = bufferedReader.readLine();
+          }
+        } catch (Exception e) {
+          //...
+        }
+      }
+    }
+    //...
+}
+
+If a CDI scope is to be used for an EJB, this can be done with the annotation @Stateful (instead of @Singleton ). The EJB container creates the instance and passes it to the CDI container for further administration. In IdeaFork , we'll next add the create.xhtml page to create a new idea. As a view controller, we can use an EJB directly. As Listing shows EJB with CDI stereotypes , we can add @ javax.ejb.Stateful to the previous @ViewController annotation . The resulting EJB is as expected-scoped by this combination and can be used in EL expressions, in our case in create.xhtml , to be referenced.
+ @Stateful
+@ViewController
+public class IdeaCreateViewCtrl implements Serializable {
+  @Inject
+  private IdeaManager ideaManager;
+
+  @Inject
+  private ActiveUserHolder userHolder;
+
+  private String topic;
+  private String category;
+  private String description;
+
+  public String save() {
+    Idea ideaToSave = ideaManager.createIdeaFor(
+      topic, category, userHolder.getAuthenticatedUser());
+    ideaToSave.setDescription(description);
+    ideaManager.save(ideaToSave);
+    return "/pages/idea/overview.xhtml";
+  }
+  //+ Getter- and Setter-Methods
+}
+
+The #save method in this case is a classic JSF action method, which is used in create.xhtml as usual by a Command component and delegated to the appropriate methods by the injected IdeaManager . Because we get a transactional view controller through this approach, the entire execution of the action method (s), as well as each getter and setter method, is done in one transaction. In our case, this is not a problem, in more complex constellations, a transactional action method is often not desirable, if several independent operations are to be performed. It also creates, without limitation via @ javax.ejb.TransactionAttribute and @ javax.ejb.Lock, an unnecessary overhead when accessing getter or setter methods. For these reasons, EJBs are typically used primarily for services. Technically, however, it is easily possible to use EJB as a view controller.
+ 
+
+In the next step we create the page list.xhtml . As the page name suggests, the ideas of the logged-in user are displayed in an overview list. Also for this page we use an EJB as a view controller. For this purpose, we create the class IdeaListViewCtrl and annotate it in addition to @ javax.ejb.Stateful with our stereotype annotation @ViewController , which as before uses @ javax.enterprise.context.RequestScoped as the scope. However, we adjust this default scope and get a @javax.enterprise.context.SessionScoped -EJB. The #onPreRenderView method is in list.xhtml is used as a callback for the PreRenderView event and is responsible in Listing EJB as a backing bean with callback so that in the following rendering process of list.xhtml the current list is always displayed.
+ @Stateful
+@SessionScoped
+@ViewController
+//can be optimized via @TransactionAttribute and @Lock
+public class IdeaListViewCtrl implements Serializable {
+  @Inject
+  private IdeaManager ideaManager;
+
+  @Inject
+  private ActiveUserHolder userHolder;
+
+  private List<Idea> ideaList;
+
+  public void onPreRenderView() {
+    ideaList = ideaManager.loadAllOfAuthor(
+      userHolder.getAuthenticatedUser());
+  }
+
+  public void deleteIdea(Idea currentIdea) {
+    this.ideaManager.remove(currentIdea);
+  }
+
+  public List<Idea> getIdeaList() {
+    return ideaList;
+  }
+}
+
+ @Stateful
+@SessionScoped
+@ViewController
+//can be optimized via @TransactionAttribute and @Lock
+public class IdeaEditViewCtrl implements Serializable {
+  @Inject
+  private IdeaManager ideaManager;
+
+  private Idea currentIdea;
+
+  public String editIdea(Idea currentIdea) {
+    this.currentIdea = currentIdea;
+    return "/pages/idea/edit.xhtml";
+  }
+
+  public String save() {
+    ideaManager.save(currentIdea);
+    return "/pages/idea/list.xhtml";
+  }
+
+  public Idea getCurrentIdea() {
+    return currentIdea;
+  }
+}
+
+The same applies to IdeaDetailsViewCtrl and IdeaForkViewCtrl in listing CDI bean with stereotype and overdriven scope and CDI bean as backing bean with injection point to other backing bean , however, these beans are normal CDI beans, which are called views Controller can be used. This also represents the classic case where primarily view-controller logic is implemented and the remainder is delegated to injected beans.
+ @SessionScoped
+@ViewController
+public class IdeaDetailsViewCtrl implements Serializable {
+  @Inject
+  private IdeaManager ideaManager;
+
+  private Idea currentIdea;
+
+  private Stack<Idea> displayedIdeas = new Stack<Idea>();
+
+  public String showIdea(Idea currentIdea) {
+    this.currentIdea = currentIdea;
+    return "/pages/idea/details.xhtml";
+  }
+
+  public void showOriginal() {
+    displayedIdeas.push(currentIdea);
+    currentIdea = ideaManager.loadById(currentIdea.getBaseIdeaId());
+  }
+
+  public String back() {
+    if (displayedIdeas.empty()) {
+      return "/pages/idea/list.xhtml";
+    }
+    currentIdea = displayedIdeas.pop();
+    return null;
+  }
+
+  public Idea getCurrentIdea() {
+     return currentIdea;
+  }
+}
+
+ @SessionScoped
+@ViewController
+public class IdeaForkViewCtrl implements Serializable {
+  @Inject
+  private IdeaEditViewCtrl ideaEditViewCtrl;
+
+  @Inject
+  private IdeaManager ideaManager;
+
+  @Inject
+  private ActiveUserHolder userHolder;
+
+  public String forkIdea(Idea currentIdea) {
+    Idea forkedIdea = ideaManager.forkIdea(
+      currentIdea, userHolder.getAuthenticatedUser());
+    ideaEditViewCtrl.editIdea(forkedIdea);
+    return "/pages/idea/edit.xhtml";
+  }
+}
+
+In addition to CDI-based injection and CDI scopes, EJBs can also contain observer methods for CDI events. In combination with @javax.ejb.Asynchronous there is an interesting advantage, since the actual logic is executed asynchronously in such an Observer method. In Listing EJB with the asynchronous CDI-Observer method , we use this advantage to asynchronously record login and logout events per user. The asynchronous observer method #onUserAction delegates this directly to the synchronously implemented UserActionRepository . Because the whole method #onUserAction running in a separate thread, the processing is asynchronous from the perspective of the event source.
+ @Stateless
+public class StatisticService {
+  @Inject
+  private UserActionRepository userActionRepository;
+
+  @Asynchronous
+  public void onUserAction(@Observes UserActionEvent userActionEvent) {
+    userActionRepository.save(userActionEvent.getUserAction());
+  }
+
+  //...
+}
+
+=== JPA with CDI
+
+There is no included integration of CDI into JPA in Java EE6. Only Java EE7 defines a rudimentary functionality for entity listeners. Although entity listeners are still not managed directly by CDI, injecting CDI beans and the possibility of lifecycle callbacks ( PostConstruct and PreDestroy ) are available. One option that has been available since EE6 is, of course, manual discovery or manual injection. We already got to know both variants and implemented them with the implementation of CdiUtils . Nevertheless, we can use CDI to simplify parts of JPA, and so the next step in the transition from IdeaFork on JPA. We can continue to use the previous in-memory repositories for our unit tests. For this we move them into the test directory of the module and annotate them with the self-created alternative stereotype MockedRepository , which we activate in the test module's beans.xml configuration file . This is equivalent to the alternative stereotype JacksonConverter , which we have already created. We annotate the new JPA based repositories as usual with our stereotype @Repository . As we mocked for repository from listing stereotype annotation annotated with stereotypeIf we want to adopt the same definitions, we can also provide this stereotype annotation with the @Repository annotation. All these changes are based on the knowledge acquired so far. Therefore, we do not go into detail here on these details. IdeaFork's Git repository summarizes the changes required and is easy to understand.
+ @Target(TYPE)
+@Retention(RUNTIME)
+
+@Alternative
+
+@Stereotype
+@Repository
+public @interface MockedRepository {
+}
+A central component of JPA is the EntityManager . Since Java EE6 CDI simplifies its use. With Java EE5 it had to be injected everywhere via @PersistenceContext . Thus, this annotation, with all the parameters required for injection, was scattered across several classes of the application. An elegant alternative to this is the use of a CDI producer, as we have already learned in chapter CDI basic concepts . In describing the basic concept, we learned that producer fields combined with resource injection in an EE server can save a few lines of code. Listing Entity Manager Producer field shows such a resource injection via @PersistenceContext . At the same time, using @Produces makes this resource injection point a CDI producer. After instantiating the class, the EE server injects an EntityManager proxy. From then on, the CDI container can use this proxy by the producer as a contextual instance. Since the EE server already creates a proxy, we do not need to define an additional Scope for the EntityManager to allow us to make reasonable use of it. In listing entity manager producer method the same functionality is seen with a producer method. Again, a dependent-scoped bean is defined. In both cases EntityManagerProducer an application-scoped bean. This definition allows the instance to be created only once and the EntityManager proxy also injected only once.
+ @ApplicationScoped
+public class EntityManagerProducer {
+  @Produces
+  @PersistenceContext(name = "ideaForkPU")
+  private EntityManager entityManager;
+}
+Compared to the Producer field, the Producer method has the advantage of simplifying the debugging process. The additional method should not be significant as it only needs to be implemented centrally once. For these reasons, IdeaFork also uses the following variant with the Producer method.
+ @ApplicationScoped
+public class EntityManagerProducer {
+  @PersistenceContext(name = "ideaForkPU")
+  private EntityManager entityManager;
+
+  @Produces
+  protected EntityManager exposeEntityManagerProxy() {
+    return entityManager;
+  }
+}
+In IdeaFork , we inject the EntityManager so created into the base class of our JPA repositories, which is excerpted in Listing Generic JPA Repository .
+ public abstract class GenericJpaRepository<T extends BaseEntity>
+  implements GenericRepository<T> {
+
+    //...
+
+    @Inject
+    protected EntityManager entityManager;
+
+    @Override
+    public void save(T entity) {
+      if (entity.isTransient()) {
+        entityManager.persist(entity);
+      } else {
+        entityManager.merge(entity);
+      }
+    }
+
+    //...
+}
+
+Tip: Worth mentioning in connection with JPA is the separation of CDI beans and JPA entities. Instances of a class should only be managed by a container (JPA or CDI) to avoid technical issues with participating proxy libraries. Technically, we could easily avoid constraints in this area by using only dependent-scoped beans for entities that do not use interceptors or decorators. This allows us to easily inject instances of entities. In order to avoid this aspect being forgotten, IdeaFork does not use such a professional injection. Instead, we use the classic keyword new .
+=== Bean Validation with CDI
+
+The previously discussed EE specifications and their integration with CDI already cover a large proportion of use cases in business applications. However, one important aspect is missing - the validation. The Bean Validation specification (JSR 303), like CDI itself, celebrated its debut in EE6. As mentioned briefly, contextual references can be made to javax.validation.ValidationFactory and javax.validation.Validator via @Inject be injected. In many cases, manual use of these artifacts is not required. For example, both JSF and JPA incorporate the then-new specification from the beginning. Normally, only the desired bean validation constraints need to be used for the actual validation. Most often, it may be necessary to use a CDI bean in a constraint validator to retrieve values ​​from the database for validation, for example. However, this is only supported as of EE7 by default. With EE6, however, this functionality can be implemented very easily. Of course we could manually search CDI beans at any time. However, we would have to do this again in each constraint validator. Instead, we want to delegate the creation of constraint validators to the CDI container at a central location, as long as it knows a bean with the corresponding type. In the chapter We have already gotten to know CDI basic concepts by manually finding beans. In a first step we extend CdiUtils with the method getContextualReference . Listing Manual integration of bean validation and CDI demonstrates that null is returned if no corresponding bean was found by the CDI container. We can use this new method in our own implementation of javax.validation.ConstraintValidatorFactory . Implementation in listing Manual integration of bean validation and CDI delegated to defaultFactory if the CDI container does not find a corresponding bean for a constraint validator.
+ public class BeanAwareConstraintValidatorFactory
+  implements ConstraintValidatorFactory {
+    private final ConstraintValidatorFactory defaultFactory;
+
+    public BeanAwareConstraintValidatorFactory() {
+      defaultFactory = Validation.byDefaultProvider().configure()
+        .getDefaultConstraintValidatorFactory();
+    }
+
+    @Override
+    public <T extends ConstraintValidator<?, ?>> T getInstance(
+      Class<T> validatorClass) {
+        T managedConstraintValidator =
+          CdiUtils.getContextualReference(validatorClass);
+
+        if (managedConstraintValidator == null) {
+          managedConstraintValidator = this.defaultFactory
+            .getInstance(validatorClass);
+        }
+        return managedConstraintValidator;
+    }
+}
+
+For BeanAwareConstraintValidatorFactory to be active, we still need to enable the fully qualified class in the file validation.xml . Listing Activation of the validator factory illustrates the configuration used in IdeaFork .
+ <validation-config>
+  <constraint-validator-factory>at.irian.cdiatwork.ideafork.infrastructure
+    .BeanAwareConstraintValidatorFactory</constraint-validator-factory>
+</validation-config>
+
+In IdeaFork , we use this new functionality in the constraint validator UniqueUserNameValidator , which validates a newly added constraint named @UserName . In our case, the constraint validator in the listing constraint validator delegates the main work to the injected user repository as a CDI bean . When using @UserName , we only have to consider that we have to use a special validation group, otherwise the validation will also be done at login. Apart from that, the remainder corresponds to the conventional rules defined by the bean validation specification. Specifically, we annotate the property nickName with @UserName (groups = UniqueUserName.class) and extend the formGroup.xhtml component with an optional attribute to externally parameterize the newly added f: validateBean tag .
+ @ApplicationScoped
+public class UniqueUserNameValidator
+  implements ConstraintValidator<UserName, String> {
+    @Inject
+    private UserRepository userRepository;
+
+    public void initialize(UserName differentName) {
+    }
+
+    public boolean isValid(
+      String userName,
+      ConstraintValidatorContext constraintValidatorContext) {
+        return this.userRepository.loadByNickName(userName) == null;
+    }
+}
+
+We could also solve the validation logic in UserService # loadByEmail via Bean-Validation Constraint. However, it is not always necessary to map all consistency checks via bean validation, since the additional validation groups increase the complexity of the constraint logic. An advantage of validation logic with bean-validation constraints is that JSF initiates the validation of the constraints in the validation phase and, in the event of an error, displays it next to the input component rather than in the general message area as before.
+=== Bean Deployment Archive with Java EE
+
+One of the few downsides of CDI 1.0 is the definition of bean deployment archives (BDAs) and their implementation in the various servers. Even EE servers with the same CDI implementation do not always have a consistent behavior because key aspects in this area can be defined by the EE server's integration code. Thus, even when migrating from one Weld based server to another, subtle differences can occur if the application is not fully portable. The concept of bean-deployment archives was introduced to define module boundaries for beans and configurations. The most restrictive case are CDI beans and configurations via beans.xml only valid for the current archive. At first, this may sound useful. However, as soon as modules, such as JARs, are not under their own control or are used to modularize their own application, various use cases can only be implemented with additional effort or not at all. Depending on the specific constellation, in severe cases this can also concern injection across module boundaries, as well as the adaptation of default implementations of a module in which an alternative implementation outside the module is to be made available. In addition, for example, interceptors must be reconfigured for each archive. Because the definition of BDA rules leaves a lot of scope for interpretation and has already caused long discussions, partially alternative approaches were created. Some application servers confess, for example, the file beans.xml has a special status when placed in the WEB-INF directory . However, the exact implementation is not covered by the CDI specification, and the actual behavior may even be different between individual versions of a server.
+ 
+
+In enterprise archives (EARs) the situation is exacerbated, as it depends on the exact structuring of the application, whether and how different constellations work. Since some server versions may even have side effects between beans of several web archives (WARs) in combination with classes in a shared module of an EAR, it is advisable to avoid EARs, at least in EE6 and EE7. Fortunately, since EE6, EARs have only had a subordinate role, which in many cases makes this restriction barely noticeable, if at all. Apache OpenWebBeans in standalone mode (= manually configured for Java SE or a servlet container) even disables the BDA rules completely by default, which means that many restrictions and hurdles do not occur.
+ 
+
+Even with a manageable application like IdeaFork , the BDAs for GlassFish 3 have to be structured differently than, for example, for AS7, although both servers use Weld as a CDI implementation. Only through different Maven build profiles, which can be seen in detail in the Git repository, the same behavior can be achieved at runtime.
+ 
+
+Since CDI 1.1, which is part of EE7, this issue has been partially solved by a new annotation called @Priority . Artifacts are activated for the entire application as soon as they are annotated with @Priority . For alternative beans, the specified priority decides which bean will actually be active, and for decorators and interceptors, the order of these is defined.
+ 
+
+In summary, this means that modularization and the choice of archive type should be based on the simplest possible version. The more complex the structuring of the application becomes, the more likely are the restrictions that occur due to BDA or classloading rules.

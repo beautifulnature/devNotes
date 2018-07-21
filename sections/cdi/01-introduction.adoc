@@ -1,0 +1,301 @@
+:sectnums:
+== Introduction to CDI
+
+*IoC:* Under the name "Contexts and Dependency Injection for the Java Platform EE", short CDI, a new specification was released in the final version on December 10, 2009, which should change the Java EE ecosystem soon after. 
+Inspired by successful open-source frameworks (such as Spring, Seam, Guice) and the associated many years of experience, a new `type-safe` component model was specified, which greatly facilitates the daily work. 
+But even more complex requirements are not neglected thanks to the flexibility of CDI. 
+This flexibility enabled portable CDI extensions that have been instrumental in the success of CDI.
+
+*Goal of this book*
+
+In this book, you will learn step by step the basic concepts of CDI and how you can successfully implement both Java SE and Java EE projects with this new component model. 
+As with any technology, CDI has one or two pitfalls. 
+Through tips and tricks you will learn to recognize them and learn details about the possible solutions. 
+In addition to integration with other technologies, we also devote ourselves to successful CDI extensions and show you how you can benefit from them.
+
+=== Context and Dependency Management
+
+*Context Management:* To understand why we started working on CDI, we take a quick look at the beginnings of Java software development.
+
+Without an additional framework, the rudimentary language scope of Java is at your disposal. 
+When it comes to creating new instances of a class, you can use the keyword `new`. 
+However, you must also manage such an instance in order to be able to use it again at a later time (= context management). 
+Similar to other programming languages, various design patterns have been established in Java. 
+But even these design patterns often lead to unnecessarily complex or extravagant implementations in large applications. 
+In order to manage instances more efficiently and enrich them with additional functionality, component models were soon introduced with which the complexity was outsourced in configuration files. 
+In the absence of a more meaningful alternative, XML was often used as the configuration format. 
+However, this led to new challenges. 
+A central part of an application is no longer `type-safe` and the configuration of some component models has become so extensive that it often had to be generated with generators. 
+Over time, the component models improved and the configuration effort was significantly reduced. 
+However, the format of the configuration files continues to be based on strings, thereby losing many of the benefits of a type-safe language such as Java.
+
+*Dependency Management:* A second challenge in the development of applications is the references to other instances (= dependency management). 
+This increases the complexity as soon as beans with different lifetimes (scopes) are involved. 
+If the container ensures that the required references to other instances are automatically set (= injected), this is called dependency injection. 
+For this dependency management, many component models use configuration entries, which also lead to the loss of type safety.
+
+A container provides a component model that can be used by the application code to more easily implement parts of the application. 
+As a result, they represent the link between the underlying runtime environment and the application code.
+
+For both context and dependency management, there was no alternative up to JDK 5 to solve this basic problem more efficiently and, most importantly, type-safe. 
+In 2004, the highly underestimated annotations with Java 5 were introduced. 
+But only in 2006 were Java EE 5 annotations first (officially) used for dependency injection. 
+The following year, this approach was refined by a project called `Guice` on type safety. 
+Due to the increasing popularity of `type-safe` component models, a specification of such concepts was obvious. 
+Originally, CDI (JSR-299) was named "Web Beans". 
+The primary goal was to create a link between the JSF and EJB specifications. 
+Three years later, CDI celebrated its debut. 
+Until the final version of the specification, not only had the name of the specification changed, but several major revisions were made. 
+For example, part of the specification has been outsourced (to JSR-330) and is not only the basis for CDI, but also for other component models. 
+In addition, CDI in its current form is no longer bound to Java EE, but can also be easily used in Java SE applications.
+
+TIP: JSR-330 consists of 5 annotations and an interface and specifies a minimal amount of functionality required for dependency injection and the definition of custom scopes. 
+In addition to implementations of the CDI specification, the specification is also used by other projects as a basis.
+
+=== Annotations as a central component
+
+Annotations are additional metadata and were introduced in Java 5 as an extension of the `type` system. 
+Since CDI is mostly based on annotations, and creating your own annotations is part of everyday tools for working with CDI, let's take a closer look at a few details. 
+In the case of annotations, a distinction must always be made as to whether or not they can be interrogated during the runtime of the application. 
+A well-known representative for annotations that can not be queried at runtime is `@Override`, since @Retention (RetentionPolicy.SOURCE) is defined. 
+For a component model like CDI, of course, only information that is available at runtime is useful. 
+Therefore, all annotations that you create in connection with CDI must always define @Retention (RetentionPolicy.RUNTIME). 
+Otherwise, the CDI container does not see the annotation at runtime.
+
+In addition, it must still be specified at which points the annotation can be used. 
+This is expressed using @Target. 
+Thus we can already analyze the most common annotation named `@Inject` for daily work with CDI, which is shown in Listing <<.Specified Structure of `@Inject`, Specified Structure of `@Inject`>>.
+
+.Specified Structure of `@Inject`
+[source,java]
+----
+@Target({ElementType.CONSTRUCTOR,
+    ElementType.METHOD, ElementType.FIELD})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Inject {}
+----
+
+In the case of `@Inject`, the possible usage targets are `constructors`, `methods`, and `fields`. 
+Apart from the element types just mentioned, in the context of CDI, `ElementType.TYPE` is also important for annotations at the class level, `ElementType.PARAMETER` for annotations on method parameters, and `ElementType.ANNOTATION_TYPE` for annotations on annotations. 
+Annotating an annotation may sound a bit strange at first. 
+In the course of the book, however, we will get to know very useful uses for this type of element.
+
+=== Hello CDI
+
+CDI follows in its minimal form a few rules. 
+In the following chapters we will also look at special constellations. 
+Please keep in mind that many of the presented concepts are optional and therefore available, but of course not in use. 
+An average CDI-based application even comes out with surprisingly few CDI functionalities. 
+Nevertheless, it makes sense to have an overview of the entire range of functions if you encounter more complex use cases and also want to solve them with the elegant CDI concepts.
+
+Listing <<.Minimal CDI Bean, Minimal CDI Bean>> shows a POJO (Plain Old Java Object), which already represents a full CDI bean. 
+As you can see, neither a CDI class nor a special annotation is used here.
+
+.Minimal CDI Bean
+[source,java]
+----
+public class HelloWorldBean {
+  public String hello() {
+    return "Hello CDI";
+  }
+}
+----
+
+Only by class can not be determined in this case, whether it is a CDI bean or not. 
+In order for the CDI container to learn about this class, a marker file named beans.xml must be created for each module (in `META-INF` for `JAR` files or `WEB-INF` for `WAR` files). 
+As the term marker file suggests, this file can be empty (= 0 bytes), because in the simplest case it is only used for labeling so-called bean archives (or bean deployment archives). 
+Thus, not the entire class path needs to be scanned, only the appropriately marked archives.
+
+Even if the CDI container found the class from Listing <<.Minimal CDI Bean, Minimal CDI Bean>>, that bean must be obtained implicitly from the container via dependency injection or explicitly via manual bean lookup from the container. 
+If you create an instance of this class manually, it will not be managed by the container and the instance will not be a CDI bean.
+
+TIP: As of CDI 1.1, the `beans.xml` file is optional. To integrate with CDI 1.0 bean modules without `beans.xml`, for example, the SPI from CDI can be used. The corresponding mechanisms are presented in the chapter Portable CDI Extensions.
+
+The first instance, which represents the entry point of a processing, must always be initialized by the CDI container. 
+In a Java EE application server, this is usually automatically carried out. 
+Java SE applications, on the other hand, have to manually query at least one bean from the CDI container or perform manual injection so that the object graph is correctly set up by the CDI container. 
+Prior to CDI 1.1, this is not possible in a Java SE application using a standardized API. 
+To check our bean, for example, with a simple unit test, we need to anticipate something here and use a `JUnit` test runner from a portable CDI extension called Apache DeltaSpike. 
+Both the test runner and many other components of DeltaSpike will be discussed later in this chapter Portable CDI extensions are described in detail. 
+Above all, this test runner ensures that the CDI container is started and CDI beans can be injected into the JUnit test class.
+
+[source,java]
+----
+@RunWith(CdiTestRunner.class)
+public class HelloWorldBeanTest {
+  @Inject
+  private HelloWorldBean bean;
+
+  @Test
+  public void testInjectedBean() {
+    Assert.assertEquals("Hello CDI", bean.hello());
+  }
+}
+----
+
+Only `@Inject` causes the CDI container to create an instance of the `HelloWorldBean` class and provide a reference to it. 
+Thus, this field can be accessed via the field annotated with `@Inject`.
+
+Listing <<Minimal CDI Bean and Injection of a CDI Bean, Minimal CDI Bean and Injection of a CDI Bean>> Show How Easy CDI Can Be. 
+Of course, there are many other mechanisms that are described in detail in the following chapters. 
+Nevertheless, it should be mentioned again that an average CDI application does not have to exhaust the full range of functions of CDI. 
+In many cases, the motto is: "The lower the complexity, the easier it is to maintain an application." 
+This not only applies to the business logic of an application, but also to the selection of the available functionalities of component models such as CDI.
+
+=== The application for this book
+
+The name of the example application is `IdeaFork`. 
+In the course of the book, a small platform is developed with which, for example, `recipe`, `travel`, ..., `gift` ideas can be easily managed. 
+In addition, ideas can be searched for and copied (geforked). 
+This allows the modification and further development of existing ideas.
+
+Please note that the example application should not be a reference design of a typical CDI application. 
+Instead, all basic concepts of CDI, as well as functionalities of CDI extensions are illustrated by means of concrete application cases of an application. 
+Of course, some of the use cases can be implemented without the help of CDI. 
+Even with CDI, the availability of functionality does not mean it has to be used at all costs.
+
+In the first part of the book, we focus on the backend of the application. 
+Initially, the backend code will not have dependencies on other Java EE specifications, such as JPA. 
+This allows us to focus fully on the CDI concepts. 
+Only then will we deal with the integration of other Java EE specifications and other technologies. 
+The structure of the backend module is kept simple, as it focuses on the illustrated CDI functionality rather than creating a specific application design. 
+For ease of use of the module, there is only one separation between the API and Impl packages.
+
+Since CDI itself is just a written specification, we need an implementation of it. 
+Here we have a considerable selection. 
+In addition to the reference implementation called `Weld` (by JBoss), there are also `OpenWebBeans` (from Apache) and `CanDI` (from Resin). 
+Widely used are `Weld` and `OpenWebBeans` (aka OWB). 
+Therefore, we will limit ourselves to these two implementations. 
+In Java SE applications as well as in web applications deployed in a servlet container, you can decide for yourself which of the implementations you choose. 
+For Java EE6 + application servers, this decision is taken away from the server manufacturer for the time being, so you do not have to worry about the setup manually.
+
+*The setup*
+
+When combined with a Java EE6 + application server, setup is minimal as only the Java EE API JAR is required during development. 
+It is then no longer necessary for deployment, and so only the classes of the project itself need to be made available. 
+However, as we start with Java SE (or JUnit tests) and CDI, we'll take a closer look at the required setup for `OpenWebBeans` and `Weld`.
+
+Both `Weld` and `OpenWebBeans` can be used with any standards-compliant API. 
+There are several possibilities here.
+
+[options="header",cols="1,1,1"]
+|===
+|[groupId:artifactId]   |Version   |Description   
+//----------------------
+|javax:javaee-web-api   |6.0   |Official Java EE 6 API   
+|javax:javaee-web-api   |7.0   |Official Java EE 7 API   
+|org.apache.openejb:javaee-api   |6.0-5   |Alternative Java EE 6 API   
+|===
+
+Table: ee-api shows different EE API bundles that are currently available. 
+Since each bundle contains the complete API, only one of these bundles is required. 
+However, if you are only interested in the CDI API itself, you can alternatively include `javax.inject:javax.inject:1` and `javax.enterprise:cdi-api:1.0-SP4`. 
+Another alternative is to use the Apache API modules listed in table: spec-apis. 
+At Apache, these API modules are collected hosted in the Apache Geronimo project, but there is no dependency on the server implementation of the same name.
+
+[options="header",cols="1,1,1"]
+|===
+|[groupId:artifactId]   |Version   |Description   
+//----------------------
+|org.apache.geronimo.specs: geronimo-atinject_1.0_spec   |1.0   |JSR-330   
+|org.apache.geronimo.specs: geronimo-jcdi_1.0_spec   |1.0   |JSR-299   
+|org.apache.geronimo.specs: geronimo-interceptor_1.1_spec   |1.0   |Component of JSR-318   
+|===
+
+In addition to the API modules, the appropriate implementation modules are required:
+[options="header",cols="1,1,1"]
+|===
+|[groupId:artifactId]   |Version   |Description   
+//----------------------
+|org.apache.openwebbeans: openwebbeans-impl   |1.2.2   |Implementation of JSR-299   
+|org.apache.openwebbeans: openwebbeans-spi   |1.2.2   |Separate SPI module for easier extensibility of OWB   
+|===
+
+[options="header",cols="1,1,1"]
+|===
+|[groupId:artifactId]   |Version   |Description   
+//----------------------
+|org.jboss.weld: weld-core-bom   |1.1.18   |BOM for Weld
+|org.jboss.weld: weld-api   |Defined by BOM   |Proprietary API of Weld
+|org.jboss.weld: weld-core   |Defined by BOM   |Implementation of JSR-299
+|org.jboss.weld.se: weld-se   |Defined by BOM   |Special module for Java SE   
+|org.slf4j: slf4j-simple   |1.7.2   |Logging Framework, which is used by Weld   
+|===
+
+In `pom.xml` of IdeaFork both the Dependencies of OpenWebBeans (Table: owb_java-se) and Weld (Table: weld_java-se) used. 
+At runtime, only one implementation may be active.
+
+This required separation is implemented in `IdeaFork` with Maven profiles. 
+Thus, the portability of the application can be ensured.
+
+In order to be able to easily start and use CDI in JUnit tests, you will find additional test dependencies for the Apache DeltaSpike test control module in the demo application, which is described in detail in the Portable CDI Extensions chapter.
+
+=== Important terms of the specification
+
+Before we start with the basic concepts, let's take a look at the most important terms of the CDI specification. 
+You will come across these terms not only in the following chapters, but also in the `JavaDoc` of CDI and possibly in one or the other own research on a CDI specific topic.
+
+*Injection Point* +
+Injection points are reference variables that are automatically removed from the CDI container be set. 
+In the course of the book, we will explore various possibilities for explicit and implicit injection points. 
+An instance variable annotated with `@Inject` is, for example, an explicit injection point.
+
+The CDI SPI also includes an interface with this name. 
+Through this interface, the metadata can be adjusted by an injection point during container startup.
+
+*Scope and context* +
+The scope defines the lifetime of an instance. 
+With `@NormalScope` CDI defines only one scope type. 
+Since CDI is based on JSR-330 and here `@Scope` specifies a simpler scope type, one must effectively differentiate between the normal scopes of CDI (JSR-299) and the so-called pseudo-scopes of JSR-330.
+
+For CDI-based applications, primarily normal scoped beans are relevant. 
+Here CDI defines `@ApplicationScoped` (instances are destroyed when the application shuts down), `@SessionScoped` (lifetime depends on the HTTP session), `@RequestScoped` (lifetime is limited to an HTTP request) and @ConversationScoped (semi-automatically controlled), The only pseudo-scope specified by CDI is `@Dependent`, which in many cases is an exception from a CDI perspective.
+
+A scope is associated with an instance of an implementation of `javax.enterprise.context.spi.Context`, which manages the lifecycle of instances (Contextual Instances). 
+Whether a context is active or not depends on the type of scope and can be evaluated dynamically.
+
+Standard contexts specified by CDI will be completely terminated, If, for example, the request scope for the current thread is destroyed, all request-scoped beans are destroyed in a collective manner. 
+Manual management of individual beans is not provided for the standard contexts. 
+However, this is not a technical limitation of CDI. 
+Therefore, fine-grained management of individual beans is quite possible with their own context implementations.
+
+TIP: In practice, `@SessionScoped` and `@RequestScoped` can even be used in Java SE applications. 
+However, they have to be controlled manually. 
+Further details on this and the individual scopes as well as the definition of Custom scopes follow in chapters [CDI and Java EE] and pPortable CDI Extensions].
+
+*Managed-Bean* +
+Managed beans should not be confused with Java beans, as defined by CDI. 
+However, even in the CDI specification, several uses of the term for different concepts are to be found. 
+At least in this book we use from CDI's point of view the following main definition:
+
+A managed bean is represented by `javax.enterprise.inject.spi.Bean <T>` and consists of the Java class and the additional metadata. 
+As we'll see later, this metadata can be adjusted almost anywhere during container startup. 
+In any case, they will be checked during the startup process of the application. 
+If CDI rules are not adhered to, the start of the container is aborted and a corresponding error description is displayed.
+
+Based on the Java class and the metadata, the container can generate the so-called contextual instance at runtime.
+
+*Contextual Instance* +
+Colloquially, the term (CDI) bean is often used instead of contextual instance. 
+However, since the term "bean" is ambiguous, in the following chapters we will (mostly) use the term contextual instance. 
+As previously mentioned, the contextual instance is the effective instance created by the CDI container based on the managed bean (= Java class and additional metadata). 
+However, in many cases, the container does not give the physical reference to the instance to the outside, but a so-called Contextual-Reference.
+
+*Contextual Reference* +
+Instead of the physical reference to a (contextual) instance, the CDI container in many cases gives a `proxy` instance to the outside. 
+Whether a `proxy` is used or not depends on the defined scope of the managed bean. 
+For normal-scoped beans, proxies are always generated and for pseudo-scoped beans, it is only required if interceptors or decorators have to be placed on a contextual instance, since such functions without adapted bytecode are not feasible.
+
+The use of proxies also solves the so-called cross-scope injection issue. 
+Without proxies, for example, a session-scoped bean with an (injected) reference to a request-scoped bean after the 1st request would have a reference to the old instance (from the 1st request). 
+Instead, the session-scoped bean should always be able to address the current request-scoped bean. 
+This is ensured by the Contextual-Reference (the proxy), since the correct instance is searched for every method call and the method call is only executed on it.
+
+Since proxies according to the CDI specification are always serializable independent of the contextual instance, the passivation (= serialization and storage of a context instance outside the runtime environment) of a contextual instance is independent of the injected references.
+
+TIP: Proxy overhead is already minimal in current implementations. 
+For example, OpenWebBeans 1.2+ creates highly optimized proxies via subclassing at the bytecode level. 
+Regardless of the concrete implementation, however, there are restrictions which have to be considered. 
+Proxies should not allow classes and their methods to be final. 
+In addition, when using CDI on a daily basis, note that the debugger displays ("empty") proxy instances. 
+To see the state of the contextual instance in the debugger you have to be inside this instance.

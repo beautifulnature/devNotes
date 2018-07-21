@@ -1,0 +1,485 @@
+== CDI or not CDI
+The relevance of a popular technology often turns out to be years away as soon as the initial hype subsides. For CDI, the result is clear. Many Java EE applications benefit from CDI because application and test logic can be implemented very efficiently. In addition, with each release of Java EE, CDI integration of other specifications, such as JSF, is being further developed, making CDI an increasingly important aspect of Java EE. In the case of JSF, several new functionalities are even supported only in conjunction with CDI.
+ 
+
+Also outside the Java EE platform, CDI enjoys great popularity. Virtually every popular framework built into dependency injection frameworks supports CDI directly or at least allows for easy integration. It is no longer easy to find a popular framework without a CDI module. An application framework without included CDI support is the actuator framework Akka (see http://akka.io). We take this as an opportunity to illustrate the simple integration of CDI with other frameworks.
+=== CDI integration by Producer
+Before we can begin integrating CDI and Akka, it is important to know and understand the basic characteristics of both technologies.
+ 
+
+For CDI we have already looked at some details in the previous chapters. Therefore, we can limit ourselves here to the most important aspects of Akka. The central concept of Akka are actuators. Actors process messages asynchronously, with an actor instance executing to process a message from a thread. If an actuator sends a message to another actuator, the further processing is normally carried out by another thread. Therefore, unlike Java EE, we can not assume that there is a kind of request that is completely processed by a thread and only branches asynchronously in exceptional cases. Only message processing within an actuator is associated with a particular thread, which guarantees thread safety. An actor can be sent a message via a so-called actuator reference. This reference is not valid as a Contextual Reference of CDI. Since Akka defines different rules for different actuator types in some versions, it is primarily important for the subsequent integration steps that actor references are not always valid unrestrictedly and it is safer to regularly generate new references.
+Tip: Another rule specific to Akka concerns the scope of an actor instance. The Akka documentation recommends using only instances that are not managed by any other container. In the case of CDI, this means, for example, the use of simple dependent-scoped beans for actuators. For dependent-scoped beans without interceptors and decorators, the CDI container usually does not create a contextual reference in the form of a proxy. In the actor instances themselves, we can inject CDI beans with other scopes, as long as the corresponding context is active when accessing the contextual reference. Injection must be done by Akka via Constructor Injection.
+ 
+
+In IdeaForkLite we can use Akka for asynchronous sending of CDI events. Since actuators themselves are already executed in their own threads, we only need to enable CDI-based injection for actor instances in order to then fire CDI events in sync. In addition, we can also facilitate the sending of messages to actors for CDI beans. In EntityProcessorInterceptor of IdeaForkLite is so far the event IdeaChangedEvent fired synchronously. To fire the asynchronous variant of this event via an actuator, we must add a corresponding actuator reference. Since interceptors preserve the lifetime of the intercepted CDI bean, we should not inject this actuator reference directly. Technically this would be possible, but as mentioned above actuator references can be invalidated. Thus, it is advisable to choose the shortest possible scope for CDI beans in which actor references are to be injected. One possible variant in IdeaForkLite is the outsourcing of the aforementioned event logic to a CDI bean named IdeaEventBroadcaster, which, for example, is stored in the previously presented transaction scope of DeltaSpike. As we'll see in the next steps, the actuator reference itself must be a dependent-scoped CDI bean. By combining a dependent-scoped actuator reference and use in a transaction scope bean, we limit the lifetime of an actuator reference in our example to a transaction.
+ 
+
+Akka provides its own class called ActorRef for actor references . Since this class is independent of a specific actor, we must use our own CDI qualifier named @Actor , as can be seen in Listing Notification by Akka Actors . This self-defined CDI qualifier allows you to specify the actuator class so that we can later determine to which actuator the message should be transmitted. We will look at the associated producer in one of the next steps.
+ @TransactionScoped
+public class EntityChangedEventBroadcaster {
+  //...
+
+  @Inject
+  @Actor(type = IdeaChangedEventActor.class)
+  private ActorRef asyncBroadcaster;
+
+  public void broadcastIdeaChangedEvent(Idea entity) {
+    IdeaChangedEvent ideaChangedEvent = new IdeaChangedEvent(entity);
+    this.asyncBroadcaster.tell(ideaChangedEvent, this.asyncBroadcaster);
+    //...
+  }
+}
+With the method ActorRef # tell we can send a message to the underlying actuator, which is delivered asynchronously by Akka. The processing of the message thus transmitted can take place, for example, as in listing actor with CDI support . Akka's only requirement to implement a Java actor is the extension of the UntypedActor class , which specifies the #onReceive actor method . Each message to an actor is processed by this method in its own actor thread. 
+In listing actor with CDI support , a CDI event ( javax.enterprise.event.Event). By typing on IdeaChangedEvent and the self-defined @Async qualifier, we can fire a specially qualified CDI event within the actor instance. Effective firing of the CDI event using the #fire method is synchronous. However, because the #onReceive method itself is executed asynchronously, firing the CDI event from the EntityChangedEventBroadcaster view is asynchronous and does not block its further execution. The qualifier @Async serves only to distinguish or to select this new event type.
+ public class IdeaChangedEventActor extends UntypedActor {
+  private final Event<IdeaChangedEvent> entityChangedEvent;
+
+  @Inject
+  public IdeaChangedEventActor(
+    @Async Event<IdeaChangedEvent> entityChangedEvent) {
+
+    this.entityChangedEvent = entityChangedEvent;
+  }
+
+  @Override
+  public void onReceive(Object message) throws Exception {
+    if (message instanceof IdeaChangedEvent) {
+      this.entityChangedEvent.fire((IdeaChangedEvent)message);
+    } else {
+      unhandled(message);
+    }
+  }
+}
+@Async IdeaChangedEvent represents a synchronous CDI event fired in an asynchronous actuator thread. The CDI Event Observer, which appears in Listing CDI Event Observer for @Async IdeaChangedEvent, follows the traditional CDI Observer rules accordingly. The @Async qualifier limits the observer only to events fired in our case by IdeaChangedEventActor . Thus, the observer runs in the same thread as IdeaChangedEventActor , but in a different thread than EntityChangedEventBroadcaster . As a result, the execution of EntityProcessorInterceptor also becomes or the processing of the entire web request is not blocked.
+ @ApplicationScoped
+public class IdeaHistoryProcessor {
+    @Inject
+    private ObjectConverter currentObjectConverter;
+
+    @Inject
+    private EntityChangeRepository entityChangeRepository;
+
+    public void onIdeaCreated(
+      @Observes @Async IdeaChangedEvent changedEvent) {
+        Idea entity = changedEvent.getEntity();
+        String ideaSnapshot = currentObjectConverter.toString(entity);
+        EntityChange entityChange = new EntityChange(
+                entity.getId(),
+                entity.getVersion() != null ? entity.getVersion() : 0,
+                ideaSnapshot,
+                changedEvent.getCreationTimestamp());
+
+        entityChangeRepository.save(entityChange);
+    }
+}
+The next step covers two aspects. In listing notification of Akka actuators , we used an injector point of type ActorRef . Since Akka currently does not have its own CDI module, we need a CDI producer for this type. As already mentioned, we need an additional CDI qualifier so that we can determine in the producer for which actuator type an actuator reference should be created. Listing Own CDI qualifier for actuators shows a possible variant of such a qualifier. So we do not need a CDI producer for every specific actuator type, just a generic producer for all ActorRef injection points , we need to mark all annotation members that are not needed for mapping to a generic producer method with @Nonbinding . In our example, we evaluate all the annotation members in the producer method ourselves and therefore have to annotate all with @Nonbinding .
+ @Qualifier
+@Retention(RUNTIME)
+@Target({METHOD, FIELD})
+public @interface Actor {
+  String AKKA_DEFAULT = "default";
+
+  @Nonbinding
+  Class<? extends akka.actor.Actor> type();
+
+  @Nonbinding
+  String systemName() default AKKA_DEFAULT;
+}
+Instead of creating a separate CDI producer for each actuator type, in our case IdeaChangedEventActor and in the next section UserRegisteredEventActor , Listing Producer for actor references illustrates a generic producer method for all ActorRef injection points in combination with the qualifier @Actor . The actuator class required for this is first created in the CDI bean with @Actor # type , in our current example with @Actor (type = IdeaChangedEventActor.class), stated. In the previous CDI producers, we mostly used CDI qualifiers only for the assignment of injection point and producer. Such producers then generated an instance independent of the injection point, which was assigned to the injection point. In our current example, this is not possible because the result of the producer depends on metadata of the respective injection point. In other words, our producer method must evaluate the metadata of the injection point dynamically in order to obtain the required information from @Actor in this specific case . In other words, we need the metadata of the reference variables , in our example ActorRef asyncBroadcaster, evaluate before we can create a contextual instance, which is assigned to this reference variable by the CDI container. This approach may seem unnecessarily complicated at first glance, but is required whenever a generic producer for injection points of a type with different metadata is to be implemented. For such special cases, CDI defines the interface javax.enterprise.inject.spi.InjectionPoint . Each producer method for dependent-scoped beans can optionally use an InjectionPoint parameter to evaluate the definition of the particular injection point. Each time a producer method is called, the CDI container fills this parameter with an InjectionPointInstance that represents the current injection point .
+ 
+
+Methods such as InjectionPoint # getAnnotated # getAnnotation can be used to access metadata of the current injection point. In Listing Producer for actor references , we get the @Actor instance from the injection point via the just mentioned method. This instance of the @Actor annotation contains all the values ​​we specified at the injection point and needed to generate an appropriate ActorRef . @Actor # type returns IdeaChangedEventActor.class in our example , and @Actor # systemName returns the default value default .
+Tip: We know that @Actor is present in our example because our Producer method is responsible for all ActorRef injection points marked with the @Actor qualifier.
+With the information just extracted, we can delegate the generation of the actuator system to Akka. The necessary call of Akka is encapsulated in the method #getActorSystem . The result of this call is an instance of the akka.actor.ActorSystem type , which can be used to create an actorref . Details can be found in the Git repository of IdeaForkLite . The actuator system created by Akka can be stored in a map. With every further access to the same actuator system, the already generated actuator system is used. To cache the actor systems directly in an ActorRefProducer instance for the runtime of the application, this class is called @ApplicationScoped annotated.
+Tip: The Producer method is annotated next to @Produces also with the qualifier @Actor . Since @Actor # type does not define a default value, as is the case with @Actor # systemName , we must specify any valid value at this location to avoid compilation errors. The akka.actor.Actor.class value specified here is ignored at runtime since it is required only for the compilation process.
+The final step in the Producer method from Listing Producer for Actors References allows injecting CDI beans into actor instances. If this is an actuator implementation derived from UntypedActor , then the actuator system is informed that CdiAwareCreator should be used to generate the actuator instances. CdiAwareCreator implements the interface akka.japi.Creator and is initialized with the desired actuator class. Since we should use dependent-scoped beans as actuators, we delegate in the method CdiAwareCreator # create to BeanProvider # getDependent # get . The method BeanProvider # getDependent is the class of the actuator instance to be created. As a result, this helper method from DeltaSpike returns an instance of the type org.apache.deltaspike.core.api.provider.DependentProvider . This data structure encapsulates the dependent-scoped instance together with the associated metadata, which is required for a later destruction of the instance by the call DependentProvider # destroy . By calling the method #get we provide the dependent-scoped instance to Akka.
+ @ApplicationScoped
+public class ActorRefProducer {
+  private Map<String, ActorSystem> actorSystemMap =
+    new HashMap<String, ActorSystem>();
+
+  @Produces
+  @Actor(type = akka.actor.Actor.class)
+  protected ActorRef createActorRef(InjectionPoint injectionPoint) {
+    final Actor actorQualifier = injectionPoint.getAnnotated()
+      .getAnnotation(Actor.class);
+
+    ActorSystem actorSystem = getActorSystem(actorQualifier.systemName());
+
+    if (!UntypedActor.class.isAssignableFrom(actorQualifier.type())) {
+      actorSystem.actorOf(Props.create(actorQualifier.type()));
+    }
+    return actorSystem.actorOf(Props.create(
+      new CdiAwareCreator(actorQualifier.type())));
+  }
+
+  public ActorSystem getActorSystem(String actorSystemName) {
+    ActorSystem actorSystem = actorSystemMap.get(actorSystemName);
+    if (actorSystem == null || actorSystem.isTerminated()) {
+      actorSystem = bootActorSystem(actorSystemName);
+    }
+
+    return actorSystem;
+  }
+
+  private synchronized ActorSystem bootActorSystem(
+    String actorSystemName) {
+
+    ActorSystem actorSystem = actorSystemMap.get(actorSystemName);
+    if (actorSystem != null && !actorSystem.isTerminated()) {
+      return actorSystem;
+    }
+
+    actorSystem = ActorSystem.create(actorSystemName);
+    actorSystemMap.put(actorSystemName, actorSystem);
+    return actorSystem;
+  }
+
+  @PreDestroy
+  protected void cleanup() {
+        for (ActorSystem actorSystem : actorSystemMap.values()) {
+            if (!actorSystem.isTerminated()) {
+                actorSystem.shutdown();
+            }
+        }
+  }
+
+  private static class CdiAwareCreator
+    implements Creator<akka.actor.Actor> {
+
+    private static final long serialVersionUID = 3739310463390426896L;
+
+    private final Class<? extends akka.actor.Actor> actorClass;
+
+    public CdiAwareCreator(Class<? extends akka.actor.Actor> actorClass) {
+      this.actorClass = actorClass;
+    }
+
+    @Override
+    public akka.actor.Actor create() throws Exception {
+      return BeanProvider.getDependent(actorClass).get();
+    }
+  }
+}
+Akka internally registers the provided instance and creates the corresponding instance of the type ActorRef , which we finally return as result of the producer method. Producer methods in which information of the injection point is evaluated must produce dependent-scoped beans. Since Akka does not have an extended scope concept anyway, we do not have to consider any additional aspects when integrating both containers here.
+ 
+
+The destruction of actor instances accepts Akka (at present) itself, whereby we can not call as usual DependentProvider # destroy . For this reason, we can use @PostConstruct in such integrated actors , but not @PreDestroy . If we annotated a callback method with @PreDestroy , then it would not be called.
+ 
+
+However, we have to manually stop the generated actuator systems ourselves when shutting down the application. In the @PreDestroy callback method named ActorRefProducer # cleanup we call the method akka.actor.ActorSystem # shutdown on the respective instance.
+ 
+
+Due to the integration of Akka and CDI beans, we have to change the scope of MonitoredStorage . So far we have assigned this CDI bean with @RequestScoped to the request context. However, the request context in an actor thread is not active and thus we have to use the @ApplicationScoped , for example , because it is always active. Of course, this change assumes that the bean is thread-safe.
+ 
+
+In our CDI extension for the validation of application structures, we can add an additional check for actuators. Listing validation of actor beans shows an example of such validation. In our case, we check whether all actor classes are implemented explicitly or implicitly as dependent-scoped beans.
+ public class AppStructureValidationExtension implements Extension {
+  private List<String> violations = new ArrayList<String>();
+
+  public void validateArtifacts(@Observes ProcessManagedBean pmb,
+                                BeanManager beanManager) {
+    Class beanClass = pmb.getAnnotatedBeanClass().getJavaClass();
+    //...
+
+    if (Actor.class.isAssignableFrom(beanClass)) {
+      validateActor(beanClass,
+        pmb.getAnnotatedBeanClass().getAnnotations(),
+        beanManager);
+    }
+  }
+
+  public void checkAndAddViolations(
+    @Observes AfterDeploymentValidation afterDeploymentValidation) {
+
+    //...
+  }
+
+  private void validateActor(Class beanClass, Set<Annotation> annotations,
+                             BeanManager beanManager) {
+    for (Annotation annotation : annotations) {
+      if (beanManager.isScope(annotation.annotationType()) &&
+        !Dependent.class.isAssignableFrom(annotation.annotationType())) {
+
+        this.violations.add(
+          "It isn't allowed to use " + annotation.annotationType() +
+          " for Akka-Actors. " +
+          "Please remove the annotation from " + beanClass.getName());
+      }
+    }
+  }
+}
+ 
+
+In the second section of this chapter, we integrate CDI and Spring. In the accompanying examples, we also build on the integration with Akka.
+=== Beans from other worlds
+Over time, various dependency injection frameworks have emerged. Some even directly or indirectly inspired the CDI Expert Group in defining CDI. While, for example, JBoss Seam has been replaced by CDI and Apache DeltaSpike, projects such as Google Guice and the Spring Framework continue to exist alongside CDI. The functionality is similar for some of the available alternatives. CDI is often used in many Java EE applications, since CDI since Java EE 6 is part of the platform and leaves nothing to be desired compared to the alternatives.
+ 
+
+As similar as the individual dependency injection frameworks are, so different are the associated ecosystems. Especially the Spring Framework has many extensions due to its long history. How useful or necessary the individual extensions are depends very much on the field of application. In many cases, the Spring Framework provides adapters for other technologies to make it easier to use these technologies. From the point of view of a Java EE application, it may therefore make sense to use such advantages if there is no equivalent extension for CDI. However, this is not a reason to switch completely a CDI-based application to another framework like Spring. As before, when integrating with Akka, we can leverage the advantages of both technologies through the strong extensibility of CDI. We can implement a portable extension that makes it possible to use spring beans in CDI beans. Such integration is widely known as CDI / Spring Bridge. Over the years, various bridges have emerged in the CDI community. The majority of these are unidirectional, but bidirectional implementations are also possible with restrictions.
+ 
+
+In IdeaForkLite, we want to implement a rudimentary spring bridge that will allow unidirectional injection of spring beans into CDI beans. Over such a bridge are then Spring extensions in a primary CDI-based application, as it is IdeaForkLite , usable. Specifically, we will expand IdeaForkLite with Spring-Mail. Apart from that, such bridges can also be used for the step-by-step migration from Spring to CDI.
+Tip: Bidirectional CDI / Spring bridges allow not only the injection of spring beans into CDI beans, but also the injection of CDI beans into spring beans. However, for both unidirectional and bi-directional bridges, a primary container must be defined. This is the first to start and is responsible for initializing the start process of the other container.
+Starting from a simple basic configuration for Spring, we will start the Spring container with the help of a portable CDI extension and register a corresponding adapter as a CDI bean for each Spring Bean, which calls the call to the Spring container when creating a Contextual instance forwards. Launch Listing Spring via CDI Extension shows the framework for a CDI extension class called SpringBridgeExtension . As usual with CDI, this extension class must be activated in the service loader configuration file META-INF / services / javax.enterprise.inject.spi.Extension . After successfully launching the Spring container in the Observer method for AfterBeanDiscoveryEvent, we can assign the generated ConfigurableApplicationContext instance to an instance variable of the extension. In Listing Spring via CDI-Extension this variable is called springContext . Since the CDI container generates only one instance per application and extension class, we can access the stored spring context in various phases of the container lifecycle. In the AfterBeanDiscovery Observer, we can evaluate the Spring Bean definitions through the bean factory. However, we are only interested in self-created Spring Beans, which we implemented in our application. With the method AfterBeanDiscovery # addBean So let's just add CDI adapter beans to those spring beans whose packages do not start with org.springframework .
+Tip: Especially in older EE servers, it may happen that instance variables in extension classes, in our case springContext , can only be used per Observer method. In such cases, class variables must be used. The only alternative would be a server update.
+ public class SpringBridgeExtension implements Extension {
+  private ConfigurableApplicationContext springContext;
+
+  public void initContainerBridge(
+    @Observes AfterBeanDiscovery abd, BeanManager beanManager) {
+
+    springContext = bootContainer();
+
+    for (String beanName : springContext.getBeanDefinitionNames()) {
+      BeanDefinition beanDefinition = springContext.getBeanFactory()
+        .getBeanDefinition(beanName);
+      Class<?> beanClass = springContext.getType(beanName);
+
+      if (!beanClass.getName().startsWith("org.springframework.")) {
+        abd.addBean(createBeanAdapter(
+          beanClass, beanName, beanDefinition,
+          springContext, beanManager));
+      }
+    }
+  }
+
+  public void cleanup(@Observes BeforeShutdown beforeShutdown) {
+    springContext.close();
+  }
+
+  private <T> Bean<T> createBeanAdapter(
+    Class<T> beanClass, String beanName,
+    BeanDefinition beanDefinition,
+    ConfigurableApplicationContext applicationContext,
+    BeanManager bm) {
+
+    //...
+  }
+
+  private ConfigurableApplicationContext bootContainer() {
+    //...
+  }
+}
+The implementation of the #createBeanAdapter method from Listing CDI bean adapters for Spring Beans demonstrates that DeltaSpike also provides helpful concepts here. With AnnotatedTypeBuilder a can on the basis of any class AnnotatedType instance be generated. In our example, we could also use BeanManager # createAnnotatedType for this. However, we could use AnnotatedTypeBuilder to influence the generated result, for example to add or remove bean metadata. A similar builder named BeanBuilder is also available for javax.enterprise.inject.spi.Bean, With this builder, we modify various properties in Listing CDI to create bean adapters for Spring beans to make the adapters for the Spring bean work as efficiently as possible. For example, we use @Dependent as the scope annotation , because the Spring container is responsible for the scope of the spring beans. The reference to a Spring Bean published by the Spring Context will therefore continue to be used unchanged. The bean name is also inherited from Spring in our example. Since the Spring container fills the injection points of Spring Beans, we can in a further step with the method #injectionPoints Remove all injection points from the point of view of CDI. Up to this point, however, we only produce one empty adapter. Only by implementing and registering a ContextualLifecycle instance can we delegate to the Spring context when the CDI bean is created. In our case we call the implementation SpringAwareBeanLifecycle .
+ private <T> Bean<T> createBeanAdapter(
+  Class<T> beanClass, String beanName,
+  BeanDefinition beanDefinition,
+  ConfigurableApplicationContext applicationContext, BeanManager bm) {
+
+  String beanScope = beanDefinition.getScope();
+  ContextualLifecycle lifecycleAdapter =
+    new SpringAwareBeanLifecycle(applicationContext, beanName, beanScope);
+
+   beanClass = ProxyUtils.getUnproxiedClass(beanClass);
+    return new BeanBuilder<T>(bm)
+      .readFromType(new AnnotatedTypeBuilder<T>()
+        .readFromType(beanClass).create())
+      .name(beanName)
+      .beanLifecycle(lifecycleAdapter)
+      .injectionPoints(Collections.<InjectionPoint>emptySet())
+      .scope(Dependent.class)
+      .create();
+}
+SpringAwareBeanLifecycle from Listing Contextual Lifecycle for Spring Beans delegates management of bean instances to the Spring Context using the #getBean method . For the CDI container, the result is a simple dependent-scoped bean. Accordingly, the rules for dependent-scoped beans are implemented. The equivalent jumping scope is called a prototype scope. Thus, when destroying the contextual instance by the CDI container, we can only route the call to the #destroyBean method , if it is the prototype scope. Otherwise, the Spring Container must manage the lifetime of the corresponding Spring Bean, depending on the scope of the bean.
+ class SpringAwareBeanLifecycle implements ContextualLifecycle {
+  private final ConfigurableApplicationContext applicationContext;
+  private final String beanName;
+  private final boolean prototypeScope;
+
+  public SpringAwareBeanLifecycle(
+    ConfigurableApplicationContext applicationContext,
+    String beanName, String scope) {
+
+    this.applicationContext = applicationContext;
+    this.beanName = beanName;
+    this.prototypeScope = "prototype".equalsIgnoreCase(scope);
+  }
+
+  @Override
+  public Object create(Bean bean, CreationalContext creationalContext) {
+    return this.applicationContext.getBean(this.beanName);
+  }
+
+  @Override
+  public void destroy(Bean bean, Object instance,
+                      CreationalContext creationalContext) {
+
+    if (this.prototypeScope) {
+      this.applicationContext.getBeanFactory()
+        .destroyBean(this.beanName, instance);
+    }
+  }
+}
+Our rudimentary CDI / Spring Bridge is hereby completed and we can implement our first Spring Bean, which we inject in a further step into a CDI Bean. As mentioned in the beginning we will use Spring-Mail for demonstration purposes. In practice, of course, it is obvious alternatives such as to evaluate Apache Commons Email, since this no additional container is required.
+ 
+
+Listing Simple Spring Bean shows a simple implementation of a Spring Bean, which delegates effective sending to JavaMailSender # send from Spring-Mail. Since we only implement a Spring Bean in IdeaForkLite , we do not create our own module. That's why the CDI container also sees this bean. However, the CDI adapter bean for this spring bean gets the same type. So we have to make that class invisible to the CDI container. In our example we use @Exclude from DeltaSpike. Of course, this would not be necessary if we provide Spring Beans outside a BDA for CDI.
+Tip: We must also consider a similar aspect from the perspective of the Spring container. If the Spring container saw all the IdeaForkLite's CDI beans , then we would register adapter beans for Spring beans that are already CDI beans and should only be visible to the CDI container. For this somewhat complicated-sounding cyclic constellation, there is a simple solution. For this we need to define in IdeaForkLite , besides configurations for Spring-Mail, the base package for Spring Beans of our application in the Spring configuration file named applicationContext.xml .
+ @Exclude
+public class SpringMailSender {
+  @Autowired
+  private JavaMailSender mailSender;
+
+  public void send(String senderAddress, String recipientAddress,
+                   String subject, String text) {
+    SimpleMailMessage message = new SimpleMailMessage();
+    message.setTo(recipientAddress);
+    message.setFrom(senderAddress);
+    message.setSubject(subject);
+    message.setText(text);
+    this.mailSender.send(message);
+  }
+}
+The Spring Bean from Listing Simple Spring Bean can be injected in the next step in a CDI bean called MailService . Listing Injecting a Spring bean into a CDI bean makes it clear that the injection point is no different than a regular injection point for a CDI bean. The previously implemented CDI adapter bean is called at runtime if the CDI container wants to populate the injection point in MailService .
+ @ApplicationScoped
+public class MailService {
+  @Inject
+  private SpringMailSender mailSender;
+
+  public void sendWelcomeMessage(User user) {
+    String senderAddress = ConfigResolver
+      .getProjectStageAwarePropertyValue(
+        "ideafork.sender", "admin@ideafork.com");
+    String subject = "Welcome " + user.getNickName();
+    String text = "Welcome @ IdeaFork!";
+    this.mailSender.send(senderAddress, user.getEmail(), subject, text);
+  }
+}
+Based on this preliminary work, we can add another actor in IdeaForkLite , via which asynchronous emails can be sent after a successful registration. Again, we could trigger a synchronous CDI event with the @Async qualifier in the asynchronous actuator thread . This is not necessary for our use case and therefore we delegate mails asynchronously in the listing directly to the previously implemented mail service . In addition, we need an event called UserRegisteredEvent , which is shown in the same listing.
+ public class UserRegisteredEvent extends EntityChangedEvent<User> {
+    public UserRegisteredEvent(User createdEntity) {
+        super(createdEntity);
+    }
+}
+
+public class UserRegisteredEventActor extends UntypedActor {
+  private final MailService mailService;
+
+  @Inject
+  public UserRegisteredEventActor(MailService mailService) {
+    this.mailService = mailService;
+  }
+
+  @Override
+  public void onReceive(Object message) throws Exception {
+    if (message instanceof UserRegisteredEvent) {
+      this.mailService.sendWelcomeMessage(((UserRegisteredEvent)message)
+        .getEntity());
+    } else {
+      unhandled(message);
+    }
+  }
+}
+Via Constructor-Injection we can inject our MailService -Bean to send emails in the #onReceive method using this CDI bean and the Spring Bean behind it. In our example, we want to send a welcome message after a new user entity has been saved. 
+The registration logic is in IdeaForkLite in the UserService # registerUser method . The excerpt illustrated in Listing CDI and Akka Events shows not only the advanced method but also the new UserRegisteredEventBroadcaster , which first triggers an asynchronous actor event via Akka and then a synchronous CDI event.
+ @Service
+public class UserService {
+  //...
+
+  @Inject
+  private UserRegisteredEventBroadcaster userRegisteredEventBroadcaster;
+
+  public User registerUser(User newUser) {
+    if (userRepository.loadByEmail(newUser.getEmail()) == null) {
+      newUser.setPassword(
+        passwordManager.createPasswordHash(newUser.getPassword()));
+      userRepository.save(newUser);
+      User registeredUser = userRepository.findBy(newUser.getId());
+
+      if (registeredUser != null) {
+        userRegisteredEventBroadcaster
+          .broadcastUserRegisteredEvent(registeredUser);
+        return registeredUser;
+      }
+    }
+    return null;
+  }
+}
+
+@TransactionScoped
+public class UserRegisteredEventBroadcaster {
+    @Inject
+    @Default
+    private Event<UserRegisteredEvent> userRegisteredEvent;
+
+    @Inject
+    @Actor(type = UserRegisteredEventActor.class)
+    private ActorRef asyncBroadcaster;
+
+    public void broadcastUserRegisteredEvent(User entity) {
+        UserRegisteredEvent userRegisteredEvent =
+          new UserRegisteredEvent(entity);
+        asyncBroadcaster.tell(userRegisteredEvent, this.asyncBroadcaster);
+        userRegisteredEvent.fire(userRegisteredEvent);
+    }
+}
+The implementation described so far works flawlessly, but has the disadvantage, especially in the case of unit tests, that whenever a registration is carried out an attempt is always made to send an e-mail. Instead, it would be enough for us to check whether an e-mail would be sent or whether the content is correct. Listing mail service for unit testing shows how we can enable the first case by creating a specialized CDI bean in the test package and overriding the #sendWelcomeMessage method . Since we use this CDI bean only in the test package in productive package of IdeaForkLite always the original mail service implementation services active because it there the class Test Mail Service does not exist. If we also do not want to use TestMailService for integration tests, then we could annotate the class additionally with @Exclude (ifProjectStage = ProjectStage.IntegrationTest.class) .
+ @Specializes
+public class TestMailService extends MailService {
+    private AtomicInteger sentWelcomeMessageCount = new AtomicInteger();
+
+    @Override
+    public void sendWelcomeMessage(User user) {
+        sentWelcomeMessageCount.incrementAndGet();
+    }
+
+    public Integer getSentWelcomeMessageCount() {
+        int result = sentWelcomeMessageCount.get();
+        if (result == 0) {
+            return null;
+        }
+        return result;
+    }
+}
+ 
+
+Finally, in our JUnit test, we can inject the TestMailService bean to verify the result after a successful registration attempt. Since we always send emails through an asynchronous actor thread, we have to put in a delay. There are several implementation options for this. In listing test with specialized mail service this is implemented with a RetryHelper . The full implementation is available in the Iditoflite git repository .
+ @RunWith(CdiTestRunner.class)
+public class IdeaForkBaseFlowTest {
+  @Inject
+  private RegistrationViewCtrl registrationViewCtrl;
+
+  @Inject
+  private TestMailService testMailService;
+
+  @Inject
+  private EntityChangeRepository entityChangeRepository;
+
+  //...
+
+  @Test
+  public void flowFromRegistrationToIdeaPromotion() {
+    registrationViewCtrl.getNewUser().setNickName("os890");
+    registrationViewCtrl.getNewUser().setEmail("os890@test.org");
+    registrationViewCtrl.getNewUser().setPassword("test");
+    Class<? extends ViewConfig> navigationResult =
+      registrationViewCtrl.register();
+
+    //...
+
+    int sentWelcomeMessageCount = getSentWelcomeMessageCount();
+    Assert.assertEquals(1, sentWelcomeMessageCount);
+  }
+
+  private Integer getSentWelcomeMessageCount() {
+    return new RetryHelper<Integer>() {
+      @Override
+      protected Integer execute() {
+        Integer result = testMailService.getSentWelcomeMessageCount();
+
+        if (result == null) {
+          return 0;
+        }
+        return result;
+      }
+    }.start();
+  }
+
+  private abstract class RetryHelper<T> {
+    //...
+  }
+}
+ 
+
+Whether the integration of CDI and Spring described here makes sense depends on the requirements of a project. In our case we could for example have renounced Spring. Instead of Spring Mail, we could use alternatives such as Apache Commons Email. Therefore, in the evaluation phase, it should be examined whether the disadvantages of an additional container are acceptable compared to the benefits of the add-ons. Such disadvantages include, among other things, a higher complexity in the application through the use of another container, its configuration and integration. In addition, a certain overhead arises at runtime even after the longer start of the application and the slightly higher memory requirement should not be ignored either.
