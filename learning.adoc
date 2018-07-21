@@ -1,0 +1,16 @@
+= Learn
+:revdate: 2018-07-21
+:copyright-year: 2018
+:language: en
+:toc:
+:sectnumlevels: 7
+:xrefstyle: short
+:appendix-caption: Annex
+:appendix-refsig: Annex
+:section-refsig: Clause
+:table-caption: Table
+:example-caption: Figure
+
+include::jsf.adoc[]
+
+include::cdi.adoc[]

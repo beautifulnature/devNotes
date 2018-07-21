@@ -1,33 +1,484 @@
-== Marking
+== JSF and CDI
+
+With Contexts and Dependency Injection for Java (CDI), Java EE version 6 and later introduces a new standard for managing beans and connecting them via dependency injection. 
+The use of CDI in JSF projects offers a whole range of advantages over the use of the internal Managed Bean Creation Facility, Among other things, CDI brings a much more powerful, type-aware dependency injection mechanism, support for interceptors and decorators, and very simple event interaction, just to name a few of the benefits - all without significantly increasing the complexity of the application. 
+From JSF's point of view, it makes no difference whether beans are managed via CDI or JSF internally. 
+The connection between the view and the model is done in both cases via the `Unified-EL`.
+
+CDI supports the standard Dependency Injection for Java (JSR-330, also At Inject called). 
+For the first time, JSR-330 standardizes annotations for the most important dependency injection and allows you to use the same annotations from the `javax.inject` package in different environments such as Java EE 6, Spring 3, or Guice 2.
+
+After an introduction to the concepts of CDI in Section [Beans and Dependency Injection with CDI], see section [Section: Configuring CDI] for configuration considerations. 
+Afterwards section [section:  MyGourmet 16 : Integration of CDI] details for example MyGourmet 16. 
+section [Section: Conversations with JSF] is dedicated to mapping business processes to conversations. 
+Finally, in Section [Section: Apache MyFaces CODI], we'll show you how to use conversations with CDI and the Apache MyFaces CODI project.
 
 === Beans and Dependency Injection with CDI
 
+The main task of CDI is to manage beans with a defined lifecycle. 
+CDI provides mechanisms to define beans and link them via type-specific dependency injection. 
+
+CDI supports different types of beans:
+
+* Beans defined by classes (also known as managed beans - not to be confused with JSF managed beans).
+* Beans defined by producer methods or fields.
+* Beans defined by EJB session beans or Java EE resources.
+
+We'll show you how to define beans based on classes and with producer methods.
+
 ==== Managed beans with CDI
+
+The road to the first CDI bean is very simple: CDI has no special annotation to define bean-based beans, and makes beans out of virtually every class. 
+Exempted are, for example, `non-static`, `inner classes` or classes that do not have a suitable structure. 
+A constructor suitable for CDI either has no parameters or is annotated with @Inject.
+
+Each CDI bean has a Scope defined with an annotation on the bean class. 
+By default, CDI supports the following scopes and defines annotations in the package `javax.enterprise.context`:
+
+* Dependent Scope (@Dependent): +
+The Dependent Scope is a so-called pseudo-scope - it does not have its own life cycle and the lifetime depends on the use of the bean. 
+If you do not specify a scope annotation, CDI uses this scope by default. 
+It corresponds to the None scope in JSF.
+* Request scope (@RequestScoped): +
+The bean lives for the duration of an HTTP request. 
+This scope corresponds to the request scope in JSF.
+* Conversation scope (@ConversationScoped): +
+The bean lives for the duration of a conversation. 
+However, the conversations offered directly by CDI are not very practical. 
+We therefore recommend using the conversations of Apache MyFaces CODI (see section [Apache MyFaces CODI section] ).
+* Session Scope (@SessionScoped): +
+The bean is alive for the duration of a session in which the user is connected to the application. 
+This corresponds to the session scope in JSF.
+* Application Scope (@ApplicationScoped): +
+For the lifetime of the application, only one instance of this bean is the same for all users. 
+This scope corresponds to the application scope in JSF.
+
+TIP: CDI beans in so-called passivating scopes like `@SessionScoped` or `@ConversationScoped` have to be serializable.
+
+Listing <<.CDI Bean, CDI Bean>> shows the definition of a CDI bean with the class `CustomerService` in the application scope. 
+Please pay attention to the package of the annotation @ApplicationScoped. 
+This is the annotation defined by CDI and not the JSF counterpart of the same name.
+
+.CDI Bean
+[source,java]
+----
+import javax.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class CustomerService {
+  ...
+}
+----
+
+CDI now has a bean of type `CustomerService` in the application scope that can be injected into any other bean. 
+Annotating a field with `@Inject` is enough to define a dependency on another bean. 
+Listing <<.dependency injection with @Inject, dependency injection with @Inject>> shows the bean CustomerBean with a dependency on the previously defined bean of type CustomerService.
+
+.dependency injection with @Inject
+[source,java]
+----
+import javax.enterprise.context.RequestScoped;
+import javax.inject.Inject;
+import javax.inject.Named;
+
+@Named
+@RequestScoped
+public class CustomerBean {
+  @Inject
+  private CustomerService customerService;
+  ...
+}
+----
+
+When creating a bean instance of type CustomerBean, CDI resolves this dependency and injects the bean instance for the type CustomerService from the application scope. 
+
+The annotation `@Named` also gives the bean a name under which it is available in `Unified EL expressions`. 
+Again, as with managed beans in JSF, if an explicit name is not specified in the element value of @Named, CDI conventionally generates the name from the class name with a small initial letter. 
+For example, from the class name `CustomerBean`, the name becomes `customerBean` which can then be used in a view as follows:
+
+[source,xhtml]
+----
+<h:inputText value="#{customerBean.property}"/>
+----
+
+If there are several beans of the same type, the selection must be further restricted. 
+To this end, CDI provides so-called qualifiers. 
+A qualifier is any annotation that is annotated with `@javax.inject.Qualifier`. 
+Listing <<.Qualifier in CDI, Qualifier in CDI>> shows an example of the qualifier `@Special`.
+
+.Qualifier in CDI
+[source,java]
+----
+@Retention(RUNTIME)
+@Target({TYPE, FIELD, METHOD})
+@Qualifier
+public @interface Special {
+}
+----
+
+With such a qualifier, on the one hand, the class of the bean and, on the other hand, the injection point are annotated. 
+But let's take a look at this with an example. 
+Listing service beans with and without qualifiers shows two different implementations of the interface `Service`. 
+Since both beans have the type `Service` (we assume that only the interface is known to the outside), we annotate the class `SpecialServiceImpl` with our qualifier `@Special` for further differentiation.
+
+[source,java]
+----
+@ApplicationScoped
+public class ServiceImpl implements Service {
+  ...
+}
+----
+
+[source,java]
+----
+@ApplicationScoped
+@Special
+public class SpecialServiceImpl implements Service {
+  ...
+}
+----
+
+The same qualifier annotation is also used at the injection point to restrict the selection of the `Service` type beans to the desired item. 
+Listing <<.dependency injection with @Inject and Qualifier shows the corresponding code snippet.
+
+.dependency injection with @Inject and Qualifier
+[source,java]
+----
+public class MyBean {
+  @Inject @Special
+  private Service service;
+}
+----
+
+Incidentally, the annotation `@Named` is also a qualifier that can be used to restrict the selection based on the name of the bean. 
+However, we advise against doing so because it will lose the benefit of type safety.
+
+CDI ViewScope, JSF 2.2: If you miss the `View-Scope` in CDI, we have a bad and good news for you. 
+The bad news is that CDI does not have a `View-Scope` by default. 
+The good news is that JSF 2.2 fixes this and complements the CDI `View-Scope`. 
+Listing <<CDI Managed Bean in `View-Scope`, CDI Managed Bean in `View-Scope`>> shows a Managed Bean Managed by CDI in the New JSF 2.2 CDI `View-Scope`. 
+Do not confuse the annotation `javax.faces.view.ViewScoped` for the CDI view scope not with the annotation `javax.faces.bean.ViewScoped` for the JSF view scope.
+
+CDI Managed Bean in `View-Scope`
+[source,java]
+----
+@javax.inject.Named
+@javax.faces.view.ViewScoped
+public class CustomerBean {
+  @Inject
+  private CustomerService customerService;
+  ...
+}
+----
+
+Apache MyFaces CODI offers an alternative to the classic `View-Scope` with the `View-Access`Scope` - even without JSF 2.2. 
+Details can be found in section [Section: Apache MyFaces CODI] and in the example MyGourmet 17.
 
 ==== Producer Methods
 
+The second variant presented here for the definition of beans with CDI are the so-called producer methods. As the name implies, beans are defined with this concept using special methods. All non-abstract methods of a managed bean or session bean, both static and non-static, can act as producer methods. For a method to become a producer method, it must be annotated with @Produces . The return type of the method defines the type of the bean and the return value is used as a bean instance. Producer methods, like bean classes, can be provided with scope and qualifier annotations. Listing Producer method for a random number shows an example in which a random number of type integer provided with the qualifier @Random as a bean.
+ import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Produces;
+import javax.inject.Named;
+import at.irian.Random;
+
+@ApplicationScoped
+public class RandomProducer {
+  private java.util.Random random = new java.util.Random();
+  @Produces @Named @Random
+  public int getRandom() {
+    return random.nextInt(1000);
+  }
+}
+The decisive advantage of producer methods is that the creation of the bean instance is completely within the responsibility of the application. It also lets you define beans for classes that CDI can not use directly (such as classes from the JDK) or that require special initialization. 
+The random number generated by the Producer method in the example can be used in another bean by annotating an int field with @Inject and the @Random qualifier :
+public class MyBean {
+  @Inject @Random
+  private int random;
+}
+After the scope is not explicitly defined, the random number is used by the dependency scope. The scope of the Bean RandomProducer and the scope of the bean created have no direct relationship to each other. But if a producer method uses, for example, data from the bean, its scope can certainly play a role. 
+Since the producer method is additionally annotated with @Named , the random number is also available directly in unified EL expressions:
+<h:outputText value="#{random}"/>
+The name of the bean derives from the method name by convention if it is not specified in @Named . Getter methods that use the JavaBeans standard use the name of the property. In the example, therefore, the name getRandom () becomes random . 
+Producer methods can also contain parameters. Listing Producer method with parameter shows a producer method with a parameter of type UserBean . When the method is called, CDI resolves the current bean instance for that type and passes it to the method. There, the name of the currently logged-in user is read out of the transferred bean and as a separate bean with the type String and the qualifier @UserName in the dependency scope.
+ @ApplicationScoped
+public class UsernameProducer {
+  @Produces @Named @UserName
+  public String getUserName(UserBean userBean) {
+    return userBean.getUserName();
+  }
+}
+Listing Producer method for converters shows an interesting use for producer methods in JSF applications. The ConverterProducer class shown provides the converter with the CustomConverter class as a bean via the getCustomConverter () method .
+ @ApplicationScoped
+public class ConverterProducer {
+  @Produces @Named
+  public CustomConverter getCustomConverter() {
+    return new CustomConverter();
+  }
+}
+The use of the converter looks like the following example:
+<h:inputText value="#{bean.property}"
+    converter="#{customConverter}"/>
+In section Section: Definition with Java , we show you how to use JSF 2.2 to define Faces Flows using CDI Producer methods.
+
 === Configuration of CDI
+
+Like JSF, CDI is just a specification for which there are several implementations. Among the best known are Weld from JBoss (the reference implementation) and Apache OpenWebBeans . Basically, there are two variants to use CDI. If the application runs on an application server that supports Java EE 6 (such as Glassfish 3 or JBoss AS 7 ), CDI is already integrated and ready to use. However, if the application runs only on a servlet container such as Tomcat or Jetty , a CDI implementation must be manually integrated. 
+Having our MyGourmet examples on Jetty We decided to use OpenWebBeans for the second variant because the integration into a JSF application is very simple. After including all required jar files, only the listener WebBeansConfigurationListener has to be entered in the web.xml in Listing Listener for OpenWebBeans in web.xml . The list of all required dependencies can be found in the source code for example MyGourmet 16 in the pom.xml .
+ <listener>
+  <listener-class>
+    org.apache.webbeans.servlet.WebBeansConfigurationListener
+  </listener-class>
+</listener>
+For CDI Beans to be found in a web application, the file must exist in the WEB-INF directory . On the other hand, CDI finds beans in jar files only if the beans.xml file exists in the META-INF directory . The beans.xml file may contain configurations for CDI, but in the simplest case it remains empty, as Listing shows minimal beans.xml .
+ <beans xmlns="http://java.sun.com/xml/ns/javaee"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://java.sun.com/xml/ns/javaee
+        http://java.sun.com/xml/ns/javaee/beans_1_0.xsd">
+</beans>
+Tip: CDI works only if the beans.xml file exists in the WEB-INF or META-INF directory .
+9.3 MyGourmet 16: Integration of CDI
+In MyGourmet 16 is all about the integration of CDI. To do this, OpenWebBeans is integrated into the Maven project via dependencies in the pom.xml (please refer to the source code for details). The additionally necessary configuration in the web.xml corresponds exactly to the one presented in the last section. 
+The transition to MyGourmet is limited to replacing the JSF annotations with their JSR-330 and CDI counterparts in the ProviderServiceImpl , AddressBean , CustomerBean , ProviderBean, and ProviderListBean classes . The bean ProviderBean has been changed to JSF 2.2's CDI View Scope with the annotation javax.faces.view.ViewScoped . 
+Listing Bean Definition and Dependency Injection with CDI shows the configuration of the beans with the ProviderService and ProviderBean classes . The JSR 330 annotation @Inject on the providerService field of the ProviderBean class causes the Bean with the ProviderService type to be injected into the field when you create a bean of type ProviderBean .
+ @ApplicationScoped
+public class ProviderServiceImpl implements ProviderService {
+  ...
+}
+
+@Named @SessionScoped
+public class ProviderBean implements Serializable {
+  @Inject
+  private ProviderService providerService;
+    ...
+}
+What we have shown you here is the simplest form of bean definition with CDI and JSR-330. Once CDI is up and running with JSF, you have the full range of options - and trust us, that's a lot. An important field of application for the use of CDI with JSF are conversations. See section [Conversations with JSF] for general information on this topic and section [Apache MyFaces CODI section] shows how to use conversations with CDI and Apache MyFaces CODI .
 
 === MyGourmet 16: Integration of CDI
 
+
+
 === Conversations with JSF
+
+In many web applications, the underlying business processes can not be mapped directly to the page flow. Many processes that form a single entity from the user's point of view extend across multiple requests or even across multiple views in the application. For example, consider registering a user who asks for login information in the first step and personal data in the second step. For the user of the application, this process is a self-contained activity that begins with displaying the first view and is completed by pressing the Finish button in the second step. From the Web application's point of view, this is just a series of queries on two different pages.
+This raises the question of the scope in which the data must be stored during the process, so that they are available in each step. Managed beans in the request scope are recreated after each request and therefore are not suitable. The view scope is only sufficient if the process does not cover more than one view. Managed beans in the application scope are not suitable for our purposes, because they are generated only once per application and thus all users see the same data. Remains as a last alternative, only the session scope left. Although the session scope solves the availability problem during the process, it does have some significant disadvantages.
+At this point, conversations come into play. Conversations are the ideal location for managed beans whose lifetime goes beyond a request or view. For web applications, this case often occurs because business processes can not always be mapped directly to the application's page flow. Conversations offer some key advantages over the session:
+A conversation, in contrast to the session, can be easily quit and removed from memory without affecting other conversations or managed beans outside the conversation.
+There can be any number of conversations per user.
+A conversation is usually recreated for each window or tab of the browser. This allows the application to run concurrently in multiple windows or tabs that do not affect each other. This is not so easy with the session, since most browsers use the same session for all tabs and often even for windows. Browsers often use the same cookies for all tabs and windows, so the same session is used on the server .: .
+If you use CDI, JSF can be easily extended with conversations. In addition to conversations, the Apache MyFaces CODI project also offers numerous enhancements to the seamless integration of JSF and CDI. Details about CODI can be found in section [Section: Apache MyFaces CODI] .
 
 === Apache MyFaces CODI
 
+The project Apache MyFaces Extensions CDI (short CODI) is a portable extension of CDI, which is developed under the roof of Apache MyFaces . CODI offers a whole range of features to make the integration of JSF and CDI as easy as possible. 
+CODI consists of several modules that can be integrated into the application as needed. In addition to a core module for the basic functionality, there are also modules for JSF, JPA, messaging and bean validation. CODI is very flexible in terms of its environment. It runs CDI-side with Apache OpenWebBeans and JBoss Weld and JSF-side with Apache MyFaces and Mojarra .
+CDI can be described as extremely successful in itself, but the conversation concept is rather poor. As one of the most important features, CODI therefore offers extended support for conversations for CDI in the JSF module. In section [Section: Conversations with CODI] we therefore take a closer look at this topic. 
+Another interesting feature of CODI is the type-safe configuration of views and the possible definition of page beans. These are beans that are tied to a view and notified in multiple lifecycle execution, such as just before rendering the view. For details, see section [View Config and Page Beans] .
+Finally, the section [  MyGourmet 17 : Apache MyFaces CODI] shows the example of MyGourmet 17 , in which some CODI features are put into practice.
+
 ==== Conversations with CODI
+
+CODI offers a very flexible conversation concept and even allows the use of multiple conversations on one page. A conversation is always bound to the current browser window or to the browser tab. There are no problems with the application running in multiple windows or tabs. 
+A conversation, like the session or the HTTP request, can be used as a scope for managed beans. Unlike CDI, CODI begins the lifetime of a conversation with the first access to a bean in the conversation. The lifetime in CODI depends on the type of conversation and can vary for a different length of time. However, a conversation can never take longer than the session because it is stored in the session.
+CODI's JSF module offers a whole range of different conversations and also includes the appropriate annotations to use as scopes for CDI beans:
+The conversation scope ( @ConversationScoped ) defines a conversation with manual life.
+The view access scope ( @ViewAccessScoped ) defines an auto lifetime conversation. As long as access is made to a bean in the View Access scope, its lifetime always extends over the current view and the next view.
+The window scope ( @WindowScoped ) defines a kind of session per browser window / tab with manual lifetime.
 
 ===== Conversation Scope
 
+CODI's Conversation Scope defines a manual life conversation for CDI beans. Listing CDI bean in the CODI conversation scope shows the Bean class WizardBean with the necessary annotations. For example, this class could be used as a bean for a multi-level wizard with the pages step1.xhtml , step2.xhtml, and step3.xhtml .
+ @Named
+@ConversationScoped
+public class WizardBean implements Serializable {
+  ...
+}
+Tip: Do not confuse the CODI annotation @ConversationScoped with the CDI annotation of the same name. They differ only by the package.
+How does this bean behave in practice when, for example, a user calls the page step1.xhtml ? The bean and conversation are created the first time you access the bean. Since it is a manual conversation, it is also available for the pages step2.xhtml and step3.xhtml until it is terminated manually or by a timeout. 
+The manual termination of the conversation is done by calling the close () method on the instance of the current conversation. We have the current conversation injected directly from CDI into the bean. Listing Manually ending a conversation in CODI shows the class WizardBean again with the methods save () and cancel () . Both methods end the conversation.
+ @Named @ConversationScoped
+public class WizardBean implements Serializable {
+  @Inject
+  private Conversation conversation;
+  public String save() {
+    conversation.close();
+    return "details.xhtml";
+  }
+  public String cancel() {
+    conversation.close();
+    return "overview.xhtml";
+  }
+}
+By default, CODI creates its own conversation for each bean in the conversation scope. This also makes it possible to have multiple conversations on one page. Sometimes it is desirable to combine several beans into one conversation. In addition, there is the concept of so-called conversation groups in CODI. The @ConversationGroup annotation can be used to define any Java class as the type-safe ID of the conversation group. Listing conversation groups in CODI shows the Beans WizardStep1 and WizardStep2 , both of which reside in the same conversation identified by the Interface Wizard .
+ public interface Wizard {}
+
+@ConversationScoped
+@ConversationGroup(Wizard.class)
+public class WizardStep1 implements Serializable {
+  ...
+}
+
+@ConversationScoped
+@ConversationGroup(Wizard.class)
+public class WizardStep2 implements Serializable {
+  ...
+}
+Since both beans share a conversation, both beans are removed from memory when the conversation is closed. Technically, the @ConversationGroup annotation is a qualifier and therefore must be used when creating a dependency on a bean annotated with it. Listing @Inject with conversation groups shows an example.
+ public class Wizard {
+  @Inject @ConversationGroup(Wizard.class)
+  private WizardStep1 step1;
+  @Inject @ConversationGroup(Wizard.class)
+  private WizardStep2 step2;
+}
+If no explicit conversation group is specified, CODI internally uses the class of the bean as the ID of the conversation.
+
 ===== View Access Scope
 
+CODI's View Access Scope defines an auto lifetime conversation for CDI beans. In principle, the lifetime of a bean in the view access scope always extends to the view in which it is currently used and to the next view. Listing CDI Bean in the View Access Scope of CODI displays the Bean DetailsBean in the View Access Scope.
+ @Named
+@ViewAccessScoped
+public class DetailsBean implements Serializable {
+  ...
+}
+Let's take an example. If the first access to DetailsBean is in the showDetails.xhtml page , the conversation and the bean are created. The lifetime of the conversation now by definition extends to the showDetails.xhtml page and the next page. As long as the user stays on this page - for example, because Ajax requests are executed - the conversation is active. In the next step, the user navigates to the editDetails.xhtml page , the conversation remains active. The key point now is whether access to the bean occurs on this page. If so, CODI extends the runtime by one more view. If not, the conversation is removed from memory as soon as the user navigates to a page with a different view ID. 
+Automatic lifetime conversations are very convenient, but can produce unexpected results if a bean is referenced on multiple pages, perhaps unintentionally.
+
 ===== Window Scope
+
+The window scope of CODI defines a manual life conversation for CDI beans. The conversation is bound to a browser window or a browser tab and acts as a kind of session per window or tab. Listing CDI bean in the window scope of CODI shows a bean in the window scope.
+ @Named
+@WindowScoped
+public class SettingsBean implements Serializable {
+  ...
+}
 
 ===== Window Context
 
 ==== View Config and Page Beans
 
+Another interesting feature of CODI is the type-safe configuration of views with View Config classes. Thanks to implicit navigation, JSF version 2.0 or higher allows direct use of the View ID for navigation. While this is convenient, it can cause problems as the application grows when XHTML files are renamed or restructured.
+
 ===== View Config
+
+The basic idea of ​​a view config is to reference pages no longer by their view ids, but by special classes. A View Config class is once centrally defined and then used throughout the project as a proxy for a page. Internally, CODI maps the view config back to a view ID. 
+Listing View-Config with CODI shows a first view-config. The class only needs to implement the ViewConfig interface and annotate it with @Page .
+ @Page
+public class Overview implements ViewConfig {}
+The connection between the class and the view ID is by convention via the class name. For example, CODI derives the View ID /overview.xhtml from class Overview . Listing View-Config in action shows how the view config from Listing View-Config with CODI is used in an action method for navigation. Instead of the View ID, the View Config class is now simply returned. Of course, the return value of the method must be adjusted, which is not a problem with JSF as of version 2.0.
+
+ @ViewAccessScoped
+public class DetailsBean implements Serializable {
+  public Class<? extends ViewConfig> save() {
+    return Overview.class;
+  }
+}
+In the previous example, we assumed that all page declarations are in the root directory of the application. CODI also enables the mapping of directory structures in the form of class hierarchies with the type-safe configuration. Let's look at the configuration for the pages details.xhtml and overview.xhtml in the directory pages as an example in Listing View-Config with CODI .
+ public interface Pages extends ViewConfig {
+  @Page
+  public final class Overview implements Pages {}
+  @Page
+  public final class Details implements Pages {}
+}
+The Pages interface represents the directory pages and is derived from the ViewConfig interface . The concrete View Config classes Overview and Details are implemented as inner classes, which no longer directly implement ViewConfig but Pages . Out of the class, CODI internally makes the View ID /pages/details.xhtml - exactly what we wanted to achieve.
+As a pleasant side effect, the View Config classes are thus clearly summarized in an interface. Incidentally, such a grouping is also possible if the pages are not in a directory. For this purpose, the interface only has to be provided with the annotation @Page (basePath = "") , as shown in Listing View-Config with page beans . The class Details becomes the View-ID / Details.xhtml again .
 
 ===== Page beans
 
+With the View Config classes, CODI provides the ability to define page beans for views. It is a bean that is bound to a view and is notified at multiple points in the lifecycle execution. The connection between the view and the page bean is defined using the @PageBean annotation on the View Config class. Listing View Config with Page Beans shows an example.
+ @Page(basePath = "")
+public interface Pages extends ViewConfig {
+  @Page
+  @PageBean(OverviewBean.class)
+  public final class Overview implements Pages {}
+  @Page
+  @PageBean(DetailsBean.class)
+  public final class Details implements Pages {}
+}
+Once a view is connected to a page bean, the bean is notified by CODI at specific times during the life cycle. The following methods are called:
+After creating the view, the method annotated with @InitView is called.
+Before invoking the action method, the method annotated @PrePageAction is called.
+Before the render-response phase, the method annotated with @PreRenderView is called.
+After the render-response phase, the method annotated @PostRenderView is called.
+Listing Page Bean shows an example of a page bean with two annotated methods.
+ @ViewAccessScoped
+public class OverviewBean {
+  @InitView
+  public void init() {...}
+  @PreRenderView
+  public void loadData() {...}
+}
+
 ==== MyGourmet 17: Apache MyFaces CODI
+
+MyGourmet 17 integrates Apache MyFaces CODI and shows some use cases. The example uses the Core and JSF 2.0 modules from CODI. Both modules are integrated into the Maven project via dependencies in the pom.xml . For details, please refer directly to the source code. On the configuration of CDI we will not go into more detail here. 
+In MyGourmet 17 we have slightly rebuilt the customer area of ​​the application. The home page is now customerList.xhtml , listing all customers with mc: dataTableis pictured. From this view, the user can navigate to a customer's detail page, create a new customer, or delete an existing customer. 
+The bean CustomerListBean in the view access scope is defined as the page bean of the view. Listing MyGourmet 17: Page Bean on the Customer Overview page shows the class. The list of customers is loaded in the method preRenderView . Since it is annotated with @PreRenderView , it is called before each rendering of the CODI view. To delete a customer is a h: commandLink component method DeleteCustomer called. The customer to be deleted is passed directly as a parameter:
+<h:commandLink value="#{msgs.delete}"
+    action="#{customerListBean.deleteCustomer(customer)}">
+  <f:ajax render=":form:addressPanel:addresses"/>
+</h:commandLink>
+Deleting a customer is executed as an Ajax request. The view access scope of the bean means that the conversation of the bean remains open until it is no longer accessed.
+ @Named @ViewAccessScoped
+public class CustomerListBean implements Serializable {
+  @Inject
+  private CustomerService customerService;
+  private List<Customer> customerList;
+  @PreRenderView
+  public void preRenderView() {
+    customerList = customerService.findAll();
+  }
+  public List<Customer> getCustomerList() {
+    return customerList;
+  }
+  public void deleteCustomer(Customer customer) {
+    customerService.delete(customer);
+  }
+}
+As part of the changes to MyGourmet 17, we have summarized all operations for objects of type Customer in the CustomerService interface . The implementation CustomerServiceImpl of this interface is available as a CDI bean. Listing MyGourmet 17: Page Bean on the Customer Summary page shows how dependency on the service is defined with @Inject . 
+Listing MyGourmet 17: View Config shows parts of the view config for MyGourmet 17 in Interface View . For example , showCustomer.xhtml becomes the ShowCustomer class , Since all classes implement View , the path must be overridden there via the basePath in the @Page annotation . Without this customization, CODI would assume that the pages are in the / view directory and adjust the view IDs accordingly. Alternatively, we could of course move the XHTML files to the / view directory . You can also find the definition of the page beans in the view config in Listing MyGourmet 17: View Config .
+ @Page(basePath = "")
+public interface View extends ViewConfig {
+  @Page @PageBean(AddCustomerBean.class)
+  public class AddCustomer1 implements View {}
+  @Page @PageBean(AddCustomerBean.class)
+  public class AddCustomer2 implements View {}
+  @Page @PageBean(CustomerListBean.class)
+  public class CustomerList implements View {}
+  @Page @PageBean(CustomerBean.class)
+  public class ShowCustomer implements View {}
+}
+The showCustomer.xhtml detail page can be reached via an h: commandLink component in the overview page . Clicking on the link calls the showCustomer method of the CustomerBean bean with the customer's ID. The method loads the customer and returns the view config of the detail page for navigation. The class AddressBean has risen in the class CustomerBean . Listing MyGourmet 17: Page Bean of Customer Views shows the relevant parts of the CustomerBean class .
+ @Named @ViewAccessScoped
+public class CustomerBean extends CustomerBeanBase {
+  @Inject
+  private CustomerService customerService;
+  public Class<? extends ViewConfig> showCustomer(long id) {
+    this.customer = customerService.findById(id);
+    return View.ShowCustomer.class;
+  }
+}
+When the user navigates to the details page, an instance of the CustomerBean bean is created in the View Access scope, including the conversation. The conversation remains active until during a request no more hits on the bean CustomerBean done. 
+The wizard for creating a new customer is also accessible from the overview page. The process consists of the two views addCustomer1.xhtml for entering the customer's basic data and addCustomer2.xhtml for entering an address. The bean AddCustomerBean is the page bean for both views and is in the CODI conversation scope. listing MyGourmet 17: Page bean of the wizard for creating a customer shows the relevant parts of the AddCustomerBean class . The bean is injected with the service CustomerService , which is used to create a new customer instance in the createCustomer method . Since this method is annotated with @InitView , it is called by CODI after the restore view phase when the lifecycle for one of the two linked views is executed. This ensures that there is always an instance of the class Customer .
+ @Named @ConversationScoped
+public class AddCustomerBean extends CustomerBeanBase {
+  @Inject
+  private CustomerService customerService;
+  @Inject
+  private Conversation conversation;
+  @InitView
+  public void createCustomer() {
+    if (customer == null) {
+      customer = customerService.createNew();
+    }
+  }
+  public Class<? extends ViewConfig> save() {
+    customerService.save(customer);
+    conversation.close();
+    return View.CustomerList.class;
+  }
+  public Class<? extends ViewConfig> cancel() {
+    conversation.close();
+    return View.CustomerList.class;
+  }
+}
+Since the bean AddCustomerBean is in the conversation scope, we have to take care of ending the conversation ourselves. To do this, call the close () method on the conversation in the save () and cancel () action methods , which we inject with CDI. 
