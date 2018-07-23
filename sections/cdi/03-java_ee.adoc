@@ -120,9 +120,14 @@ In addition, we override the scope specified by `@Model` by explicitly using `@j
 
 TIP: `@Model` customizations greatly reduce the benefits of this stereotype, as the number of annotations does not decrease. 
 The examples shown are primarily intended to illustrate that such adjustments are possible in principle. 
-The explicit use of `@Named` can reduce the effort involved in refactoring, since the name of the bean remains unchanged, at least in the first step, and the name of the class can still change. In general, overriding the bean name and scope in your own stereotype annotation makes more sense, as a stereotype annotation defines the primary properties of each bean category or role and, ideally, adds meaningfulness. In exceptional cases, these requirements can be overridden for individual beans. Nevertheless, at least the advantage of the higher informative value remains.
+The explicit use of `@Named` can reduce the effort involved in refactoring, since the name of the bean remains unchanged, at least in the first step, and the name of the class can still change. 
+In general, overriding the bean name and scope in your own stereotype annotation makes more sense, as a stereotype annotation defines the primary properties of each bean category or role and, ideally, adds meaningfulness. 
+In exceptional cases, these requirements can be overridden for individual beans. 
+Nevertheless, at least the advantage of the higher informative value remains.
 
 .CDI bean with a custom name
+[source,java]
+----
 @Named("menuBean")
 @Model
 public class MenuController {
@@ -153,7 +158,10 @@ public class MenuController {
     return "/pages/user/registration.xhtml";
   }
 }
- @Named
+----
+[source,java]
+----
+@Named
 @SessionScoped
 public class ActiveUserHolder implements Serializable {
   private User authenticatedUser;
@@ -170,9 +178,20 @@ public class ActiveUserHolder implements Serializable {
     return authenticatedUser;
   }
 }
-
-The method isTransient has been added to BaseEntity and evaluates if the version number is already set. This becomes relevant later, especially in combination with JPA, because we only want to accept persistent user entities for the login. In the class MenuController we already refer to pages as navigation destinations , which are currently not available. Therefore, in the next step we will create the pages login.xhtml and registration.xhtml . Each side we use a separate controller, which is responsible for this page. For now, most of our controllers are request-scoped and must, as previously mentioned, be @Named be annotated so that they can be addressed in an EL expression. We could also use @Model here instead of these two annotations . However, a separate stereotype called @ViewController is much more meaningful. Apart from that, this stereotype annotation is a substantive copy of @Model . Listing CDI beans as view controller shows the controller implementations LoginViewCtrl for login.xhtml , as well as RegistrationViewCtrl for registration.xhtml .
- @ViewController
+----
+The method `isTransient` has been added to `BaseEntity` and evaluates if the version number is already set. 
+This becomes relevant later, especially in combination with JPA, because we only want to accept persistent user entities for the login. 
+In the class `MenuController` we already refer to pages as navigation destinations, which are currently not available. 
+Therefore, in the next step we will create the pages `login.xhtml` and `registration.xhtml`. 
+Each page we use a separate controller, which is responsible for this page. 
+For now, most of our controllers are request-scoped and must, as previously mentioned, be annotated with `@Named` so that they can be addressed in an EL expression. 
+We could also use `@Model` here instead of these two annotations. 
+However, a separate stereotype called `@ViewController` is much more meaningful. 
+Apart from that, this stereotype annotation is a substantive copy of `@Model`. 
+Listing <<.CDI beans as view controller, CDI beans as view controller>> shows the controller implementations `LoginViewCtrl` for `login.xhtml`, as well as `RegistrationViewCtrl` for `registration.xhtml`.
+[source,java]
+----
+@ViewController
 public class LoginViewCtrl {
   @Inject
   private UserService userService;
@@ -206,7 +225,10 @@ public class LoginViewCtrl {
 
   //+ getter and setter
 }
+----
 
+[source,java]
+----
 @ViewController
 public class RegistrationViewCtrl {
   @Inject
@@ -238,6 +260,7 @@ public class RegistrationViewCtrl {
     return newUser;
   }
 }
+----
 
 The logic implemented here is very simple. Currently we still use our in-memory repositories. As soon as we add EJBs this will change. In preparation for this change, we create the UserService class , which is responsible for registration and login, combining various UserManager methods , and using a newly added PasswordManager, calculates the password hash and compares it to the stored value. We are also expanding our previous implementations and tests. The entity User becomes a password field and UserRepository the method loadByEmail extended. Accordingly, the method must createUserFor of User Manager to be extended. The associated implementations and changes are clearly summarized in the Git repository in a commit and can be easily understood with the knowledge acquired so far.
 Tip: Although UserService uses an injected field, the implementation is implicitly stateless because only one Contextual Reference is injected as a proxy. The proxy instance itself is thread-safe and can be de / serialized if necessary or, if necessary, restored by manual injection at any time. If thread security is relevant, then it must be ensured in all injected beans. If we were to inject a session-scoped bean at this point, then only UserService including the Contextual-Reference would be thread-safe. A session-scoped bean would need to take action itself to make its methods thread-safe.
