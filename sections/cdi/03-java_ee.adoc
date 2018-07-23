@@ -1,32 +1,95 @@
 == CDI and Java EE
-CDI was first released with Java EE6 as a fixed part of the Java EE platform. Initially, CDI was primarily intended as a link between JSF and EJB. This is also due to the original name of the specification (web beans). But CDI quickly became a full-fledged component model, which is much more than just a link. Although not intended in the first revision of the specification, both Apache OpenWebBeans and JBoss Weld, using proprietary APIs, can be used in Java SE applications. Since CDI 1.1 this is supported by the specification itself. In the chapter Apache DeltaSpike we will take a closer look at the compatibility with Java SE. In this chapter we focus on the standard integration in Java EE6 and EE7.
+
+CDI was first released with Java EE6 as a fixed part of the Java EE platform. 
+Initially, CDI was primarily intended as a link between JSF and EJB. 
+This is also due to the original name of the specification (web beans). 
+But CDI quickly became a full-fledged component model, which is much more than just a link. 
+Although not intended in the first revision of the specification, both Apache OpenWebBeans and JBoss Weld, using proprietary APIs, can be used in Java SE applications. 
+Since CDI 1.1 this is supported by the specification itself. 
+In the chapter Apache DeltaSpike we will take a closer look at the compatibility with Java SE. 
+In this chapter we focus on the standard integration in Java EE6 and EE7.
+
 === The first steps towards Java EE
 
-In Java EE6, some basic integration points were defined directly in the CDI and platform specification. As a general rule, CDI-based injection via @Inject can be used in any managed instance of a class where resource injection was already possible with Java EE5 . This rule supports CDI injection into artifacts that are not explicitly listed in the Platform Specification. In addition, EE Server supports injection points for predefined EE artifacts. These include UserTransaction , javax.validation.ValidationFactory , javax.validation.Validator, and javax.security.Principal .
-Due to the close integration of CDI, EJB and JSF, in many cases the limits of the integration points are reached late. In subsequent revisions of Java EE these limits will be further postponed. Thanks to the proliferation of CDI, integration with CDI has also been extended in other EE specifications since EE7. But already EE6 itself offers many integration points. We will look at some of them in the following parts of this chapter. Before we create a web interface for IdeaFork and extend its functionality, let's take a look at the restructuring possibilities in CDI based applications. In IdeaFork For example, we can move all classes to another package. Every modern Java IDE supports such changes in a few steps. Due to the type safety of Java, the result is checked by the compiler at the latest. Many projects use the beans.xml configuration file as a simple marker, which eliminates the need for CDI changes. In IdeaFork However, we use some configuration options. Some IDEs provide superior CDI support, which automatically updates even these configuration entries. If this is not the case and one or more entries are no longer up-to-date after the restructuring, this is checked by the CDI container at the latest at the next application start and recognized as an error. The start process will be aborted in such a case with a corresponding error message. Technical errors that only occur after the application has been deployed are thereby reduced to an absolute minimum. Dynamic bean lookups, which are only recommended in exceptional cases or in conjunction with the EL (Expression Language), must be considered here.
+In Java EE6, some basic integration points were defined directly in the CDI and platform specification. 
+As a general rule, CDI-based injection via `@Inject` can be used in any managed instance of a class where resource injection was already possible with Java EE5. 
+This rule supports CDI injection into artifacts that are not explicitly listed in the Platform Specification. 
+In addition, EE Server supports injection points for predefined EE artifacts. 
+These include `UserTransaction`, `javax.validation.ValidationFactory`, `javax.validation.Validator`, and `javax.security.Principal`.
+
+Due to the close integration of CDI, EJB and JSF, in many cases the limits of the integration points are reached late. 
+In subsequent revisions of Java EE these limits will be further postponed. 
+Thanks to the proliferation of CDI, integration with CDI has also been extended in other EE specifications since EE7. 
+But already EE6 itself offers many integration points. 
+We will look at some of them in the following parts of this chapter. 
+Before we create a web interface for `IdeaFork` and extend its functionality, let's take a look at the restructuring possibilities in CDI based applications. 
+In `IdeaFork` For example, we can move all classes to another package. 
+Every modern Java IDE supports such changes in a few steps. 
+Due to the type safety of Java, the result is checked by the compiler at the latest. 
+Many projects use the `beans.xml` configuration file as a simple marker, which eliminates the need for CDI changes. 
+In `IdeaFork` However, we use some configuration options. 
+Some IDEs provide superior CDI support, which automatically updates even these configuration entries. 
+If this is not the case and one or more entries are no longer up-to-date after the restructuring, this is checked by the CDI container at the latest at the next application start and recognized as an error. 
+The start process will be aborted in such a case with a corresponding error message. 
+Technical errors that only occur after the application has been deployed are thereby reduced to an absolute minimum. 
+Dynamic bean lookups, which are only recommended in exceptional cases or in conjunction with the EL (Expression Language), must be considered here.
+
 === Web Applications with CDI
 
 Both JSF and JAX-RS are based on servlets. For servlet-based technologies, the same rules apply to the configuration of CDI. The file beans.xml we could deposit as before in the directory META-INF . In web applications, WEB-INF is additionally supported as a configuration directory. However, some EE servers do not support META-INF / beans.xml correctly in web applications. That's why we use the WEB-INF directory . After we created WEB-INF / beans.xml as an empty marker file, CDI is activated in the web module of our application and we can implement the first functionalities.
 Tip: Our primary runtime environment is Apache TomEE 1.7+. In addition, IdeaFork is also tested with other EE6 servers such as JBoss AS7 and Oracle Glassfish 3. However, basic compatibility exists with any server that supports Java EE6 in compliance with specifications.
 The central theme of stateful Web applications in the Java EE environment in the context of CDI is the handling of server-side scopes. The request and session scope are relevant for all servlet-based technologies. The correct treatment of both scopes is ensured by the CDI container. Thus, no additional integrations are required in the other specifications here. Application developers can provide CDI beans with the appropriate scope annotations, and the CDI container ensures the proper administration of the beans as usual. In order to reuse our previous implementation independently, we are creating a new Java EE6 specific web module. In this we define the Java EE6 API and our previous module as dependency.
 Tip: Since EE6, using Enterprise archives (EARs) has few advantages over simple Web archives (WARs), but in many application servers, the different interpretation of the Bean Deployment Archive (BDA) rules creates unnecessary disadvantages. In IdeaFork there is no need for EARs and therefore we can increase the portability by using a Web archive.
+
 === JSF with CDI
 
-In Java EE6, CDI integration with JSF is primarily defined by the CDI specification. Because JSF beans are components that need to support injection in the EE6 platform specification, CDI beans can easily be injected into JSF beans in an EE server.
- 
+In Java EE6, CDI integration with JSF is primarily defined by the CDI specification. 
+Because JSF beans are components that need to support injection in the EE6 platform specification, CDI beans can easily be injected into JSF beans in an EE server.
 
-Injection into other JSF artifacts, such as in phase listeners, is not yet supported in EE6. In addition to Java classes, so-called View Declaration Languages ​​(VDL) also play a central role in JSF. Both JSP and the more advanced alternative called facelets use expression language (EL) to access beans. By @Named (from JSR-330) can be addressed in an EL-expression with their name CDI beans. As usual in JSF, this is implemented internally with a dedicated EL resolver. CDI implementations automatically register this EL resolver, which enables integration without manual configuration steps. This resolver is responsible for finding the appropriate contextual reference or null return them. Dependent-scoped beans, however, once again occupy a special position. They exist in this context for the evaluation time of a complete EL expression, even if they are addressed several times in the expression. Only after the complete evaluation of EL expression are dependent-scoped beans destroyed again. In addition to dependent-scoped beans, beans with any CDI scopes can be addressed directly via EL expression, provided the corresponding scope is active at the time of the evaluation. In this context, the CDI Conversation Scope occupies a special position because it has a special rule defined in connection with JSF. Details about the conversation scope will be found in the chapter Apache DeltaSpike take a closer look, as we will also get to know alternative conversation concepts here. Thus, we already got to know the most important integration points between CDI and JSF theoretically and it is time to expand IdeaFork with a simple web interface. In our web application, in addition to a simple XHTML file for JSF, we also create the configuration file WEB-INF / web.xml and configure the Faces servlet for JSF. In our case, we additionally define the newly created XHTML file as a starting point.
- 
+Injection into other JSF artifacts, such as in `Phase-Listeners`, is not yet supported in EE6. 
+In addition to Java classes, so-called `View Declaration Languages ​​(VDL)` also play a central role in JSF. 
+Both JSP and the more advanced alternative called facelets use expression language (EL) to access beans. 
+By `@Named` (from JSR-330) can be addressed in an EL-expression with their name CDI beans. 
+As usual in JSF, this is implemented internally with a dedicated EL resolver. 
+CDI implementations automatically register this EL resolver, which enables integration without manual configuration steps. 
+This resolver is responsible for finding the appropriate contextual reference or null return them. 
+Dependent-scoped beans, however, once again occupy a special position. 
+They exist in this context for the evaluation time of a complete EL expression, even if they are addressed several times in the expression. 
+Only after the complete evaluation of EL expression are dependent-scoped beans destroyed again. 
+In addition to dependent-scoped beans, beans with any CDI scopes can be addressed directly via EL expression, provided the corresponding scope is active at the time of the evaluation. 
+In this context, the CDI Conversation Scope occupies a special position because it has a special rule defined in connection with JSF. 
+Details about the conversation scope will be found in the chapter [Apache DeltaSpike] take a closer look, as we will also get to know alternative conversation concepts here. 
+Thus, we already got to know the most important integration points between CDI and JSF theoretically and it is time to expand `IdeaFork` with a simple web interface. 
+In our web application, in addition to a simple `XHTML` file for JSF, we also create the configuration file `WEB-INF/web.xml` and configure the `FacesServlet` for JSF. 
+In our case, we additionally define the newly created `XHTML` file as a starting point.
 
-The next step is to use Twitter Bootstrap (http://getbootstrap.com) to make our page template more visually appealing. For this purpose, HTML tags are used primarily. Only in places where it is essential, we use JSF standard components. Thus, in IdeaFork we remain independent of an additional component library for JSF. Of course, you can use any JSF component library because integration with CDI attaches to an independent extension point. This first step is independent of CDI and therefore we will skip the details. IdeaFork's Git repository summarizes the changes required and is easy to understand.
- 
+The next step is to use Twitter Bootstrap (http://getbootstrap.com) to make our page template more visually appealing. 
+For this purpose, HTML tags are used primarily. 
+Only in places where it is essential, we use JSF standard components. 
+Thus, in `IdeaFork` we remain independent of an additional component library for JSF. 
+Of course, you can use any JSF component library because integration with CDI attaches to an independent extension point. 
+This first step is independent of CDI and therefore we will skip the details. 
+IdeaFork's Git repository summarizes the changes required and is easy to understand.
 
-Regardless of the layout, one of the first steps should be to add a "Messages" component so that messages such as error messages can be displayed. In IdeaFork we want to improve the news area visually and display global messages in a message panel. For this we embed the standard component h: messages in a panel, which is formatted with the help of Twitter bootstrap. In order not to display an empty panel, if there are no messages, we can hide this area by default. Accessing a CDI Bean in Listing Via EL Expression clearly shows that we are here the renderedAttribute. Within the panel group, therefore, in addition to some formatting tags, the h: messages component can also be found. However, the crucial part for us is the content of rendered . The EL expression # {messageController.globalMessageAvailable} does not yet reveal that messageController references a CDI bean. Only by listing CDI bean with name this becomes clear.
- <h:panelGroup layout="block" class="panel"
+Regardless of the layout, one of the first steps should be to add a "Messages" component so that messages such as error messages can be displayed. 
+In `IdeaFork` we want to improve the messsages area visually and display global messages in a message panel. 
+For this we embed the standard component `h:messages` in a panel, which is formatted with the help of Twitter bootstrap. 
+In order not to display an empty panel, if there are no messages, we can hide this area by default. 
+In Listing <<.Accessing a CDI Bean Via EL Expression, Accessing a CDI Bean Via EL Expression>> clearly shows that we uset the rendered attribute. 
+Within the panel group, therefore, in addition to some formatting tags, the `h:messages` component can also be found. 
+However, the crucial part for us is the content of rendered. 
+The EL expression #{messageController.globalMessageAvailable} does not yet reveal that `messageController` references a CDI bean. 
+Only by Listing <<CDI bean with name, CDI bean with name>> this becomes clear.
+
+.Accessing a CDI Bean Via EL Expression
+<h:panelGroup layout="block" class="panel"
   rendered="#{messageController.globalMessageAvailable}">
     <!-- message panel content -->
 </h:panelGroup>
- @javax.enterprise.inject.Model
+
+.CDI bean with name
+
+@javax.enterprise.inject.Model
 public class MessageController {
   public boolean isGlobalMessageAvailable() {
     return !FacesContext.getCurrentInstance()
