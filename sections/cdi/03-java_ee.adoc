@@ -82,13 +82,17 @@ The EL expression #{messageController.globalMessageAvailable} does not yet revea
 Only by Listing <<CDI bean with name, CDI bean with name>> this becomes clear.
 
 .Accessing a CDI Bean Via EL Expression
+[source,xml]
+----
 <h:panelGroup layout="block" class="panel"
   rendered="#{messageController.globalMessageAvailable}">
     <!-- message panel content -->
 </h:panelGroup>
+----
 
 .CDI bean with name
-
+[source,java]
+----
 @javax.enterprise.inject.Model
 public class MessageController {
   public boolean isGlobalMessageAvailable() {
@@ -96,16 +100,30 @@ public class MessageController {
       .getMessageList(null).isEmpty();
   }
 }
+----
 
-Through the stereotypical annotation @Model we define in Listing CDI bean with name a @ javax.inject.Named and @ javax.enterprise.context.RequestScoped CDI bean. The naming convention is the same as classic JSF managed beans. The EL expression # {messageController.globalMessageAvailable} thus references a CDI bean that provides the isGlobalMessageAvailable method . Using this method, we can evaluate whether there are global Faces messages or not and consequently show or hide the corresponding message panel.
- 
+Through the stereotypical annotation `@Model` we define in Listing <<.CDI bean with name, CDI bean with name>> a `@javax.inject.Named` and `@javax.enterprise.context.RequestScoped` CDI bean. 
+The naming convention is the same as classic JSF managed beans. 
+The EL expression #{messageController.globalMessageAvailable} thus references a CDI bean that provides the `isGlobalMessageAvailable` method. 
+Using this method, we can evaluate whether there are global Faces messages or not and consequently show or hide the corresponding message panel.
 
-Next we want to fill our menu with life. For this we replace the HTML links, which served as placeholders, with h: commandLink components. This menu links use a CDI bean named menuBean , which is equivalent to message controller with @Model is annotated. In our case, the Java class is called MenuController . In order to be able to use the name menuBean and thus adapt the default naming convention, we must change the name given by @Model with the explicit use of @Named ('' menuBean '') .
- 
+Next we want to fill our menu. 
+For this we replace the HTML links, which served as placeholders, with `h:commandLink` components. 
+This menu links use a CDI bean named `menuBean`, which is equivalent to `MessageController` with `@Model` is annotated. 
+In our case, the Java class is called `MenuController`. 
+In order to be able to use the name `menuBean` and thus adapt the default naming convention, we must change the name given by `@Model` with the explicit use of `@Named` ('menuBean').
 
-Listing CDI bean with a custom name shows that in some places we need to check or reset the logged in user for the menu to behave as expected. We store the logged-in user in the session-scoped ActiveUserHolder -Bean, which we inject and use in the MenuController -Bean. The class ActiveUserHolder itself is annotated with @Model . In addition, we override the scope specified by @Model by explicitly using @ javax.enterprise.context.SessionScoped .
-Tip: @Model customizations greatly reduce the benefits of this stereotype, as the number of annotations does not decrease. The examples shown are primarily intended to illustrate that such adjustments are possible in principle. The explicit use of @Named can reduce the effort involved in refactoring, since the name of the bean remains unchanged, at least in the first step, and the name of the class can still change. In general, overriding the bean name and scope in your own stereotype annotation makes more sense, as a stereotype annotation defines the primary properties of each bean category or role and, ideally, adds meaningfulness. In exceptional cases, these requirements can be overridden for individual beans. Nevertheless, at least the advantage of the higher informative value remains.
- @Named("menuBean")
+Listing <<.CDI bean with a custom name, CDI bean with a custom name>> shows that in some places we need to check or reset the logged in user for the menu to behave as expected. 
+We store the logged-in user in the session-scoped `ActiveUserHolder`-Bean, which we inject and use in the `MenuController`-Bean. 
+The class `ActiveUserHolder` itself is annotated with `@Model`. 
+In addition, we override the scope specified by `@Model` by explicitly using `@javax.enterprise.context.SessionScoped`.
+
+TIP: `@Model` customizations greatly reduce the benefits of this stereotype, as the number of annotations does not decrease. 
+The examples shown are primarily intended to illustrate that such adjustments are possible in principle. 
+The explicit use of `@Named` can reduce the effort involved in refactoring, since the name of the bean remains unchanged, at least in the first step, and the name of the class can still change. In general, overriding the bean name and scope in your own stereotype annotation makes more sense, as a stereotype annotation defines the primary properties of each bean category or role and, ideally, adds meaningfulness. In exceptional cases, these requirements can be overridden for individual beans. Nevertheless, at least the advantage of the higher informative value remains.
+
+.CDI bean with a custom name
+@Named("menuBean")
 @Model
 public class MenuController {
   @Inject

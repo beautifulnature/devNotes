@@ -307,7 +307,7 @@ For further details on (grouped) conversations, we will discuss this topic in th
 
 *`@Dependent`* +
 `@Dependent` is currently the only pseudo-scope in the CDI specification and also the default scope for CDI beans. 
-In IdeaFork, for example, no scope is explicitly specified for `IdeaValidator`. 
+In `IdeaFork`, for example, no scope is explicitly specified for `IdeaValidator`. 
 Internally, the CDI container treats such beans as if they were explicitly annotated with `@Dependent`. 
 In our application, `IdeaValidator` is injected into IdeaManager. 
 The instance injected in `IdeaManager` therefore exists as long as the Contextual instance of `IdeaManager`. 
@@ -347,7 +347,7 @@ If the context is not active, a `ContextNotActiveException` is thrown when a `Co
 So far, we had simple constellations where we had exactly one bean for a task. 
 In such cases, the direct type-safe injection is not a problem, as the `Injection Point` indicates the desired type. 
 In real applications, we usually meet more extensive requirements. 
-As a concrete example, we have an `ObjectConverter` interface in IdeaFork. 
+As a concrete example, we have an `ObjectConverter` interface in `IdeaFork`. 
 Implementations of the interface can convert objects to an external text format and vice versa. 
 For example, to support various export formats, different implementations of the interface are required. 
 In the application, however, should only be implemented against the interface. 
@@ -790,7 +790,7 @@ CDI extensions such as CODI and DeltaSpike provide type-safe configurations usin
 The default values ​​of the configuration are often hard-coded. 
 Alternative implementations, which we will look at in more detail in the chapter [Replace Beans], make it easy to adjust the default values.
 
-In IdeaFork, we want to connect a simple configuration file for the time being and provide its values ​​in the application in a type-safe manner. 
+In `IdeaFork`, we want to connect a simple configuration file for the time being and provide its values ​​in the application in a type-safe manner. 
 We store the configured values ​​in a property file as key / value pairs. 
 We can read them with the help of `java.util.ResourceBundle`. 
 In our configuration class called `ApplicationConfig`, we only pass a `ResourceBundle` instance in the constructor and load information such as the application name. 
@@ -1035,8 +1035,19 @@ For our simple in-memory implementation, we can recreate this effect using a sim
 This avoids unexpected effects that can occur when using the reference to the entity after the repository call for further changes. 
 As key, we use a generated ID, which we add for the time being in the Idea class.
 
-With this new functionality in IdeaFork , we can add a meaningful CDI event. For example, we can generate an event once an idea instance has been saved. To do that, inject javax.enterprise.event.Event into our newly created IdeaRepository class and type the event to our own event type. Any class can be used as event type. For simple use cases, the class of the entity itself can be used. Firing Listing CDI Events illustrates such a simple use. Later we will introduce our own event class, as this is more meaningful in real applications and additional information can be provided. In the second part of Listing CDI Events firing , the injected Event instance is used to fire an event.
- public class IdeaRepository {
+With this new functionality in `IdeaFork`, we can add a meaningful CDI event. 
+For example, we can generate an event once an idea instance has been saved. 
+To do that, inject `javax.enterprise.event.Event` into our newly created IdeaRepository class and type the event to our own event type. 
+Any class can be used as event type. 
+For simple use cases, the class of the entity itself can be used. 
+Firing Listing <<.CDI Events, CDI Events>> illustrates such a simple use. 
+Later we will introduce our own event class, as this is more meaningful in real applications and additional information can be provided. 
+In the second part of Listing <<.CDI Events firing, CDI Events firing>>, the injected Event instance is used to fire an event.
+
+.CDI Events
+[source,java]
+----
+public class IdeaRepository {
   @Inject
   private Event<Idea> ideaSavedEvent;
 
@@ -1049,11 +1060,27 @@ With this new functionality in IdeaFork , we can add a meaningful CDI event. For
   }
   //...
 }
-CDI qualifiers are also possible in combination with CDI events. They can be specified at the injection point of the event. Alternatively, it is possible to specify qualifiers dynamically using literals. This is also possible here with the corresponding select methods. The usage is equivalent to the concepts we learned in javax.enterprise.inject.Instance in the previous chapter.
- 
+----
 
-In CDI-based frameworks, there are events that are unresponsive in the framework itself. Such events will be monitored later in IdeaFork . Application-specific events are only meaningful by definition if they are processed in the application. To do this we need to add a method with at least one parameter in any CDI bean. The parameter type and explicit / implicit qualifiers must match those of the event source. In our case, the Idea class is the parameter type. Monitoring Listing CDI Events shows that we do not need to specify an explicit qualifier because we use the implicit default when firing the event Have used. For the CDI container to register the method as an Observer method, this parameter must be annotated with @Observes .
- @ApplicationScoped
+CDI qualifiers are also possible in combination with CDI events. 
+They can be specified at the injection point of the event. 
+Alternatively, it is possible to specify qualifiers dynamically using literals. 
+This is also possible here with the corresponding select methods. 
+The usage is equivalent to the concepts we learned in `javax.enterprise.inject.Instance` in the previous chapter.
+
+In CDI-based frameworks, there are events that are unresponsive in the framework itself. 
+Such events will be monitored later in `IdeaFork`. 
+Application-specific events are only meaningful by definition if they are processed in the application. 
+To do this we need to add a method with at least one parameter in any CDI bean. 
+The parameter type and explicit / implicit qualifiers must match those of the event source. 
+In our case, the Idea class is the parameter type. 
+Listing <<.CDI Events Monitoring, CDI Events Monitoring>> shows that we do not need to specify an explicit qualifier because we use the implicit default when firing the event. 
+For the CDI container to register the method as an Observer method, this parameter must be annotated with `@Observes`.
+
+.CDI Events Monitoring
+[source,java]
+----
+@ApplicationScoped
 public class IdeaSavedObserver {
   private static final Logger LOGGER =
     Logger.getLogger(IdeaSavedObserver.class.getName());
@@ -1071,15 +1098,37 @@ public class IdeaSavedObserver {
     }
   }
 }
-Observers are stateless in many cases and perform the necessary evaluations before executing the actual logic. Nevertheless, it is useful and above all possible to store unchangeable information during the initialization so that the execution time of the Observer method can be minimized. In our simple example, this information could be stored statically. Normally, it's not all about static information, which makes it useful to initialize with @PostConstruct . In application-scoped beans, like IdeaSavedObserver Therefore, such evaluations are performed only once and not every time the Observer method (s) is called. Because the Observer method is called on the effective Contextual instance as if it were a manual method call to the CDI bean.
- 
+----
+Observers are stateless in many cases and perform the necessary evaluations before executing the actual logic. 
+Nevertheless, it is useful and above all possible to store unchangeable information during the initialization so that the execution time of the Observer method can be minimized. 
+In our simple example, this information could be stored statically. 
+Normally, it's not all about static information, which makes it useful to initialize with `@PostConstruct`. 
+In application-scoped beans, like `IdeaSavedObserver` therefore, such evaluations are performed only once and not every time the Observer method (s) is called. 
+Because the Observer method is called on the effective Contextual instance as if it were a manual method call to the CDI bean.
 
-Events are primarily useful if we potentially want to initiate several independent actions in the system. Stateless observers are often defined dependent-scoped. For each event, a Contextual instance of the Observer class is created by definition and the Observer method is called. Depending on the effective logic of the Observer method, such methods are somewhat harder to test because the dependent-scoped bean is destroyed again after the Observer method is called. With regard to the delivery of events, you must rely on the CDI container in such cases. If an event is fired effectively, it can be checked if necessary with its own test observer. Such test observers are stored in the test directory and may not be dependent-scoped. The parameters of the Observer test methods should match those of the true observer method to allow meaningful statement. In any case, the implementation is trivial because you only have to remember if the Observer method was called after a certain point. listing Test delivery of CDI events shows a simple test case and Listing Test-Observer the associated test observer. Before saving the newly created Idea instance, the injected TestIdeaSavedObserver is checked. Until this time, our event may not have occurred yet. After saving, the state of TestIdeaSavedObserver is rechecked because the event has already been generated and delivered by the CDI container.
- 
+Events are primarily useful if we potentially want to initiate several independent actions in the system. 
+Stateless observers are often defined dependent-scoped. 
+For each event, a Contextual instance of the Observer class is created by definition and the Observer method is called. 
+Depending on the effective logic of the Observer method, such methods are somewhat harder to test because the dependent-scoped bean is destroyed again after the Observer method is called. 
+With regard to the delivery of events, you must rely on the CDI container in such cases. 
+If an event is fired effectively, it can be checked if necessary with its own test observer. 
+Such test observers are stored in the test directory and may not be dependent-scoped. 
+The parameters of the Observer test methods should match those of the true observer method to allow meaningful statement. 
+In any case, the implementation is trivial because you only have to remember if the Observer method was called after a certain point. 
+Listing Test delivery of CDI events shows a simple test case and Listing Test-Observer the associated test observer. 
+Before saving the newly created Idea instance, the injected TestIdeaSavedObserver is checked. 
+Until this time, our event may not have occurred yet. 
+After saving, the state of TestIdeaSavedObserver is rechecked because the event has already been generated and delivered by the CDI container.
 
-To avoid having the event triggered by another test and recorded by the TestIdeaSavedObserver , we define TestIdeaSavedObserver as a request-scoped bean.
-Tip: As mentioned in the Introduction to CDI chapter , the CDI request scope is independent of a physical HTTP request if the scope for the current thread is manually started and stopped. In unit tests without CDI support, we would have to do this manually. In our case, this is done by CdiTestRunner for each test method.
- @RunWith(CdiTestRunner.class)
+To avoid having the event triggered by another test and recorded by the `TestIdeaSavedObserver`, we define `TestIdeaSavedObserver` as a request-scoped bean.
+
+TIP: As mentioned in the Introduction to CDI chapter, the CDI request scope is independent of a physical HTTP request if the scope for the current thread is manually started and stopped. 
+In unit tests without CDI support, we would have to do this manually. 
+In our case, this is done by CdiTestRunner for each test method.
+
+[source,java]
+----
+@RunWith(CdiTestRunner.class)
 public class EventTest {
   @Inject
   private IdeaManager ideaManager;
@@ -1099,7 +1148,10 @@ public class EventTest {
     Assert.assertTrue(ideaSavedObserver.isEventObserved());
   }
 }
- @RequestScoped
+----
+[source,java]
+----
+@RequestScoped
 public class TestIdeaSavedObserver {
   private boolean isEventObserved;
 
@@ -1111,11 +1163,28 @@ public class TestIdeaSavedObserver {
     return isEventObserved;
   }
 }
-Execution Order
-Together with the Test-Observer we now have several Observer methods for our Idea event. The execution order of these methods can neither be influenced nor defined by a rule. If one of the observer methods throws an exception, the following observer methods will no longer be executed. A multi-level execution of an event and a defined order can only be achieved manually with the help of different qualifiers. In most cases, this is not required and would mainly lead to a more complex implementation and the result comes close to manual method calls.
-Conditional monitoring of events
-If there are no Contextual instances of a managed bean with Observer method, it will be generated as soon as the event is fired. Thus, pure observer beans are possible. For some use cases, however, an observer method is only called if there is already a contextual instance of the managed bean. An example of this are UI controllers that monitor a specific UI event. If the same event is used for different interfaces, it usually does not make sense to create all UI controllers of the entire application that have an Observer method for this event and call the corresponding Observer method. In IdeaFork , we are still removed from such more specific use cases, thus illustrating listing Conditional test observer the basic concept with a simple example. The newly added class TestIdeaSavedConditionalObserver is almost identical to the TestIdeaSavedObserver implementation . The only difference is the specification of Reception.IF_EXISTS . Because TestIdeaSavedConditionalObserver is not used in Listing delivery of conditional CDI events before saving the idea , the conditional observer method does not run.
- @RequestScoped
+----
+*Execution Order* +
+Together with the `Test-Observer` we now have several Observer methods for our Idea event. 
+The execution order of these methods can neither be influenced nor defined by a rule. 
+If one of the observer methods throws an exception, the following observer methods will no longer be executed. 
+A multi-level execution of an event and a defined order can only be achieved manually with the help of different qualifiers. 
+In most cases, this is not required and would mainly lead to a more complex implementation and the result comes close to manual method calls.
+
+*Conditional monitoring of events* +
+If there are no Contextual instances of a managed bean with Observer method, it will be generated as soon as the event is fired. 
+Thus, pure observer beans are possible. 
+For some use cases, however, an observer method is only called if there is already a contextual instance of the managed bean. 
+An example of this are UI controllers that monitor a specific UI event. 
+If the same event is used for different interfaces, it usually does not make sense to create all UI controllers of the entire application that have an Observer method for this event and call the corresponding Observer method. 
+In `IdeaFork`, we are still removed from such more specific use cases, thus illustrating listing Conditional test observer the basic concept with a simple example. 
+The newly added class TestIdeaSavedConditionalObserver is almost identical to the TestIdeaSavedObserver implementation. 
+The only difference is the specification of Reception.IF_EXISTS. 
+Because TestIdeaSavedConditionalObserver is not used in Listing delivery of conditional CDI events before saving the idea, the conditional observer method does not run.
+
+[source,java]
+----
+@RequestScoped
 public class TestIdeaSavedObserver {
   private boolean isEventObserved;
 
@@ -1129,7 +1198,10 @@ public class TestIdeaSavedObserver {
     return isEventObserved;
   }
 }
- @RunWith(CdiTestRunner.class)
+----
+[source,java]
+----
+@RunWith(CdiTestRunner.class)
 public class EventTest {
   @Inject
   private IdeaManager ideaManager;
@@ -1158,19 +1230,51 @@ public class EventTest {
     Assert.assertTrue(conditionalObserver.isEventObserved());
   }
 }
-
+----
 === Replace beans
 
-In some cases it may make sense to adapt existing implementations. If you use an external CDI-based framework, or if several of your applications share CDI-based modules, then situations can arise in which to extend or replace an existing implementation. In addition, unit testing may require additional requirements for individual beans. For these and some other applications, CDI provides two approaches, @Alternative and @Specializes .
-Nothing is perfect
-CDI is a mostly good and thoughtful specification. Unfortunately, as with any specification or technology, there are pitfalls. In the case of CDI, the most obvious problems are with the BDAs (= Bean Deployment Archives), which we will discuss later. The effects are especially visible in alternative implementations, which we will explore in this chapter. Already in the definition of the two annotations there are contrary views. For example, javax.enterprise.inject.Instance works in conjunction with @Alternative with OpenWebBeans differently than with Weld. In Weld, the iterator returns the original and the alternative bean as a result. Consequently, isAmbiguous returns "true" back. However, the get method does not perform an AmbiguousResolutionException as expected because only the alternative bean is returned. OpenWebBeans implements this consistently and in both cases only uses the alternate bean, so isAmbiguous returns "false" as expected back. In combination with faulty integration of CDI in some application servers, both annotations are very limited use. Rather than going into all the rules of the specification and the existing implementation errors or inconsistencies in each version of the CDI implementations, we limit ourselves to the most important use cases, which in most cases are portable and work.
-Tip: If you want to save your nerves, then the following recommendations can make life easier with CDI 1.0. Limit the use of @Alternative and @Specializes to the bare minimum. If you prefer @Specializes, and only if this annotation does not work or is not possible for your use case, try @Alternative . Test the alternative implementations above average. If neither @Alternative nor @Specializes work then you can in many cases resort to Apache DeltaSpike functionality called "global alternatives".
-Replace implementations with @Specializes
-We start with @Specializes because it's the easiest way to exchange a default implementation. The specialized implementation derives, as expected, from the original bean class and is annotated with @Specializes . If the original class implements an interface, then it is not enough to just implement the same interface, it always has to be derived from the original class.
- 
+In some cases it may make sense to adapt existing implementations. 
+If you use an external CDI-based framework, or if several of your applications share CDI-based modules, then situations can arise in which to extend or replace an existing implementation. 
+In addition, unit testing may require additional requirements for individual beans. 
+For these and some other applications, CDI provides two approaches, `@Alternative` and `@Specializes`.
 
-In IdeaFork , we 've created TestIdeaSavedObserver to test whether the Idea event is fired at the right time and we did not want to customize the original implementation in this respect. The adaptation for the unit test was very easy in our simple example. In more complex cases, however, it may not be that easy. Here you can use @Specializes to help. Instead of using an additional bean, we can derive TestIdeaSavedObserver from IdeaSavedObserver and adjust it accordingly. Since we are TestIdeaSavedObserver in the test directory, this implementation only becomes active in our unit tests. In the effective application, the test code of TestIdeaSavedObserver can never become active because the final application will not contain this test class and therefore autom. IdeaSavedObserver is used. Listing Specialized implementations shows that in our simple case, we override the Observer method. The new implementation delegates in the first step to the original implementation of the superclass and then inserts the required test code.
- @Specializes
+*Nothing is perfect* +
+CDI is a mostly good and thoughtful specification. 
+Unfortunately, as with any specification or technology, there are pitfalls. 
+In the case of CDI, the most obvious problems are with the BDAs (= Bean Deployment Archives), which we will discuss later. 
+The effects are especially visible in alternative implementations, which we will explore in this chapter. 
+Already in the definition of the two annotations there are contrary views. 
+For example, `javax.enterprise.inject.Instance` works in conjunction with `@Alternative` with OpenWebBeans differently than with Weld. 
+In Weld, the iterator returns the original and the alternative bean as a result. 
+Consequently, `isAmbiguous` returns back "true". 
+However, the get method does not perform an `AmbiguousResolutionException` as expected because only the alternative bean is returned. 
+OpenWebBeans implements this consistently and in both cases only uses the alternate bean, so `isAmbiguous` returns back "false" as expected. 
+In combination with faulty integration of CDI in some application servers, both annotations are very limited use. 
+Rather than going into all the rules of the specification and the existing implementation errors or inconsistencies in each version of the CDI implementations, we limit ourselves to the most important use cases, which in most cases are portable and work.
+TIP: If you want to save your nerves, then the following recommendations can make life easier with CDI 1.0. 
+Limit the use of `@Alternative` and `@Specializes` to the bare minimum. 
+If you prefer `@Specializes`, and only if this annotation does not work or is not possible for your use case, try `@Alternative`. 
+Test the alternative implementations above average. 
+If neither `@Alternative` nor `@Specializes` work then you can in many cases resort to Apache DeltaSpike functionality called "global alternatives".
+
+*Replace implementations with `@Specializes`* +
+We start with `@Specializes` because it's the easiest way to exchange a default implementation. 
+The specialized implementation derives, as expected, from the original bean class and is annotated with `@Specializes`. 
+If the original class implements an interface, then it is not enough to just implement the same interface, it always has to be derived from the original class.
+
+In `IdeaFork`, we've created `TestIdeaSavedObserver` to test whether the `Idea` event is fired at the right time and we did not want to customize the original implementation in this respect. 
+The adaptation for the unit test was very easy in our simple example. 
+In more complex cases, however, it may not be that easy. 
+Here you can use `@Specializes` to help. 
+Instead of using an additional bean, we can derive `TestIdeaSavedObserver` from `IdeaSavedObserver` and adjust it accordingly. 
+Since we are `TestIdeaSavedObserver` in the test directory, this implementation only becomes active in our unit tests. 
+In the effective application, the test code of `TestIdeaSavedObserver` can never become active because the final application will not contain this test class and therefore automatically `IdeaSavedObserver` is used. 
+Listing Specialized implementations shows that in our simple case, we override the Observer method. 
+The new implementation delegates in the first step to the original implementation of the superclass and then inserts the required test code.
+
+[source,java]
+----
+@Specializes
 @RequestScoped
 public class TestIdeaSavedObserver extends IdeaSavedObserver {
   private boolean isEventObserved;
@@ -1185,19 +1289,45 @@ public class TestIdeaSavedObserver extends IdeaSavedObserver {
     return isEventObserved;
   }
 }
-In our case, IdeaSavedObserver is defined as an application-scoped bean. Specialization has not only expanded the implementation, but also changed the scope of the bean. For a specialized implementation, specifying a scope is required only if the scope of the bean, as in TestIdeaSavedObserver , is to be changed. If no scope is specified for the specialized class, the scope annotation will be inherited if it is annotated @ java.lang.annotation.Inherited . Since this is a recommendation of the CDI specification, all scope annotations of the specification are annotated with @Inherited and will be autom. inherited.
- 
+----
+In our case, `IdeaSavedObserver` is defined as an application-scoped bean. 
+Specialization has not only expanded the implementation, but also changed the scope of the bean. 
+For a specialized implementation, specifying a scope is required only if the scope of the bean, as in `TestIdeaSavedObserver`, is to be changed. 
+If no scope is specified for the specialized class, the scope annotation will be inherited if it is annotated `@java.lang.annotation.Inherited`. 
+Since this is a recommendation of the CDI specification, all scope annotations of the specification are annotated with `@Inherited` and will be automatically inherited.
 
-In many cases it is not necessary to change the scope. If we recall, we annotated TestIdeaSavedObserver with @RequestScoped because we want to use a new instance for each test method. Before you change the scope of the original implementation, make sure that you understand the implications and do not violate important aspects or assumptions of the original implementation, causing unexpected effects.
-Alternative implementations with @Alternative
-Compared to the previously introduced specialized implementations with @Specializes , alternative implementations with @Alternative are a bit more complex. The annotation itself is only the first step. As with @Specializes , you can derive from the original implementation and annotate it with @Alternative . In many cases, however, you only have one interface that you can / want to implement for the alternative bean. This is the main application of @Alternative , because with @Specializes the sole implementation of an interface is not possible. Another difference is that implementations which with @Alternative annotated are not autom. are active because they need to be configured via beans.xml . Here lurks one of the pitfalls of the specification. According to this, alternative implementations must be configured in the same (bean-deployment) archive. The definition of a (bean-deployment) archive and its limitations are very controversial. In the most restrictive case, you must assume that the smallest module unit, such as a JAR file, is meant. This concept and the associated limitations will be discussed in the chapter CDI and Java EE analyze it more closely. Since we do not have multiple applications that share CDI-based modules and discuss the adaptation of a CDI-based framework later, we will not notice any limitations at this point.
- 
+In many cases it is not necessary to change the scope. 
+If we recall, we annotated `TestIdeaSavedObserver` with `@RequestScoped` because we want to use a new instance for each test method. 
+Before you change the scope of the original implementation, make sure that you understand the implications and do not violate important aspects or assumptions of the original implementation, causing unexpected effects.
 
-@Alternative offers you the possibility to try several implementations in parallel. If none of the alternative implementations are activated via beans.xml , the original bean remains active. You can annotate any number of alternative implementations with @Alternative . Only if you activate one of them via beans.xml will it be used at runtime.
- 
+*Alternative implementations with `@Alternative`* +
+Compared to the previously introduced specialized implementations with `@Specializes`, alternative implementations with `@Alternative` are a bit more complex. 
+The annotation itself is only the first step. 
+As with `@Specializes`, you can derive from the original implementation and annotate it with `@Alternative`. 
+In many cases, however, you only have one interface that you can/want to implement for the alternative bean. 
+This is the main application of `@Alternative`, because with `@Specializes` the sole implementation of an interface is not possible. 
+Another difference is that implementations with which `@Alternative` annotated are not automatically are active because they need to be configured via `beans.xml`. 
+Here lurks one of the pitfalls of the specification. 
+According to this, alternative implementations must be configured in the same (bean-deployment) archive. 
+The definition of a (bean-deployment) archive and its limitations are very controversial. 
+In the most restrictive case, you must assume that the smallest module unit, such as a JAR file, is meant. 
+This concept and the associated limitations will be discussed in the chapter CDI and Java EE analyze it more closely. 
+Since we do not have multiple applications that share CDI-based modules and discuss the adaptation of a CDI-based framework later, we will not notice any limitations at this point.
 
-In IdeaFork it lends itself to alternative Beans for Object Converter interface to implement. As an alternative to JAXB and Gson, we can include Jackson (http://fasterxml.com) in the project and test appropriate implementations for the JSON and XML converters. Listing Alternative implementation shows this with the example of a Jackson converter for JSON. Listing Activation of an alternative implementation illustrates the corresponding configuration in the beans.xml file .
- @Alternative
+`@Alternative` offers you the possibility to try several implementations in parallel. 
+If none of the alternative implementations are activated via `beans.xml`, the original bean remains active. 
+You can annotate any number of alternative implementations with `@Alternative`. 
+Only if you activate one of them via `beans.xml` will it be used at runtime.
+
+`IdeaFork` offers to implement alternative beans for the `ObjectConverter` interface. 
+As an alternative to `JAXB` and `Gson`, we can include `Jackson`(http://fasterxml.com) in the project and test appropriate implementations for the `JSON` and `XML` converters. 
+Listing <<.Alternative implementation, Alternative implementation>> shows this with the example of a Jackson converter for JSON. 
+Listing <<.Activation of an alternative implementation, Activation of an alternative implementation>> illustrates the corresponding configuration in the `beans.xml` file.
+
+.Alternative implementation
+[source,java]
+----
+@Alternative
 @ExternalFormat(ExternalFormat.TargetFormat.JSON)
 @ApplicationScoped
 public class JSONConverterJackson implements ObjectConverter {
@@ -1219,14 +1349,25 @@ public class JSONConverterJackson implements ObjectConverter {
     }
   }
 }
- <beans>
+----
+
+.Activation of an alternative implementation
+[source,xml]
+----
+<beans>
   <alternatives>
     <class>[package-name].JSONConverterJackson</class>
   </alternatives>
 </beans>
-Alternative Producer / Disposer
-Producers and disposers have a kind of special position with regard to alternative implementations. For the best portability of your beans, if you override both the producer and the disposer, including all metadata, as in Listing Specialized Bean with Producer and Disposer in the Derived class, even if you do not make any adjustments to those places and only to the original implementation delegate. In our example, we are adjusting the producer for ApplicationConfig because we will configure different values ​​for unit testing in the next chapter.
- @Specializes
+----
+*Alternative Producer / Disposer* +
+Producers and Disposers have a kind of special position with regard to alternative implementations. 
+For best portability, override both the producer and the disposer, including all metadata, as in Listing <<.Specialized Bean with Producer and Disposer, Specialized Bean with Producer and Disposer>> in the Derived class, even if you do not make any adjustments in these places and only delegate to the original implementation. 
+In our example, we are adjusting the producer for `ApplicationConfig` because we will configure different values ​​for unit testing in the next chapter.
+
+[source,java]
+----
+@Specializes
 public class TestConfigProducer extends ConfigProducer {
   @Override
   @Produces
@@ -1245,29 +1386,67 @@ public class TestConfigProducer extends ConfigProducer {
     return "test-" + super.getConfigBaseName();
   }
 }
-In addition, there are differences in the CDI implementations. With OpenWebBeans you can use both @Specializes and @Alternative . On Weld, you are limited to @Specializes to provide alternative producers.
+----
+In addition, there are differences in the CDI implementations. 
+With OpenWebBeans you can use both `@Specializes` and `@Alternative`. 
+On Weld, you are limited to `@Specializes` to provide alternative producers.
 
 === Interceptors
 
-Interceptors enable the implementation of cross-sectional issues, such as logging, security, monitoring, and much more, regardless of the concrete operation of the beans for which they are used. Compared to other Interceptor solutions or AOP, CDI interceptors are simple and elegant. Similar to servlet filters, a nested chain of 2-n instances is created. The smallest chain consists of an interceptor and the actual contextual instance. The interceptor can delegate its logic anywhere to the next instance in the chain. The last link in the chain calls the method of the contextual instance. Thereafter, as with nested method calls, the chain is reversed in the reverse direction. You can easily decide which interceptor logic should run before and after calling the Contextual instance's effective method. For exceptions, you do not need an additional type of interceptor because it is the classic one try / catch / finally block .
- 
+Interceptors enable the implementation of cross-sectional issues, such as logging, security, monitoring, and much more, regardless of the concrete operation of the beans for which they are used. 
+Compared to other Interceptor solutions or AOP, CDI interceptors are simple and elegant. 
+Similar to servlet filters, a nested chain of 2-n instances are created. 
+The smallest chain consists of an interceptor and the actual contextual instance. 
+The interceptor can delegate its logic anywhere to the next instance in the chain. 
+The last link in the chain calls the method of the contextual instance. 
+Thereafter, as with nested method calls, the chain is reversed in the reverse direction. 
+You can easily decide which interceptor logic should run before and after calling the Contextual instance's effective method. 
+For exceptions, you do not need an additional type of interceptor because it is the classic one try/catch/finally block.
 
-In IdeaFork we introduce an interceptor that allows us to record slow method calls . We can use this interceptor for any beans. For now we will be monitoring IdeaManager , IdeaRepository, and all ObjectConverter implementations with this interceptor.
- 
+In `IdeaFork` we introduce an interceptor that allows us to record slow method calls. 
+We can use this interceptor for any beans. 
+For now we will be monitoring `IdeaManager`, `IdeaRepository`, and all `ObjectConverter` implementations with this interceptor.
 
-For the implementation of an interceptor we have to define our own annotation. Similar to qualifiers, we have to think about where we want to or can use the interceptor. The CDI specification allows use by individual methods as well as at the class level, whereby all (business) methods of the class receive the interceptor. Thus, Listing Interceptor annotation uses ElementType.METHOD and ElementType.TYPE . Only through the annotation @ javax.interceptor.InterceptorBinding we mark our new annotation as a so-called interceptor binding.
- @InterceptorBinding
+For the implementation of an interceptor we have to define our own annotation. 
+Similar to qualifiers, we have to think about where we want to or can use the interceptor. 
+The CDI specification allows use by individual `methods` as well as at the `class` level, whereby all (business) methods of the class receive the interceptor. 
+Thus, Listing <<.Interceptor annotation, Interceptor annotation>> uses `ElementType.METHOD` and `ElementType.TYPE`. 
+Only through the annotation `@javax.interceptor.InterceptorBinding` we mark our new annotation as a so-called interceptor binding.
 
+.Interceptor annotation
+[source,java]
+----
+@InterceptorBinding
 @Target({TYPE, METHOD})
 @Retention(RUNTIME)
 public @interface Monitored {}
-With this annotation we can annotate our managed bean classes or individual methods. Listing Using the Interceptor Annotation illustrates this by using the IdeaRepository class .
- @Monitored
+----
+
+With this annotation we can annotate our managed bean classes or individual methods. 
+Listing <<.Using the Interceptor Annotation, Using the Interceptor Annotation>> illustrates this by using the `IdeaRepository` class.
+
+.Using the Interceptor Annotation
+[source,java]
+----
+@Monitored
 public class IdeaRepository {
   //...
 }
-Since annotations are just metadata, we need a second part of the interceptor binding, the interceptor implementation itself. To do this, we create the MonitoredInterceptor class and annotate it with @ javax.interceptor.Interceptor to mark the class as an interceptor implementation. The name MonitoredInterceptor is made up of the name of the Interceptor Binding Annotation and the word Interceptor and follows an optional but widely used naming convention. However, we still need to define the connection between our interceptor binding and the interceptor implementation. That's why we annotate the interceptor implementation with our interceptor-binding annotation. So far we only have one empty class annotated with metadata. In Listing Interceptor implementation , we can see that we need an interceptor method annotated @ javax.interceptor.AroundInvoke . This method can have any name, but must have an InvocationContext type parameter use, define Object as the return type and offer the possibility to throw exceptions.
- @Monitored
+----
+
+Since annotations are just metadata, we need a second part of the interceptor binding, the interceptor implementation itself. 
+To do this, we create the `MonitoredInterceptor` class and annotate it with `@javax.interceptor.Interceptor` to mark the class as an interceptor implementation. 
+The name `MonitoredInterceptor` is made up of the name of the Interceptor Binding Annotation and the word Interceptor and follows an optional but widely used naming convention. 
+However, we still need to define the connection between our interceptor binding and the interceptor implementation. 
+That's why we annotate the interceptor implementation with our interceptor-binding annotation. 
+So far we only have one empty class annotated with metadata. 
+In Listing <<.Interceptor implementation, Interceptor implementation>>, we can see that we need an interceptor method annotated `@javax.interceptor.AroundInvoke`. 
+This method can have any name, but must have an InvocationContext type parameter, define Object as the return type and offer the possibility to throw exceptions.
+
+.Interceptor implementation
+[source,java]
+----
+@Monitored
 @Interceptor
 public class MonitoredInterceptor implements Serializable {
 
@@ -1292,31 +1471,60 @@ public class MonitoredInterceptor implements Serializable {
       applicationConfig.getMethodInvocationThreshold();
   }
 }
-An interceptor instance takes over the scope of the corresponding contextual instance. Thus, the same rules apply to interceptor instances as to a dependent-scoped bean. Since you usually do not know which bean the interceptor will be applied to, interceptors should always implement serializable . The minimum requirements for an Interceptor implementation do not require the implementation of the Serializable interface, but you must assume that at runtime an Interceptor instance could be serialized along with the Contextual instance.
- 
+----
 
-In a final step, we need to enable the interceptor via beans.xml as it is done in listing activation of an interceptor implementation . The nesting order of multiple interceptors is not defined by the order of the interceptor annotations, but by the order of listing in the configuration file.
- <beans>
+An interceptor instance takes over the scope of the corresponding contextual instance. 
+Thus, the same rules apply to interceptor instances as to a dependent-scoped bean. 
+Since you usually do not know which bean the interceptor will be applied to, interceptors should always implement serializable. 
+The minimum requirements for an Interceptor implementation do not require the implementation of the Serializable interface, but you must assume that at runtime an Interceptor instance could be serialized along with the Contextual instance.
+
+In a final step, we need to enable the interceptor via beans.xml as it is done in Listing <<.activation of an interceptor implementation, activation of an interceptor implementation>>. 
+The nesting order of multiple interceptors is not defined by the order of the interceptor annotations, but by the order of listing in the configuration file.
+[source,xml]
+----
+<beans>
   <interceptors>
     <class>[package-name].MonitoredInterceptor</class>
   </interceptors>
 </beans>
-Listing Interceptor implementation has also shown that an interceptor implementation can define injection points. This option allows us to bypass a limitation of interceptors. It is not possible to exchange interceptor implementations, as is possible with CDI beans by @Alternative or @Specializes . Although we can hard-code configure another implementation, we'll see in this chapter and in the chapter on portable CDI extensions that a more flexible approach has comparatively many advantages.
- 
+----
+Listing <<.Interceptor implementation, Interceptor implementation>> has also shown that an interceptor implementation can define injection points. 
+This option allows us to bypass a limitation of interceptors. 
+It is not possible to exchange interceptor implementations, as is possible with CDI beans by `@Alternative` or `@Specializes`. 
+Although we can hard-code configure another implementation, we'll see in this chapter and in the chapter on portable CDI extensions that a more flexible approach has comparatively many advantages.
 
-The trick is that we can inject via an injection point an implementation that is customizable with @Alternative or @Specializes as usual . Listing Interceptor Strategy illustrates the implementation. The separated bean implements the Serializable interface, equivalent to the Interceptor implementation . Since the paged implementation is dependent-scoped, no proxy is generated, and the overhead is primarily initial injection into the interceptor instance, and is therefore minimal.
- 
+The trick is that we can inject via an injection point an implementation that is customizable with `@Alternative` or `@Specializes` as usual. 
+Listing <<.Interceptor Strategy, Interceptor Strategy>> illustrates the implementation. 
+The separated bean implements the Serializable interface, equivalent to the Interceptor implementation. 
+Since the outsourced implementation is dependent-scoped, no proxy is generated, and the overhead is primarily initial injection into the interceptor instance, and is therefore minimal.
 
-In IdeaFork , we can use this trick to exchange a preconfigured interceptor for unit testing. The alternative implementation of the Interceptor strategy may include additional code for better testability and be offloaded to the test module. Of course, we do not want to burden a productive implementation with test code. In our case we could provide a test bean with this interceptor and create a correspondingly slow test method. A special interceptor implementation, which can be controlled accordingly, is easier in many cases.
- 
+In `IdeaFork`, we can use this trick to exchange a preconfigured interceptor for unit testing. 
+The alternative implementation of the Interceptor strategy may include additional code for better testability and be offloaded to the test module. 
+Of course, we do not want to burden a productive implementation with test code. 
+In our case we could provide a test bean with this interceptor and create a correspondingly slow test method. 
+A special interceptor implementation, which can be controlled accordingly, is easier in many cases.
 
-Let's start by offloading the Interceptor logic itself. To do this, we introduce an interface called MonitoredInterceptorStrategy . When defining the method signature, we follow the rules for interceptor methods. We can only do without the @AroundInvoke annotation here. Listing Interceptor Strategy shows the new interface and default implementation with our previous Interceptor logic. In Listing Using the Interceptor Strategy , we see the customized Interceptor implementation delegating to the active MonitoredInterceptorStrategy .
-Tip: We take the term InterceptorStrategy from popular CDI extensions, which we will get to know in subsequent chapters. It is a naming convention that is not specified by the CDI specification.
- public interface MonitoredInterceptorStrategy
+Let's start by offloading the Interceptor logic itself. 
+To do this, we introduce an interface called `MonitoredInterceptorStrategy`. 
+When defining the method signature, we follow the rules for interceptor methods. 
+We can only do without the `@AroundInvoke` annotation here. 
+Listing <<.Interceptor Strategy, Interceptor Strategy>> shows the new interface and default implementation with our previous Interceptor logic. 
+In Listing <<.Using the Interceptor Strategy, Using the Interceptor Strategy>>, we see the customized Interceptor implementation delegating to the active `MonitoredInterceptorStrategy`.
+TIP: We take the term `InterceptorStrategy` from popular CDI extensions, which we will get to know in subsequent chapters. 
+It is a naming convention that is not specified by the CDI specification.
+
+.Interceptor Strategy
+[source,java]
+----
+public interface MonitoredInterceptorStrategy
   extends Serializable {
     Object intercept(InvocationContext ic) throws Exception;
 }
+----
 
+.Using the Interceptor Strategy
+[source,java]
+----
 @Dependent
 public class DefaultMonitoredInterceptorStrategy
   implements MonitoredInterceptorStrategy {
@@ -1341,7 +1549,11 @@ public class DefaultMonitoredInterceptorStrategy
         applicationConfig.getMethodInvocationThreshold();
     }
 }
- @Monitored
+----
+
+[source,java]
+----
+@Monitored
 @Interceptor
 public class MonitoredInterceptor implements Serializable {
 
@@ -1353,7 +1565,15 @@ public class MonitoredInterceptor implements Serializable {
     return this.interceptorStrategy.intercept(ic);
   }
 }
-In the course of the refactoring we defined the method isSlowInvocation as protected . In the next step, as shown in Listing Interceptor Test Strategy , we can introduce a specialized implementation for a corresponding unit test. Listing control of the Interceptor test strategy shows that in a unit test, the result of the overwritten method can be easily controlled. For our simple test, a simple static variable in TestMonitoredInterceptorStrategy is sufficient. For more complex cases, it may be necessary to work with a ThreadLocal .
+----
+
+In the course of the refactoring we defined the method `isSlowInvocation` as protected. 
+In the next step, as shown in Listing <<.Interceptor Test Strategy, Interceptor Test Strategy>>, we can introduce a `specialized` implementation for a corresponding unit test. 
+Listing <<.control of the Interceptor test strategy, control of the Interceptor test strategy>> shows that in a unit test, the result of the overwritten method can be easily controlled. 
+For our simple test, a simple static variable in `TestMonitoredInterceptorStrategy` is sufficient. 
+For more complex cases, it may be necessary to work with a `ThreadLocal`.
+[source,java]
+----
 @Specializes
 @Dependent
 public class TestMonitoredInterceptorStrategy
@@ -1370,7 +1590,11 @@ public class TestMonitoredInterceptorStrategy
         .slowInvocationSimulationModeActive = newValue;
     }
 }
- @RunWith(CdiTestRunner.class)
+----
+
+[source,java]
+----
+@RunWith(CdiTestRunner.class)
 public class InterceptorTest {
   @Inject
   private IdeaManager ideaManager;
@@ -1397,20 +1621,41 @@ public class InterceptorTest {
     Assert.assertFalse(monitoredStorage.getSlowMethods().isEmpty());
   }
 }
-Interceptors with additional information
-Equivalent to Qualifiers, Interceptor annotations can also be annotated. Without @Nonbinding , annotation attributes, just like qualifiers, are used to find the appropriate interceptor implementation. In addition, it is possible to provide an interceptor implementation with multiple interceptor-binding annotations. This mechanism allows you to bind an interceptor implementation to a specific interceptor combination. In practice, the use cases for both concepts are very few. For Interceptoren much more interesting are the uses of the @Nonbinding annotation. For example, it allows to override global configurations with inline configurations.
- 
+----
+*Interceptors with additional information* +
+Equivalent to Qualifiers, Interceptor annotations can also be annotated. 
+Without `@Nonbinding`, annotation attributes, just like qualifiers, are used to find the appropriate interceptor implementation. 
+In addition, it is possible to provide an interceptor implementation with multiple interceptor-binding annotations. 
+This mechanism allows you to bind an interceptor implementation to a specific interceptor combination. 
+In practice, the use cases for both concepts are very few. 
+For Interceptors much more interesting are the uses of the `@Nonbinding` annotation. 
+For example, it allows to override global configurations with inline configurations.
 
-In IdeaFork , we inject ApplicationConfig into DefaultMonitoredInterceptorStrategy to read a configured value. In this case, we specify the maximum expected execution time of an average method via the configuration. If a method call exceeds this value, this is recorded using MonitoredStorage . There may of course be exceptions that we know will always be exceeded or the maximum duration will be lower. For cases like these, we can add an annotation attribute annotated with @Nonbinding to set another value for such exceptions. listing Interceptor with additional information shows the extension of the Interceptor Binding Annotation and Simple Evaluation of Interceptor Information the evaluation of this additional information. The simple evaluation shown here assumes that the interceptor annotation is physically available either on the intercepted method or its class. As we'll see in the Portable CDI Extensions section , metadata such as interceptors can be added dynamically as needed during container startup. For this, we would have to look for the managed bean definition via the bean manager , as this contains the effective bean definition at runtime.
- @InterceptorBinding
+In `IdeaFork`, we inject `ApplicationConfig` into `DefaultMonitoredInterceptorStrategy` to read a configured value. 
+In this case, we specify the maximum expected execution time of an average method via the configuration. 
+If a method call exceeds this value, this is recorded using `MonitoredStorage`. 
+There may of course be exceptions that we know will always be exceeded or the maximum duration will set to lower. 
+For cases like these, we can add an annotation attribute annotated with `@Nonbinding` to set another value for such exceptions. 
+Listing <<.Interceptor with additional information, Interceptor with additional information>> shows the extension of the Interceptor Binding Annotation and <<.Simple Evaluation of Interceptor Information, Simple Evaluation of Interceptor Information>> the evaluation of this additional information. 
+The simple evaluation shown here assumes that the interceptor annotation is physically available either on the intercepted method or its class. 
+As we'll see in the Portable CDI Extensions section, metadata such as interceptors can be added dynamically as needed during container startup. 
+For this, we would have to look for the managed bean definition via the bean manager, as this contains the effective bean definition at runtime.
 
+.Interceptor with additional information
+[source,java]
+----
+@InterceptorBinding
 @Target({TYPE, METHOD})
 @Retention(RUNTIME)
 public @interface Monitored {
   @Nonbinding
   int maxThreshold() default -1;
 }
- public class DefaultMonitoredInterceptorStrategy
+----
+
+[source,java]
+----
+public class DefaultMonitoredInterceptorStrategy
   implements MonitoredInterceptorStrategy {
     //...
     @Inject
@@ -1452,14 +1697,27 @@ public @interface Monitored {
     return System.currentTimeMillis() - start > maxThreshold;
   }
 }
+----
 
 === Decorators
 
-Apart from generic cross-sectional issues explained with interceptors in the previous chapter, it is possible with CDI to create tailor-made specialized interceptors. In applications, the so-called decorators are rather rare compared to interceptors.
- 
+Apart from generic cross-sectional issues explained with interceptors in the previous chapter, it is possible with CDI to create tailor-made specialized interceptors. 
+In applications, the so-called decorators are rather rare compared to interceptors.
 
-In order to clarify the potential advantage of decorators, we are expanding IdeaFork before we implement our first decorator. Apart from the typing on Idea , the implementation of IdeaRepository is generic. We could reuse an actually generic variant for other entities. So far we have no entity in IdeaFork that represents a user and therefore add an entity of the same name. With generics and corresponding interfaces and abstract classes, we can reduce redundant implementations (see Repository Refactoring in IdeaFork ). Thus, among other things, we have the abstract class BaseEntity and the interface GenericRepository . Listing base entity in IdeaFork demonstrates that we also add a new field for the version of the entity in the BaseEntity class because we will use it in the next step. The entities Idea and User derive from this new base class and add the corresponding properties. In IdeaFork we want to refer to an author of type User . That's why we need to add JAXB annotations to keep our existing ObjectConverter tests working.
- public abstract class BaseEntity implements Serializable {
+In order to clarify the potential advantage of decorators, we are expanding `IdeaFork` before we implement our first decorator. 
+Apart from the typing on `Idea`, the implementation of `IdeaRepository` is generic. 
+We could reuse an actually generic variant for other entities. 
+So far we have no entity in `IdeaFork` that represents a `user` and therefore add an entity of the same name. 
+With generics and corresponding interfaces and abstract classes, we can reduce redundant implementations (see Repository Refactoring in `IdeaFork`). 
+Thus, among other things, we have the abstract class `BaseEntity` and the interface `GenericRepository`. 
+Listing <<.Base entity in `IdeaFork`, Base entity in `IdeaFork`>> demonstrates that we also add a new field for the `version` of the entity in the `BaseEntity` class because we will use it in the next step. 
+The entities `Idea` and `User` derive from this new base class and add the corresponding properties. 
+In `IdeaFork` we want to refer to an author of type `User`. 
+That's why we need to add `JAXB` annotations to keep our existing `ObjectConverter` tests working.
+
+[source,java]
+----
+public abstract class BaseEntity implements Serializable {
   protected String id;
   protected Long version;
 
@@ -1476,15 +1734,25 @@ In order to clarify the potential advantage of decorators, we are expanding Idea
   }
   //...
 }
- public interface GenericRepository<T extends BaseEntity>
+----
+
+[source,java]
+----
+public interface GenericRepository<T extends BaseEntity>
   extends Serializable {
     void save(T entity);
     void remove(T entity);
     T loadById(String id);
 }
+----
 
+[source,java]
+----
 public interface IdeaRepository extends GenericRepository<Idea> {}
+----
 
+[source,java]
+----
 public abstract class GenericInMemoryRepository<T extends BaseEntity>
   implements GenericRepository<T> {
     protected Map<String, T> entityMap =
@@ -1508,12 +1776,21 @@ public abstract class GenericInMemoryRepository<T extends BaseEntity>
   }
   public static <T> T clone(T source) { /*...*/ }
 }
+----
 
+[source,java]
+----
 @Monitored
 public class IdeaInMemoryRepository extends GenericInMemoryRepository<Idea>
   implements IdeaRepository {}
-Since we used Idea only temporarily as an event type and this is no longer useful at the latest, we create the class EntityChangedEvent , which can be seen in Listing Explicit Event class .
- public abstract class EntityChangedEvent <T extends BaseEntity> {
+----
+
+Since we used Idea only temporarily as an event type and this is no longer useful at the latest, we create the class `EntityChangedEvent`, which can be seen in Listing `Explicit Event class`.
+
+.Explicit Event class
+[source,java]
+----
+public abstract class EntityChangedEvent <T extends BaseEntity> {
   private final T entity;
   private final long creationTimestamp;
 
@@ -1530,17 +1807,36 @@ Since we used Idea only temporarily as an event type and this is no longer usefu
     return creationTimestamp;
   }
 }
+----
 
+[source,java]
+----
 public class UserChangedEvent extends EntityChangedEvent<User> {
   public UserChangedEvent(User createdEntity) {
     super(createdEntity);
   }
 }
-With this stand, we are ready to create a meaningful decorator. GenericInMemoryRepository only contains the effective logic for managing entities, not generating events. That's why the tests in EventTest fail at this point of our refactoring . The event treatment will be outsourced to a decorator in the next step.
- 
+----
 
-With the new interface GenericRepository we can create an abstract class GenericRepositoryDecorator , because we need an interface as a basis. The abstract class can be used as a base class for all GenericRepository decors. To do this, we implement the interface we want to decorate ourselves and add the required decorator logic to the appropriate places. In our case we implement checkEntity with the method a basic check that we perform before delegating to the decorated instance. Thus, we can separate rudimentary technical checks from the repository implementation. In addition, after a successful save, we call the abstract method fireEntityChangedEvent . Concrete decorator implementations provide these and can therefore fire the required event. With the help of the abstract method getDelegate we can access the decorated instance in the generic implementation, which has to be provided by a concrete decorator. The key ingredients of GenericRepositoryDecorator are in Listing Generic Decorator Logic seen.
- public abstract class GenericRepositoryDecorator
+With this stand, we are ready to create a meaningful decorator. 
+GenericInMemoryRepository only contains the effective logic for managing entities, not generating events. 
+That's why the tests in EventTest fail at this point of our refactoring. 
+The event treatment will be outsourced to a decorator in the next step.
+
+With the new interface GenericRepository we can create an abstract class GenericRepositoryDecorator, because we need an interface as a basis. 
+The abstract class can be used as a base class for all GenericRepository decorators. 
+To do this, we implement the interface we want to decorate ourselves and add the required decorator logic to the appropriate places. 
+In our case, we use the checkEntity method to implement a basic check that we perform before delegating to the decorated instance. 
+Thus, we can separate rudimentary technical checks from the repository implementation. 
+In addition, after a successful save, we call the abstract method fireEntityChangedEvent. 
+Concrete decorator implementations provide these and can therefore fire the required event. 
+With the help of the abstract method `getDelegate` we can access the decorated instance in the generic implementation, which has to be provided by a concrete decorator. 
+The key ingredients of GenericRepositoryDecorator are shown in Listing <<.Generic Decorator Logic, Generic Decorator Logic>>.
+
+.Generic Decorator Logic
+[source,java]
+----
+public abstract class GenericRepositoryDecorator
   <T extends BaseEntity> implements GenericRepository<T> {
 
     protected abstract GenericRepository<T> getDelegate();
@@ -1572,7 +1868,18 @@ With the new interface GenericRepository we can create an abstract class Generic
       //...
     }
 }
-Listing Decorator implementation shows an example of a concrete decorator implementation. Equivalent to interceptors, there is a marker annotation called @Decorator , which signals to the CDI container that this class is a decorator implementation. By @Delegate in combination with @Inject we can inject the next instance in the chain. Normally, the type of injected delegate must match the decorator type. For example , if we want to decorate IdeaRepository , the decorator must implement IdeaRepository . There GenericRepositoryDecorator and our repositories implement GenericRepository in this case , this is already technically sufficient, since the correct Decorator is identified by Generics. Although in this case the implementation of the concrete repository interface is technically not required, this should be done since we can only decorate methods that are defined by a concrete repository interface and not by the GenericRepository interface.
+----
+
+Listing <<.Decorator implementation, Decorator implementation>> shows an example of a concrete decorator implementation. 
+Equivalent to interceptors, there is a marker annotation called `@Decorator`, which signals to the CDI container that this class is a decorator implementation. 
+By `@Delegate` in combination with `@Inject` we can inject the next instance in the chain. 
+Normally, the type of injected delegate must match the decorator type. 
+For example, if we want to decorate IdeaRepository, the decorator must implement IdeaRepository. 
+The GenericRepositoryDecorator and our repositories implement GenericRepository in this case, this is already technically sufficient, since the correct Decorator is identified by Generics. 
+Although in this case the implementation of the concrete repository interface is technically not required, this should be done since we can only decorate methods that are defined by a concrete repository interface and not by the GenericRepository interface.
+
+[source,java]
+----
 @Decorator
 public class IdeaRepositoryDecorator
   extends GenericRepositoryDecorator<Idea>
@@ -1594,13 +1901,38 @@ public class IdeaRepositoryDecorator
         changedEvent.fire(new IdeaChangedEvent(entity));
     }
 }
-Listing Activation of a decorator implementation is the last step in implementing a decorator. Equivalent to interceptors, decorators must be enabled in the beans.xml file . If there are multiple decorators for a bean, the order of nesting can be used to define the nesting order. Of course, for the tests to work again in EventTest , we'll need to move our Observer methods from Idea to IdeaChangedEvent .
- <decorators>
+----
+
+Listing Activation of a decorator implementation is the last step in implementing a decorator. 
+Equivalent to interceptors, decorators must be enabled in the `beans.xml` file. 
+If there are multiple decorators for a bean, the order of nesting can be used to define the nesting order. 
+Of course, for the tests to work again in EventTest, we'll need to move our Observer methods from Idea to IdeaChangedEvent.
+
+[source,xml]
+----
+<decorators>
   <class>[package-name].IdeaRepositoryDecorator</class>
 </decorators>
-We'll see another benefit of separating the repository logic as soon as we create alternative JPA repository implementations in the CDI and Java EE chapters . These will also use our newly created decorator implementations and will not need to implement the basic checks and event logic redundantly. Of course, this is meant to be an example only, since in practice often only a repository implementation is created. Thus you should evaluate in your projects exactly, from when the additional complexity by the introduction of decorators is worthwhile.
-Abstract decorators
-In many cases, Decorator logic is not available for every method. Decorator methods without additional logic would simply manually delegate the call. Therefore, CDI allows the use of abstract decorator classes. Methods that are not implemented by an abstract decorator are automatically used. forwarded to the next instance in the chain. In IdeaFork , we can add EntityChangeRepository to archive changes to entities. Listing Abstract Decorator demonstrates that only one method is implemented in the associated abstract decorator and decorated with decorator logic.
+----
+
+We'll see another benefit of separating the repository logic as soon as we create alternative JPA repository implementations in the CDI and Java EE chapters. 
+These will also use our newly created decorator implementations and will not need to implement the basic checks and event logic redundantly. 
+Of course, this is meant to be an example only, since in practice often only a repository implementation is created. 
+Thus you should evaluate in your projects exactly, from when the additional complexity by the introduction of decorators is worthwhile.
+
+*Abstract decorators* +
+
+In many cases, Decorator logic is not available for every method. 
+Decorator methods without additional logic would simply manually delegate the call. 
+Therefore, CDI allows the use of abstract decorator classes. 
+Methods that are not implemented by an abstract decorator are automatically used. 
+forwarded to the next instance in the chain. 
+In `IdeaFork`, we can add `EntityChangeRepository` to archive changes to entities. 
+Listing <<.Abstract Decorator, Abstract Decorator>> demonstrates that only one method is implemented in the associated abstract decorator and decorated with decorator logic.
+
+.Abstract Decorator
+[source,java]
+----
 @Decorator
 public abstract class EntityChangeRepositoryDecorator
   implements EntityChangeRepository {
@@ -1618,7 +1950,15 @@ public abstract class EntityChangeRepositoryDecorator
       //...
     }
 }
-EntityChangeRepository also defines the findRevision method , which searches the associated archived state of the entity with the ID of an entity and the version number. The individual states of the entity we can automate with an Observer. to save. Listing Observer for storing revisions shows the Observer implementation in the IdeaHistoryProcessor class .
+----
+
+EntityChangeRepository also defines the findRevision method, which searches the associated archived state of the entity with the ID of an entity and the version number. 
+The individual states of the entity we can automate with an Observer to save. 
+Listing <<.Observer for storing revisions, Observer for storing revisions>> shows the Observer implementation in the IdeaHistoryProcessor class.
+
+.Observer for storing revisions
+[source,java]
+----
 @ApplicationScoped
 public class IdeaHistoryProcessor {
   @Inject
@@ -1640,8 +1980,17 @@ public class IdeaHistoryProcessor {
       entityChangeRepository.save(entityChange);
   }
 }
-So far, we have not assigned a scope to our repository implementations. Since we only injected and addressed the contextual instance in our unit tests, the associated limitations have not been noticed. On the other hand, we use EntityChangeRepository in the IdeaHistoryProcessor class and the Listing Verify Observer logic result illustrates a section of a unit test that represents the second use. For this reason, EntityChangeInMemoryRepository must receive an explicit scope. In our case, we opt for the application scope.
- @RunWith(CdiTestRunner.class)
+----
+
+So far, we have not assigned a scope to our repository implementations. 
+Since we only injected and addressed the contextual instance in our unit tests, the associated limitations have not been noticed. 
+On the other hand, we use EntityChangeRepository in the IdeaHistoryProcessor class and the Listing Verify Observer logic result illustrates a section of a unit test that represents the second use. 
+For this reason, EntityChangeInMemoryRepository must receive an explicit scope. 
+In our case, we opt for the application scope.
+
+[source,java]
+----
+@RunWith(CdiTestRunner.class)
 public class DecoratorTest {
   //...
 
@@ -1663,24 +2012,39 @@ public class DecoratorTest {
     Assert.assertEquals(savedIdea, archivedIdea);
   }
 }
+----
 
 === Stereotypes
 
 In the previous chapter, we found out that our repository implementations should have a scope. 
-However, we have an inconsistency in the current state of IdeaFork. 
+However, we have an inconsistency in the current state of `IdeaFork`. 
 EntityChangeRepository is application-scoped, and the other repository implementations are annotated with `@Monitored` only, implicitly dependent-scoped. 
 With CDI stereotypes it is possible to solve such inconsistencies centrally and to use annotations more expressively and efficiently.
 
-Similar to UML stereotypes, roles of a managed bean can be expressed with CDI stereotypes. In addition, stereotypes allow information to be encapsulated. Instead of providing similar managed beans with multiple and above all always identical annotations, we can define a stereotype annotation that encapsulates these annotations. The annotation should be named after the artifact type. In our case, we create a stereotype annotation called @Repository and annotate it, as in Listing's Own Stereotype Annotation , with @ApplicationScoped and @Monitored . In order for the CDI container to recognize our stereotype annotation as such, this must be done with @Stereotype be annotated. We do not use any Producers for repository implementations in IdeaFork, so ElementType.TYPE is sufficient for @Target .
+Similar to UML stereotypes, roles of a managed bean can be expressed with CDI stereotypes. 
+In addition, stereotypes allow information to be encapsulated. 
+Instead of providing similar managed beans with multiple and above all always identical annotations, we can define a stereotype annotation that encapsulates these annotations. 
+The annotation should be named after the artifact type. 
+In our case, we create a stereotype annotation called `@Repository` and annotate it, as in Listing's <<.Own Stereotype Annotation, Own Stereotype Annotation>>, with `@ApplicationScoped` and `@Monitored`. 
+In order for the CDI container to recognize our stereotype annotation as such, this must be done with `@Stereotype` be annotated. 
+We do not use any Producers for repository implementations in `IdeaFork`, so ElementType.TYPE is sufficient for @Target.
+
+[source,java]
+----
 @Target(TYPE)
 @Retention(RUNTIME)
-
 @Stereotype
 @ApplicationScoped
 @Monitored
 public @interface Repository {}
-Listing Using a custom stereotype annotation demonstrates the simplified implementation of EntityChangeInMemoryRepository .
- @Repository
+----
+
+Listing <<.Using a custom stereotype annotation, Using a custom stereotype annotation>> demonstrates the simplified implementation of EntityChangeInMemoryRepository.
+
+.Using a custom stereotype annotation
+[source,java]
+----
+@Repository
 public class EntityChangeInMemoryRepository
   extends GenericInMemoryRepository<EntityChange>
   implements EntityChangeRepository {
@@ -1697,40 +2061,90 @@ public class EntityChangeInMemoryRepository
         return null;
     }
 }
-Of course, we also annotate the other repository implementations with our new stereotype annotation. Future changes, such as changing the scope, can be done centrally for all implementations through the stereotype annotation.
+----
 
-Stereotypes can specify the default scope of a managed bean , as in Listing Own Stereotype Annotation . In concrete implementations, this can be overridden for special cases by explicitly specifying the scope of the implementation. The same applies to the name of a bean. @ javax.enterprise.inject.Model is a stereotype defined in the CDI specification. This stereotype annotation is annotated with @RequestScoped and @Named . Beans, which are annotated with @Model , get autom. a name based on the default naming convention. Should one with @Model If the annotated bean is given a different name, the default name can be overridden by the explicit use of @Named . More details on naming managed beans will be discussed in the chapter CDI and Java EE .
-TIP: In the previous chapter, we manually searched for the interceptor annotation. Since we moved @Monitored to @Repository , we need to expand the annotation logic accordingly and parse all annotations. In IdeaFork a simple implementation is illustrated. If you want to support more extensive constellations, such as stereotype annotations annotated with one or more other stereotype annotations, the search logic must be more complex to implement.
-Alternative stereotypes
-When using alternative implementations, we have activated each class separately in the beans.xml file . In large applications with many alternative beans, this can be very time-consuming and error-prone. For this reason, CDI provides a simple and expressive mechanism based on stereotypes. A separate annotation, annotated at least with @Stereotype and @Alternative , allows you to activate all alternatives that have this stereotype annotation.
+Of course, we also annotate the other repository implementations with our new stereotype annotation. 
+Future changes, such as changing the scope, can be done centrally for all implementations through the stereotype annotation.
 
-A common use case is the activation of mock or test classes for unit tests. For a change we start with another application. In IdeaFork we want to enable / disable all Jackson converters with a configuration entry. The annotation @JacksonConverter , which can be seen in Listing Alternative Stereotype Annotation , also receives the @Monitored Interceptor Binding Annotation, as well as @ApplicationScoped as Default Scope. Listing activation of alternative beans via stereotype illustrates the activation of all Jackson Converter implementations with only one entry in the beans.xml file ,
+Stereotypes can specify the default scope of a managed bean, as in Listing Own Stereotype Annotation. 
+In concrete implementations, this can be overridden for special cases by explicitly specifying the scope of the implementation. 
+The same applies to the name of a bean. 
+`@javax.enterprise.inject.Model` is a stereotype defined in the CDI specification. 
+This stereotype annotation is annotated with `@RequestScoped` and `@Named`. 
+Beans, which are annotated with @Model, get automatically a name based on the default naming convention. 
+Should one with @Model If the annotated bean is given a different name, the default name can be overridden by the explicit use of `@Named`. 
+More details on naming managed beans will be discussed in the chapter CDI and Java EE.
+
+TIP: In the previous chapter, we manually searched for the interceptor annotation. 
+Since we moved @Monitored to @Repository, we need to expand the annotation logic accordingly and parse all annotations. 
+In `IdeaFork` a simple implementation is illustrated. 
+If you want to support more extensive constellations, such as stereotype annotations annotated with one or more other stereotype annotations, the search logic must be more complex to implement.
+
+*Alternative stereotypes* +
+
+When using alternative implementations, we have activated each class separately in the `beans.xml` file. 
+In large applications with many alternative beans, this can be very time-consuming and error-prone. 
+For this reason, CDI provides a simple and expressive mechanism based on stereotypes. 
+A separate annotation, annotated at least with `@Stereotype` and `@Alternative`, allows you to activate all alternatives that have this stereotype annotation.
+
+A common use case is the activation of mock or test classes for unit tests. 
+For a change we start with another application. 
+In `IdeaFork` we want to enable/disable all `Jackson` converters with a configuration entry. 
+The annotation `@JacksonConverter`, which can be seen in Listing <<.Alternative Stereotype Annotation, Alternative Stereotype Annotation>>, also receives the `@Monitored` Interceptor Binding Annotation, as well as `@ApplicationScoped` as Default Scope. 
+Listing <<.activation of alternative beans via stereotype, activation of alternative beans via stereotype>> illustrates the activation of all Jackson Converter implementations with only one entry in the `beans.xml file`,
+
+.Alternative Stereotype Annotation
+[source,java]
+----
 @Target(TYPE)
 @Retention(RUNTIME)
-
 @Alternative
 @Stereotype
 @ApplicationScoped
 @Monitored
 public @interface JacksonConverter {}
- <beans>
+----
+.activation of alternative beans via stereotype
+[source,xml]
+----
+<beans>
   <alternatives>
     <stereotype>[package-name].JacksonConverter</stereotype>
   </alternatives>
 </beans>
-
+----
 === Explicit typing
 
-Direct type-safe dependency injection means that there can only be one managed bean per type. We've already seen qualifiers as an extension of the type system and the possibility of dynamic lookups. With these concepts, it is possible to extend the limitations of type-aware dependency injection. However, there are cases in which a bean can have multiple types from the perspective of Java and only a subset of them should be preserved for the CDI injection process, for example, to prevent type overlaps with other beans.
- 
+Direct type-safe dependency injection means that there can only be one managed bean per type. 
+We've already seen qualifiers as an extension of the type system and the possibility of dynamic lookups. 
+With these concepts, it is possible to extend the limitations of type-aware dependency injection. 
+However, there are cases in which a bean can have multiple types from the perspective of Java and only a subset of them should be preserved for the CDI injection process, for example, to prevent type overlaps with other beans.
 
-In IdeaFork , for example, we can reduce the number of injection points required when we make IdeaManager and UserManager a facet . Both classes can implement the associated repository interfaces and delegate the corresponding methods to the respective repository. Implemented for example. IdeaManager the interface IdeaRepository , we have in the application two managed beans type IdeaRepository . Double ambiguities such as these result in a false start of the application and an AmbiguousResolutionException is the result.
- 
+In `IdeaFork`, for example, we can reduce the number of injection points required when we make `IdeaManager` and `UserManager` a facade. 
+Both classes can implement the associated repository interfaces and delegate the corresponding methods to the respective repository. 
+Implemented for example. IdeaManager the interface IdeaRepository, we have in the application two managed beans type IdeaRepository. 
+Double ambiguities such as these result in a false start of the application and an AmbiguousResolutionException is the result.
 
-With an injection point of type IdeaRepository , the CDI container does not know whether we want to inject IdeaManager or IdeaInMemoryRepository because of our desired change . In our case, we want to inject IdeaInMemoryRepository , because IdeaManager also uses this to delegate the method calls . Such ambiguities can be elegantly resolved using the @Typed annotation . It allows you to specify any type of managed bean to use for the CDI container for the injection process. With @Typed () For example, a class can even be made invisible to the CDI type system. The managed bean itself still exists in the background, but it has no type from the viewpoint of the CDI container and therefore can not be found. Only @Named could still ensure that such a managed bean can be found by its name. We've already used this trick in ApplicationConfig , so we do not need an additional qualifier for the Producer method. Apart from the complete removal of the type information, it is also possible to explicitly define 1-n types. Only these types are used for the managed bean of the CDI container. For our managerial facade we can, as in Listing Explicit Typing, specify the manager class yourself. Our type-safe injection points thus become clear again.
- @ApplicationScoped
+With an injection point of type IdeaRepository, the CDI container does not know whether we want to inject IdeaManager or IdeaInMemoryRepository because of our desired change. 
+In our case, we want to inject IdeaInMemoryRepository, because IdeaManager also uses this to delegate the method calls. 
+Such ambiguities can be elegantly resolved using the `@Typed` annotation. 
+It allows you to specify any type of managed bean to use for the CDI container for the injection process. 
+With `@Typed()` For example, a class can even be made invisible to the CDI type system. 
+The managed bean itself still exists in the background, but it has no type from the viewpoint of the CDI container and therefore can not be found. 
+Only `@Named` could still ensure that such a managed bean can be found by its name. 
+We've already used this trick in ApplicationConfig, so we do not need an additional qualifier for the Producer method. 
+Apart from the complete removal of the type information, it is also possible to explicitly define 1-n types. 
+Only these types are used for the managed bean of the CDI container. 
+For our managerial facade we can, as in Listing <<.Explicit Typing, Explicit Typing>>, specify the manager class yourself. 
+Our type-safe injection points thus become clear again.
+
+.Explicit Typing
+[source,java]
+----
+@ApplicationScoped
 @Typed(IdeaManager.class)
 public class IdeaManager implements IdeaRepository {
   //...
 }
+----
 @Typed can therefore be used for more complex constellations with multiple interfaces or a base class and allows the use of complex type hierarchies if required.
