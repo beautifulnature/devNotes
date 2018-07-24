@@ -822,25 +822,67 @@ public class StatisticService {
 ----
 === JPA with CDI
 
-There is no included integration of CDI into JPA in Java EE6. Only Java EE7 defines a rudimentary functionality for entity listeners. Although entity listeners are still not managed directly by CDI, injecting CDI beans and the possibility of lifecycle callbacks ( PostConstruct and PreDestroy ) are available. One option that has been available since EE6 is, of course, manual discovery or manual injection. We already got to know both variants and implemented them with the implementation of CdiUtils . Nevertheless, we can use CDI to simplify parts of JPA, and so the next step in the transition from IdeaFork on JPA. We can continue to use the previous in-memory repositories for our unit tests. For this we move them into the test directory of the module and annotate them with the self-created alternative stereotype MockedRepository , which we activate in the test module's beans.xml configuration file . This is equivalent to the alternative stereotype JacksonConverter , which we have already created. We annotate the new JPA based repositories as usual with our stereotype @Repository . As we mocked for repository from listing stereotype annotation annotated with stereotypeIf we want to adopt the same definitions, we can also provide this stereotype annotation with the @Repository annotation. All these changes are based on the knowledge acquired so far. Therefore, we do not go into detail here on these details. IdeaFork's Git repository summarizes the changes required and is easy to understand.
- @Target(TYPE)
+There is no included integration of CDI into JPA in Java EE6. 
+Only Java EE7 defines a rudimentary functionality for entity listeners. 
+Although entity listeners are still not managed directly by CDI, injecting CDI beans and the possibility of Lifecycle callbacks (PostConstruct and PreDestroy) are available. 
+One option that has been available since EE6 is, of course, manual discovery or manual injection. 
+We already got to know both variants and implemented them with the implementation of `CdiUtils`. 
+Nevertheless, we can use CDI to simplify parts of JPA, and so the next step in the transition from `IdeaFork` on JPA. 
+We can continue to use the previous in-memory repositories for our unit tests. 
+For this we move them into the test directory of the module and annotate them with the self-created alternative stereotype `MockedRepository`, which we activate in the test module's `beans.xml` configuration file. 
+This is equivalent to the alternative stereotype `JacksonConverter`, which we have already created. 
+We annotate the new JPA based repositories as usual with our stereotype `@Repository`. 
+As we look for `MockedRepository` from Listing <<Stereotype annotation annotated with Stereotype, Stereotype annotation annotated with Stereotype>> If we want to adopt the same definitions, we can also provide this stereotype annotation with the `@Repository` annotation. 
+All these changes are based on the knowledge acquired so far. 
+Therefore, we do not go into detail here on these details. 
+IdeaFork's Git repository summarizes the changes required and is easy to understand.
+
+.Stereotype annotation annotated with Stereotype
+[source,java]
+----
+@Target(TYPE)
 @Retention(RUNTIME)
-
 @Alternative
-
 @Stereotype
 @Repository
 public @interface MockedRepository {
 }
-A central component of JPA is the EntityManager . Since Java EE6 CDI simplifies its use. With Java EE5 it had to be injected everywhere via @PersistenceContext . Thus, this annotation, with all the parameters required for injection, was scattered across several classes of the application. An elegant alternative to this is the use of a CDI producer, as we have already learned in chapter CDI basic concepts . In describing the basic concept, we learned that producer fields combined with resource injection in an EE server can save a few lines of code. Listing Entity Manager Producer field shows such a resource injection via @PersistenceContext . At the same time, using @Produces makes this resource injection point a CDI producer. After instantiating the class, the EE server injects an EntityManager proxy. From then on, the CDI container can use this proxy by the producer as a contextual instance. Since the EE server already creates a proxy, we do not need to define an additional Scope for the EntityManager to allow us to make reasonable use of it. In listing entity manager producer method the same functionality is seen with a producer method. Again, a dependent-scoped bean is defined. In both cases EntityManagerProducer an application-scoped bean. This definition allows the instance to be created only once and the EntityManager proxy also injected only once.
- @ApplicationScoped
+----
+
+A central component of JPA is the `EntityManager`. 
+Since Java EE6 CDI simplifies its use. 
+With Java EE5 it had to be injected everywhere via `@PersistenceContext`. 
+Thus, this annotation, with all the parameters required for injection, was scattered across several classes of the application. 
+An elegant alternative to this is the use of a CDI producer, as we have already learned in chapter CDI basic concepts. 
+In describing the basic concept, we learned that producer fields combined with resource injection in an EE server can save a few lines of code. 
+Listing <<.Entity Manager Producer field, Entity Manager Producer field>> shows such a resource injection via `@PersistenceContext`. 
+At the same time, using `@Produces` makes this resource injection point a CDI producer. 
+After instantiating the class, the EE server injects an EntityManager proxy. 
+From then on, the CDI container can use this proxy by the producer as a contextual instance. 
+Since the EE server already creates a proxy, we do not need to define an additional Scope for the EntityManager to allow us to make reasonable use of it. 
+In Listing <<.entity manager producer method, entity manager producer method>> the same functionality is seen with a producer method. 
+Again, a dependent-scoped bean is defined. 
+In both cases `EntityManagerProducer` an application-scoped bean. 
+This definition allows the instance to be created only once and the EntityManager proxy also injected only once.
+
+.Entity Manager Producer field
+[source,java]
+----
+@ApplicationScoped
 public class EntityManagerProducer {
   @Produces
   @PersistenceContext(name = "ideaForkPU")
   private EntityManager entityManager;
 }
-Compared to the Producer field, the Producer method has the advantage of simplifying the debugging process. The additional method should not be significant as it only needs to be implemented centrally once. For these reasons, IdeaFork also uses the following variant with the Producer method.
- @ApplicationScoped
+----
+
+Compared to the Producer field, the Producer method has the advantage of simplifying the debugging process. 
+The additional method should not be significant as it only needs to be implemented centrally once. 
+For these reasons, `IdeaFork` also uses the following variant with the Producer method.
+
+[source,java]
+----
+@ApplicationScoped
 public class EntityManagerProducer {
   @PersistenceContext(name = "ideaForkPU")
   private EntityManager entityManager;
@@ -850,8 +892,14 @@ public class EntityManagerProducer {
     return entityManager;
   }
 }
-In IdeaFork , we inject the EntityManager so created into the base class of our JPA repositories, which is excerpted in Listing Generic JPA Repository .
- public abstract class GenericJpaRepository<T extends BaseEntity>
+----
+
+In `IdeaFork`, we inject the `EntityManager` so created into the base class of our JPA repositories, which is excerpted in Listing <<.Generic JPA Repository, Generic JPA Repository>>.
+
+.Generic JPA Repository
+[source,java]
+----
+public abstract class GenericJpaRepository<T extends BaseEntity>
   implements GenericRepository<T> {
 
     //...
@@ -870,12 +918,39 @@ In IdeaFork , we inject the EntityManager so created into the base class of our 
 
     //...
 }
+----
+TIP: Worth mentioning in connection with JPA is the separation of CDI beans and JPA entities. 
+Instances of a class should only be managed by a container (JPA or CDI) to avoid technical issues with participating proxy libraries. 
+Technically, we could easily avoid constraints in this area by using only dependent-scoped beans for entities that do not use interceptors or decorators. 
+This allows us to easily inject instances of entities. 
+In order to avoid this aspect being forgotten, `IdeaFork` does not use such a professional injection. 
+Instead, we use the classic keyword `new`.
 
-TIP: Worth mentioning in connection with JPA is the separation of CDI beans and JPA entities. Instances of a class should only be managed by a container (JPA or CDI) to avoid technical issues with participating proxy libraries. Technically, we could easily avoid constraints in this area by using only dependent-scoped beans for entities that do not use interceptors or decorators. This allows us to easily inject instances of entities. In order to avoid this aspect being forgotten, IdeaFork does not use such a professional injection. Instead, we use the classic keyword new .
 === Bean Validation with CDI
 
-The previously discussed EE specifications and their integration with CDI already cover a large proportion of use cases in business applications. However, one important aspect is missing - the validation. The Bean Validation specification (JSR 303), like CDI itself, celebrated its debut in EE6. As mentioned briefly, contextual references can be made to javax.validation.ValidationFactory and javax.validation.Validator via @Inject be injected. In many cases, manual use of these artifacts is not required. For example, both JSF and JPA incorporate the then-new specification from the beginning. Normally, only the desired bean validation constraints need to be used for the actual validation. Most often, it may be necessary to use a CDI bean in a constraint validator to retrieve values ​​from the database for validation, for example. However, this is only supported as of EE7 by default. With EE6, however, this functionality can be implemented very easily. Of course we could manually search CDI beans at any time. However, we would have to do this again in each constraint validator. Instead, we want to delegate the creation of constraint validators to the CDI container at a central location, as long as it knows a bean with the corresponding type. In the chapter We have already gotten to know CDI basic concepts by manually finding beans. In a first step we extend CdiUtils with the method getContextualReference . Listing Manual integration of bean validation and CDI demonstrates that null is returned if no corresponding bean was found by the CDI container. We can use this new method in our own implementation of javax.validation.ConstraintValidatorFactory . Implementation in listing Manual integration of bean validation and CDI delegated to defaultFactory if the CDI container does not find a corresponding bean for a constraint validator.
- public class BeanAwareConstraintValidatorFactory
+The previously discussed EE specifications and their integration with CDI already cover a large proportion of use cases in business applications. 
+However, one important aspect is missing - the validation. 
+The Bean Validation specification (JSR 303), like CDI itself, celebrated its debut in EE6. 
+As mentioned briefly, contextual references can be made to `javax.validation.ValidationFactory` and `javax.validation.Validator` via `@Inject` be injected. 
+In many cases, manual use of these artifacts is not required. 
+For example, both JSF and JPA incorporate the then-new specification from the beginning. 
+Normally, only the desired bean validation constraints need to be used for the actual validation. 
+Most often, it may be necessary to use a CDI bean in a constraint validator to retrieve values ​​from the database for validation, for example. 
+However, this is only supported as of EE7 by default. 
+With EE6, however, this functionality can be implemented very easily. 
+Of course we could manually search CDI beans at any time. 
+However, we would have to do this again in each constraint validator. 
+Instead, we want to delegate the creation of constraint validators to the CDI container at a central location, as long as it knows a bean with the corresponding type. 
+In the chapter We have already gotten to know CDI basic concepts by manually finding beans. 
+In a first step we extend `CdiUtils` with the method `getContextualReference`. 
+Listing <<.Manual integration of bean validation and CDI, Manual integration of bean validation and CDI>> demonstrates that null is returned if no corresponding bean was found by the CDI container. 
+We can use this new method in our own implementation of `javax.validation.ConstraintValidatorFactory`. 
+Implementation in Listing <<.Manual integration of bean validation and CDI, Manual integration of bean validation and CDI>> delegated to defaultFactory if the CDI container does not find a corresponding bean for a constraint validator.
+
+.Manual integration of bean validation and CDI
+[source,java]
+----
+public class BeanAwareConstraintValidatorFactory
   implements ConstraintValidatorFactory {
     private final ConstraintValidatorFactory defaultFactory;
 
@@ -897,15 +972,27 @@ The previously discussed EE specifications and their integration with CDI alread
         return managedConstraintValidator;
     }
 }
+----
+For `BeanAwareConstraintValidatorFactory` to be active, we still need to enable the fully qualified class in the file `validation.xml`. 
+Listing <<.Activation of the validator factory, Activation of the validator factory>> illustrates the configuration used in `IdeaFork`.
 
-For BeanAwareConstraintValidatorFactory to be active, we still need to enable the fully qualified class in the file validation.xml . Listing Activation of the validator factory illustrates the configuration used in IdeaFork .
- <validation-config>
+[source,XML]
+----
+<validation-config>
   <constraint-validator-factory>at.irian.cdiatwork.ideafork.infrastructure
     .BeanAwareConstraintValidatorFactory</constraint-validator-factory>
 </validation-config>
+----
+In `IdeaFork`, we use this new functionality in the constraint validator `UniqueUserNameValidator`, which validates a newly added constraint named `@UserName`. 
+In our case, the constraint validator in the Listing <<.constraint validator as CDI bean, constraint validator as CDI bean>> delegates the main work to the injected `userRepository`. 
+When using `@UserName`, we only have to consider that we have to use a special validation group, otherwise the validation will also be done at login. 
+Apart from that, the remainder corresponds to the conventional rules defined by the bean validation specification. 
+Specifically, we annotate the property nickName with `@UserName(groups = UniqueUserName.class)` and extend the `formGroup.xhtml` component with an optional attribute to parameterize the newly added tag `f:validateBean` from the outside.
 
-In IdeaFork , we use this new functionality in the constraint validator UniqueUserNameValidator , which validates a newly added constraint named @UserName . In our case, the constraint validator in the listing constraint validator delegates the main work to the injected user repository as a CDI bean . When using @UserName , we only have to consider that we have to use a special validation group, otherwise the validation will also be done at login. Apart from that, the remainder corresponds to the conventional rules defined by the bean validation specification. Specifically, we annotate the property nickName with @UserName (groups = UniqueUserName.class) and extend the formGroup.xhtml component with an optional attribute to externally parameterize the newly added f: validateBean tag .
- @ApplicationScoped
+.constraint validator as CDI bean
+[source,java]
+----
+@ApplicationScoped
 public class UniqueUserNameValidator
   implements ConstraintValidator<UserName, String> {
     @Inject
@@ -920,20 +1007,37 @@ public class UniqueUserNameValidator
         return this.userRepository.loadByNickName(userName) == null;
     }
 }
+----
+We could also solve the validation logic in `UserService#loadByEmail` via Bean-Validation Constraint. 
+However, it is not always necessary to map all consistency checks via bean validation, since the additional validation groups increase the complexity of the constraint logic. 
+An advantage of validation logic with bean-validation constraints is that JSF initiates the validation of the constraints in the validation phase and, in the event of an error, displays it next to the input component rather than in the general message area as before.
 
-We could also solve the validation logic in UserService # loadByEmail via Bean-Validation Constraint. However, it is not always necessary to map all consistency checks via bean validation, since the additional validation groups increase the complexity of the constraint logic. An advantage of validation logic with bean-validation constraints is that JSF initiates the validation of the constraints in the validation phase and, in the event of an error, displays it next to the input component rather than in the general message area as before.
 === Bean Deployment Archive with Java EE
 
-One of the few downsides of CDI 1.0 is the definition of bean deployment archives (BDAs) and their implementation in the various servers. Even EE servers with the same CDI implementation do not always have a consistent behavior because key aspects in this area can be defined by the EE server's integration code. Thus, even when migrating from one Weld based server to another, subtle differences can occur if the application is not fully portable. The concept of bean-deployment archives was introduced to define module boundaries for beans and configurations. The most restrictive case are CDI beans and configurations via beans.xml only valid for the current archive. At first, this may sound useful. However, as soon as modules, such as JARs, are not under their own control or are used to modularize their own application, various use cases can only be implemented with additional effort or not at all. Depending on the specific constellation, in severe cases this can also concern injection across module boundaries, as well as the adaptation of default implementations of a module in which an alternative implementation outside the module is to be made available. In addition, for example, interceptors must be reconfigured for each archive. Because the definition of BDA rules leaves a lot of scope for interpretation and has already caused long discussions, partially alternative approaches were created. Some application servers confess, for example, the file beans.xml has a special status when placed in the WEB-INF directory . However, the exact implementation is not covered by the CDI specification, and the actual behavior may even be different between individual versions of a server.
- 
+One of the few downsides of CDI 1.0 is the definition of bean deployment archives (BDAs) and their implementation in the various servers. 
+Even EE servers with the same CDI implementation do not always have a consistent behavior because key aspects in this area can be defined by the EE server's integration code. 
+Thus, even when migrating from one Weld based server to another, subtle differences can occur if the application is not fully portable. 
+The concept of bean-deployment archives was introduced to define module boundaries for beans and configurations. 
+The most restrictive case are CDI beans and configurations via `beans.xml` only valid for the current archive. 
+At first, this may sound useful. 
+However, as soon as modules, such as JARs, are not under their own control or are used to modularize their own application, various use cases can only be implemented with additional effort or not at all. 
+Depending on the specific constellation, in severe cases this can also concern injection across module boundaries, as well as the adaptation of default implementations of a module in which an alternative implementation outside the module is to be made available. 
+In addition, for example, interceptors must be reconfigured for each archive. 
+Because the definition of BDA rules leaves a lot of scope for interpretation and has already caused long discussions, partially alternative approaches were created. 
+Some application servers confess, for example, the file `beans.xml` has a special status when placed in the `WEB-INF` directory. 
+However, the exact implementation is not covered by the CDI specification, and the actual behavior may even be different between individual versions of a server.
 
-In enterprise archives (EARs) the situation is exacerbated, as it depends on the exact structuring of the application, whether and how different constellations work. Since some server versions may even have side effects between beans of several web archives (WARs) in combination with classes in a shared module of an EAR, it is advisable to avoid EARs, at least in EE6 and EE7. Fortunately, since EE6, EARs have only had a subordinate role, which in many cases makes this restriction barely noticeable, if at all. Apache OpenWebBeans in standalone mode (= manually configured for Java SE or a servlet container) even disables the BDA rules completely by default, which means that many restrictions and hurdles do not occur.
- 
+In enterprise archives (EARs) the situation is exacerbated, as it depends on the exact structuring of the application, whether and how different constellations work. 
+Since some server versions may even have side effects between beans of several web archives (WARs) in combination with classes in a shared module of an EAR, it is advisable to avoid EARs, at least in EE6 and EE7. 
+Fortunately, since EE6, EARs have only had a subordinate role, which in many cases makes this restriction barely noticeable, if at all. 
+Apache OpenWebBeans in standalone mode (= manually configured for Java SE or a servlet container) even disables the BDA rules completely by default, which means that many restrictions and hurdles do not occur.
 
-Even with a manageable application like IdeaFork , the BDAs for GlassFish 3 have to be structured differently than, for example, for AS7, although both servers use Weld as a CDI implementation. Only through different Maven build profiles, which can be seen in detail in the Git repository, the same behavior can be achieved at runtime.
- 
+Even with a manageable application like `IdeaFork`, the BDAs have to be structured differently for GlassFish 3 than, for example, for AS7, although both servers use Weld as a CDI implementation. 
+Only through different Maven build profiles, which can be seen in detail in the Git repository, the same behavior can be achieved at runtime.
 
-Since CDI 1.1, which is part of EE7, this issue has been partially solved by a new annotation called @Priority . Artifacts are activated for the entire application as soon as they are annotated with @Priority . For alternative beans, the specified priority decides which bean will actually be active, and for decorators and interceptors, the order of these is defined.
- 
+Since CDI 1.1, which is part of EE7, this issue has been partially solved by a new annotation called `@Priority`. 
+Artifacts are activated for the entire application as soon as they are annotated with `@Priority`. 
+For alternative beans, the specified priority decides which bean will actually be active, and for decorators and interceptors, the order of these is defined.
 
-In summary, this means that modularization and the choice of archive type should be based on the simplest possible version. The more complex the structuring of the application becomes, the more likely are the restrictions that occur due to BDA or classloading rules.
+In summary, this means that modularization and the choice of archive type should be based on the simplest possible version. 
+The more complex the structuring of the application becomes, the more likely are the restrictions that occur due to BDA or classloading rules.

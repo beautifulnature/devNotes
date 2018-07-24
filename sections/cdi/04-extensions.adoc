@@ -1,62 +1,185 @@
 == Portable CDI extensions
 
-In December 2009 the time had come and CDI was available in a first version as part of Java EE6. The previous chapter showed that CDI was integrated very early with other Java EE6 specifications such as JSF, EJB, and many more. However, there is some room for improvement in the standard integration. This was quickly recognized in some cases and later submitted on the next occasion, the release of Java EE7. Apart from that, certain functionalities such as the integration of other frameworks are difficult or impossible to cover by specifications. To ensure that these limitations do not become a limiting factor in daily work, CDI's SPI (Service Provider Interface) has been kept very flexible. This makes it possible to implement so-called portable CDI extensions to extend the standard API of CDI and close any gaps. There are now many such extensions. In this chapter, you will learn basic skills that will help you expand CDI relatively easily. In addition, these basics allow the analysis and possibly improvement of existing CDI extensions.
- 
+In December 2009 the time had come and CDI was available in a first version as part of Java EE6. 
+The previous chapter showed that CDI was integrated very early with other Java EE6 specifications such as JSF, EJB, and many more. 
+However, there is some room for improvement in the standard integration. 
+This was quickly recognized in some cases and later submitted on the next occasion, the release of Java EE7. 
+Apart from that, certain functionalities such as the integration of other frameworks are difficult or impossible to cover by specifications. 
+To ensure that these limitations do not become a limiting factor in daily work, CDI's SPI (Service Provider Interface) has been kept very flexible. 
+This makes it possible to implement so-called portable CDI extensions to extend the standard API of CDI and close any gaps. 
+There are now many such extensions. 
+In this chapter, you will learn basic skills that will help you expand CDI relatively easily. 
+In addition, these basics allow the analysis and possibly improvement of existing CDI extensions.
 
-In a broader sense, portable CDI extensions are articles for CDI that are implemented only on the basis of CDI's APIs and SPIs. Given a few subtleties of CDI implementations, such an essay is compatible with any specification compliant implementation. In the best case, this also applies to use in Java EE6 + servers. However, the deep integration of CDI and the different layout of parts of the specification can be an additional challenge. We have already got to know different interpretations of the BDA rules in the chapter CDI and Java EE .
- 
+In a broader sense, portable CDI extensions are articles for CDI that are implemented only on the basis of CDI's APIs and SPIs. 
+Given a few subtleties of CDI implementations, such an essay is compatible with any specification compliant implementation. 
+In the best case, this also applies to use in Java EE6+ servers. 
+However, the deep integration of CDI and the different layout of parts of the specification can be an additional challenge. 
+We have already got to know different interpretations of the BDA rules in the chapter CDI and Java EE.
 
-A portable extension in the strict sense is called when the marker interface javax.enterprise.inject.spi.Extension is implemented, for example, during the startup process of the application to modify or extend the default behavior. This marker interface is only needed to configure the corresponding implementations for the ServiceLoader mechanism ( java.util.ServiceLoader ). Implementations of this interface can include any number of CDI-Observer methods that monitor predefined stages of the container lifecycle. Depending on the lifecycle phase, you can extend the standard concepts of CDI with your own mechanisms to support additional use cases as comfortably as possible.
+A portable extension in the strict sense is called when the marker interface `javax.enterprise.inject.spi.Extension` is implemented, for example, during the startup process of the application to modify or extend the default behavior. 
+This marker interface is only needed to configure the corresponding implementations for the `ServiceLoader` mechanism (`java.util.ServiceLoader`). 
+Implementations of this interface can include any number of CDI-Observer methods that monitor predefined stages of the container lifecycle. 
+Depending on the lifecycle phase, you can extend the standard concepts of CDI with your own mechanisms to support additional use cases as comfortably as possible.
+
 === The Container Lifecycle of CDI
 
-Before we start with a concrete extension, let's take a closer look at the container lifecycle, as this is the basis for the successful implementation of extension classes. The lifecycle basically consists of two main parts. At the beginning is the container start, also called bootstrapping process, and at the end of the container stop. During container startup, bean definitions can optionally be changed, added or removed. This allows integration with almost any frameworks that do not themselves provide explicit CDI support. In the following part we get to know all events of the lifecycle.
- 
+Before we start with a concrete extension, let's take a closer look at the container lifecycle, as this is the basis for the successful implementation of extension classes. 
+The lifecycle basically consists of two main parts. 
+At the beginning is the container start, also called bootstrapping process, and at the end of the container stop. 
+During container startup, bean definitions can optionally be changed, added or removed. 
+This allows integration with almost any frameworks that do not themselves provide explicit CDI support. 
+In the following part we get to know all events of the lifecycle.
 
-As mentioned earlier, the CDI container notifies active implementations of javax.enterprise.inject.spi.Extension through CDI events. The service loader concept, which was introduced with JDK6, is used for the configuration and thus the activation of own extension classes. With the java.util.ServiceLoader class , in the case of CDI, all configured implementations of the javax.enterprise.inject.spi.Extension marker interface are queried by the CDI container, which is contained in one or more files named / META-INF / services / javax .enterprise.inject.spi.Extension are configured. For each archive, for example a JAR file, such a configuration file with any number of entries is possible. An entry consists of the fully qualified class name of an implementation of the aforementioned marker interface. For each of these entries, the CDI container creates an instance that is valid for the entire application. This is a fixed specification. The explicit specification of a scope is not provided. As the name Markerinterface already suggests, javax.enterprise.inject.spi.Extension does not specify any method signatures , which means that a method does not have to be provided for every lifecycle event.
- 
+As mentioned earlier, the CDI container notifies active implementations of `javax.enterprise.inject.spi.Extension` through CDI events. 
+The service loader concept, which was introduced with JDK6, is used for the configuration and thus the activation of custom extension classes. 
+With the `java.util.ServiceLoader` class, in the case of CDI, all configured implementations of the `javax.enterprise.inject.spi.Extension` marker interface are queried by the CDI container, which is contained in one or more files named `/META-INF/services/javax.enterprise.inject.spi.Extension` are configured. 
+For each archive, for example a JAR file, such a configuration file with any number of entries is possible. 
+An entry consists of the fully qualified class name of an implementation of the aforementioned marker interface. 
+For each of these entries, the CDI container creates an instance that is valid for the entire application. 
+This is a fixed specification. 
+The explicit specification of a scope is not provided. 
+As the name Markerinterface already suggests, `javax.enterprise.inject.spi.Extension` does not specify any method signatures, which means that a method does not have to be provided for every lifecycle event.
 
-Container lifecycle CDI events can be monitored in active extension classes using observer methods. Some of the lifecycle events fires the CDI container once and others for each artifact found, such as beans. Most of these events have been available since CDI 1.0. CDI 1.1 introduces three additional events, AfterTypeDiscovery , ProcessInjectionPoint, and ProcessBeanAttributes , which are also discussed in the following section.
-TIP: Even extensions s are injectable into other CDI beans later. This approach makes it possible to collect information during the start of the application so that it can be used later.
+Container lifecycle CDI events can be monitored in active extension classes using observer methods. 
+Some of the lifecycle events fires the CDI container once and others for each artifact found, such as beans. 
+Most of these events have been available since CDI 1.0. 
+CDI 1.1 introduces three additional events, `AfterTypeDiscovery`, `ProcessInjectionPoint`, and `ProcessBeanAttributes`, which are also discussed in the following section.
+TIP: Even extensions are injectable into other CDI beans later. 
+This approach makes it possible to collect information during the start of the application so that it can be used later.
+
 In the following part you will learn more about the individual lifecycle events and their areas of application.
+
 ==== BeforeBeanDiscovery
 
-Before starting to process the bean candidates, the CDI container fires the BeforeBeanDiscovery event . This event can be used to add qualifier, scope, stereotype, and interceptor annotations that do not meet all specifications of the CDI specification. In addition, it is even possible for classes outside of BDAs (Bean Deployment Archive) to create a so-called AnnotatedType , the pre-stage of managed beans, and add it via this event. The later resulting beans hardly differ from beans, which are regularly included in a BDA. But there is a small difference here by BDAs. There are no beans.xml for such bean candidates File, whereby only global (interceptor, ...) configurations available since CDI 1.1 are usable for the final beans. In addition to the limitation in combination with BDAs, manual registration of AnnotatedType s allows the integration of arbitrary archives and configuration formats to extend the standard search for bean candidates.
+Before starting to process the bean candidates, the CDI container fires the `BeforeBeanDiscovery` event. 
+This event can be used to add qualifier, scope, stereotype, and interceptor annotations that do not meet all specifications of the CDI specification. 
+In addition, it is even possible for classes outside of BDAs (Bean Deployment Archive) to create a so-called AnnotatedType, the pre-stage of managed beans, and add it via this event. 
+The later resulting beans hardly differ from beans, which are regularly included in a BDA. 
+But there is a small difference here by BDAs. 
+There is no `beans.xml` file for such bean candidates, allowing only global (interceptor, ...) configurations available since CDI 1.1 to be used on the final beans.
+In addition to the limitation in combination with BDAs, manual registration of `AnnotatedType` allows the integration of arbitrary archives and configuration formats to extend the standard search for bean candidates.
+
 ==== ProcessAnnotatedType
-After the manual registrations via BeforeBeanDiscovery , the CDI container performs a scan of all BDAs and creates for each potential bean class a so-called AnnotatedType , which is fired by an event named ProcessAnnotatedType . This event is the most commonly used event in the bootstrapping process because portable CDI extensions can use this event to modify or remove bean definitions. In IdeaFork , we use this to disable certain types for the CDI container in the second part of this chapter. Such deactivation of bean candidates is by calling the AnnotatedType method #vetoin an Observer method for the ProcessAnnotatedType event.
+
+After the manual registrations via `BeforeBeanDiscovery`, the CDI container performs a scan of all BDAs and creates for each potential bean class a so-called `AnnotatedType`, which is fired by an event named `ProcessAnnotatedType`. 
+This event is the most commonly used event in the bootstrapping process because portable CDI extensions can use this event to modify or remove bean definitions. 
+In `IdeaFork`, we use this to disable certain types for the CDI container in the second part of this chapter. 
+Such bean candidate deactivation is possible by calling the AnnotatedType #veto method in an Observer method for the `ProcessAnnotatedType` event.
+
 ==== AfterTypeDiscovery
-This lifecycle event has been available since CDI 1.1 and will be fired once all types have been registered. The methods #getAlternatives , #getInterceptors and #getDecorators return lists of globally activated classes. Both the order and the contents of the lists can be changed at this time. Global activations have been standardized since CDI 1.1 using the @Priority annotation . If, for example, an interceptor is activated for only one BDA via beans.xml , then this is not included here.
- 
 
-With #addAnnotatedType it is possible to add own types. Afterwards, the CDI container knows all definitions for which actually bean definitions are to be created. All types excluded by #veto are no longer available in the internal data structures of the CDI container at the latest. With ProcessBeanAttributes , which we will discuss in more detail later, since CDI 1.1, such a veto is also possible based on the final bean metadata.
+This lifecycle event has been available since CDI 1.1 and will be fired once all types have been registered. 
+The methods #getAlternatives, #getInterceptors and #getDecorators return lists of globally activated classes. 
+Both the order and the contents of the lists can be changed at this time. 
+Global activations have been standardized since CDI 1.1 using the `@Priority` annotation. 
+If, for example, an interceptor is activated for only one BDA via beans.xml, then this is not included here.
+
+With #addAnnotatedType it is possible to add custom types. 
+Afterwards, the CDI container knows all definitions for which actually bean definitions are to be created. 
+All types excluded by #veto are no longer available in the internal data structures of the CDI container at the latest. 
+With `ProcessBeanAttributes`, which we will discuss in more detail later, since CDI 1.1, such a veto is also possible based on the final bean metadata.
+
 ==== ProcessInjectionPoint
-This event, also introduced with CDI 1.1, is called for each injection point of a managed resource. These include not only CDI beans, but also artifacts such as EJBs. This lifecycle event has been the first step in the definition of the final managed bean metadata since CDI 1.1. Previously, this was the subsequent event called ProcessInjectionTarget .
+
+This event, also introduced with CDI 1.1, is called for each injection point of a managed resource. 
+These include not only CDI beans, but also artifacts such as EJBs. 
+This lifecycle event has been the first step in the definition of the final managed bean metadata since CDI 1.1. 
+Previously, this was the subsequent event called `ProcessInjectionTarget`.
  
+`ProcessInjectionPoint` is created not only for injection points in registered types, but also for injection points of active observer methods and producers. 
+Via #getInjectionPoint and #setInjectionPoint you can check or replace / decorate the respective injection point in special cases. 
+If an invalid definition (for the application) is found during the check, the application start can be aborted by calling #addDefinitionError (Throwable).
 
-ProcessInjectionPoint is created not only for injection points in registered types, but also for injection points of active observer methods and producers. Via #getInjectionPoint and #setInjectionPoint you can check or replace / decorate the respective injection point in special cases. If an invalid definition (for the application) is found during the check, the application start can be aborted by calling #addDefinitionError (Throwable) .
 ==== ProcessInjectionTarget
-The ProcessInjectionTarget event is typed to the type of component and is generated for each component (including Java EE components) that supports injection. javax.enterprise.inject.spi.InjectionTarget is responsible for all creation and destruction, including the filling of injection points, as well as calls to callback methods (post-construct and pre-destroy callbacks). Because this event has its own implementation of InjectionTarget, or a wrapper for the default implementation can be set, it is easily possible to expand or adapt the mentioned processes. However, these are very specific and profound interventions, which are required only in rare cases. On the other hand, the evaluation of the corresponding AnnotatedType instance, which is available via #getAnnotatedType , is a bit more interesting . You can use this instance to carry out your own validations, and in the event of an error, you can stop container startup via #addDefinitionError (Throwable) .
-==== ProcessBeanAttributes
-This lifecycle event represents the last event introduced by CDI 1.1 in our description of the lifecycle. It is fired for each bean, as well as interceptors and decorators, and uses #getBeanAttributes and #getAnnotated to check the existing metadata. If necessary, it is possible to report an error by calling #addDefinitionError (Throwable) , which terminates the container start as usual. In rare cases it may be necessary to modify the existing bean attributes with #setBeanAttributes or disable the entire bean by calling #veto .
-==== ProcessProducer
-For each CDI producer, both producer methods and producer fields, this lifecycle event will be fired. The interface of this event allows the validation of the producer and if necessary the start of the application can be aborted by calling #addDefinitionError (Throwable) . In addition, the producer can also be changed. However, customizations should only be made with a wrapper that at least partially delegates calls to the original instance. In order to avoid errors such as memory leaks, it is advisable to implement a full implementation of the Producer interface with caution.
-==== ProcessBean
-Before an active bean is effectively registered, the CDI container fires the ProcessBean event . This represents the last point before the corresponding bean is registered. At this point, the final Managed-Bean definition (instance of javax.enterprise.inject.spi.Bean <T> ) already exists . Thus, it is possible to check the final representation of the managed bean metadata and, if necessary, to terminate the container start via #addDefinitionError (Throwable) . If you are only interested in a specific managed bean type, then it is possible to use the specific subtypes ProcessManagedBean , ProcessProducerMethod and ProcessProducerField specify. With ProcessBean itself you can monitor all subtypes of the event.
-==== ProcessObserverMethod
-Observer methods have a separate event called ProcessObserverMethod because validating such methods requires different metadata. In addition to the bean class and the qualifier annotations, all information about the method itself is also available. The basic concept corresponds to that of ProcessBean .
-==== AfterBeanDiscovery
-Once the CDI container has finished processing, including active managed bean validation, the AfterBeanDiscovery event fires . Apart from the already known method #addDefinitionError (Throwable) , this event provides methods for the manual registration of own managed beans, observer methods and CDI context implementations. If a separate managed bean is added using the #addBean method , the previously presented event becomes ProcessBean fired before the bean is effectively added. It should be noted that these are not fully-fledged managed beans, as, for example, no interceptors are supported. Such beans are thus more comparable with producers and allow, for example, the integration of other bean containers.
-==== AfterDeploymentValidation
-AfterDeploymentValidation is the last event before the CDI container is fully started. At this point, all validations for which the container is responsible must be completed. If you find an invalid situation in the application in an observer for this event, you can still prevent the successful deployment of the application at this point using the #addDeploymentProblem method .
-TIP: The AfterDeploymentValidation event is often used to manually implement a startup event. However, this works only to a limited extent and thus does not allow a completely portable implementation. For this reason, the annotation @Initialized with CDI 1.1 was introduced. Since CDI 1.1, the preferred approach to implementing portable initialization logic is an Observer with the qualifier @Initialized (ApplicationScoped.class) .
-==== BeforeShutdown
-This Lifecycle event is fired before the CDI container is stopped and allows, for example, the explicit release of open resources before the application is terminated.
-=== Develop your own CDI extensions
-To develop your own portable CDI extension, you do not have to monitor each of the previously presented events. The strength of CDI events, the absolute decoupling between producers and the Observer methods, is also used here to keep CDI extensions as lightweight as possible. In IdeaFork, we want to use the ProcessAnnotatedType event to disable JPA entities for the CDI container. As already mentioned in the chapter CDI and Java EE , instances of a class should only be managed by one container, otherwise side effects with the various proxy libraries may occur. JPA entities can be identified by the annotation @Entity recognize. We use this circumstance to make entity classes invisible to the CDI container. To do this, we create the class EntityVetoExtension and implement the marker interface javax.enterprise.inject.spi.Extension . For an extension class to be found and used by the CDI container, you must specify it fully qualified in a file named /META-INF/services/javax.enterprise.inject.spi.Extension . Listing Activation of a portable CDI extension demonstrates this for our EntityVetoExtension .
- //content of /META-INF/services/javax.enterprise.inject.spi.Extension
-at.irian.cdiatwork.ideafork.core.impl.infrastructure.EntityVetoExtension
 
-For now, we are only interested in the event ProcessAnnotatedType and therefore add a corresponding Observer method. As Listing illustrated a class for CDI exclude , it is possible to keep the implementation very simple. Via ProcessAnnotatedType # getAnnotatedType # getJavaClass we can directly access the underlying class. In our case, however, we'll take a shortcut over ProcessAnnotatedType # getAnnotatedType # isAnnotationPresent . As soon as we find the annotation @Entity , we deactivate the corresponding AnnotatedType with the call ProcessAnnotatedType # veto, The subsequent container lifecycle events are therefore no longer fired for this AnnotatedType . The entity classes are also no longer injectable via @Inject into other beans because they no longer know the CDI container by calling the #veto method.
- public class EntityVetoExtension implements Extension {
+The `ProcessInjectionTarget` event is typed to the type of component and is generated for each component (including Java EE components) that supports injection. 
+`javax.enterprise.inject.spi.InjectionTarget` is responsible for all creation and destruction, including the filling of injection points, as well as calls to callback methods (post-construct and pre-destroy callbacks). 
+Because this event has its own implementation of InjectionTarget, or a wrapper for the default implementation can be set, it is easily possible to expand or adapt the mentioned processes. 
+However, these are very specific and profound interventions, which are required only in rare cases. 
+On the other hand, the evaluation of the corresponding `AnnotatedType` instance, which is available via #getAnnotatedType, is a bit more interesting. 
+You can use this instance to carry out your own validations, and in the event of an error, you can stop container startup via #addDefinitionError (Throwable).
+
+==== ProcessBeanAttributes
+
+This lifecycle event represents the last event introduced by CDI 1.1 in our description of the lifecycle. 
+It is fired for each bean, as well as interceptors and decorators, and uses #getBeanAttributes and #getAnnotated to check the existing metadata. 
+If necessary, it is possible to report an error by calling #addDefinitionError (Throwable), which terminates the container start as usual. 
+In rare cases it may be necessary to modify the existing bean attributes with #setBeanAttributes or disable the entire bean by calling #veto.
+
+==== ProcessProducer
+
+For each CDI producer, both producer methods and producer fields, this lifecycle event will be fired. 
+The interface of this event allows the validation of the producer and if necessary the start of the application can be aborted by calling #addDefinitionError (Throwable). 
+In addition, the producer can also be changed. 
+However, customizations should only be made with a wrapper that at least partially delegates calls to the original instance. 
+In order to avoid errors such as memory leaks, it is advisable to implement a full implementation of the Producer interface with caution.
+
+==== ProcessBean
+
+Before an active bean is effectively registered, the CDI container fires the `ProcessBean` event. 
+This represents the last point before the corresponding bean is registered. 
+At this point, the final Managed-Bean definition (instance of `javax.enterprise.inject.spi.Bean <T>`) already exists. 
+Thus, it is possible to check the final representation of the managed bean metadata and, if necessary, to terminate the container start via #addDefinitionError (Throwable). 
+If you are only interested in a specific managed bean type, then it is possible to use the specific subtypes `ProcessManagedBean`, `ProcessProducerMethod` and `ProcessProducerField` specify. 
+With `ProcessBean` itself you can monitor all subtypes of the event.
+
+==== ProcessObserverMethod
+
+Observer methods have a separate event called `ProcessObserverMethod` because validating such methods requires different metadata. 
+In addition to the bean class and the qualifier annotations, all information about the method itself is also available. 
+The basic concept corresponds to that of `ProcessBean`.
+
+==== AfterBeanDiscovery
+
+Once the CDI container has finished processing, including active managed bean validation, the `AfterBeanDiscovery` event fires. 
+Apart from the already known method #addDefinitionError (Throwable), this event provides methods for the manual registration of custom managed beans, observer methods and CDI context implementations. 
+If a separate managed bean is added using the #addBean method, the previously presented event becomes `ProcessBean` fired before the bean is effectively added. 
+It should be noted that these are not fully-fledged managed beans, as, for example, no interceptors are supported. 
+Such beans are thus more comparable with producers and allow, for example, the integration of other bean containers.
+
+==== AfterDeploymentValidation
+
+`AfterDeploymentValidation` is the last event before the CDI container is fully started. 
+At this point, all validations for which the container is responsible must be completed. 
+If you find an invalid situation in the application in an observer for this event, you can still prevent the successful deployment of the application at this point using the #addDeploymentProblem method.
+
+TIP: The `AfterDeploymentValidation` event is often used to manually implement a startup event. 
+However, this works only to a limited extent and thus does not allow a completely portable implementation. 
+For this reason, the annotation `@Initialized` with CDI 1.1 was introduced. 
+Since CDI 1.1, the preferred approach to implementing portable initialization logic is an Observer with the qualifier `@Initialized(ApplicationScoped.class)`.
+
+==== BeforeShutdown
+
+This Lifecycle event is fired before the CDI container is stopped and allows, for example, the explicit release of open resources before the application is terminated.
+
+=== Develop your own CDI extensions
+
+To develop custom portable CDI extension, you do not have to monitor each of the previously presented events. 
+The strength of CDI events, the absolute decoupling between producers and the Observer methods, is also used here to keep CDI extensions as lightweight as possible. 
+In `IdeaFork`, we want to use the `ProcessAnnotatedType` event to disable JPA entities for the CDI container. 
+As already mentioned in the chapter CDI and Java EE, instances of a class should only be managed by one container, otherwise side effects with the various proxy libraries may occur. 
+JPA entities can be identified by the annotation `@Entity`. 
+We use this circumstance to make entity classes invisible to the CDI container. 
+To do this, we create the class `EntityVetoExtension` and implement the marker interface `javax.enterprise.inject.spi.Extension`. 
+For an extension class to be found and used by the CDI container, you must specify it fully qualified in a file named `/META-INF/services/javax.enterprise.inject.spi.Extension`. 
+
+Listing <<.Activation of a portable CDI extension, Activation of a portable CDI extension>> demonstrates this for our `EntityVetoExtension`.
+
+----
+//content of /META-INF/services/javax.enterprise.inject.spi.Extension
+at.irian.cdiatwork.ideafork.core.impl.infrastructure.EntityVetoExtension
+----
+
+For now, we are only interested in the event `ProcessAnnotatedType` and therefore add a corresponding Observer method. 
+As illustrated in Listing  exclude a class for CDI, it is possible to keep the implementation very simple. Via ProcessAnnotatedType #getAnnotatedType #getJavaClass we can directly access the underlying class. 
+In our case, however, we'll take a shortcut over ProcessAnnotatedType # getAnnotatedType # isAnnotationPresent. 
+As soon as we find the annotation `@Entity`, we deactivate the corresponding AnnotatedType with the call ProcessAnnotatedType #veto. 
+The subsequent container lifecycle events are therefore no longer fired for this AnnotatedType. 
+The entity classes are also no longer injectable via @Inject into other beans because they no longer know the CDI container by calling the #veto method.
+[source,java]
+----
+public class EntityVetoExtension implements Extension {
     protected void excludeEntityClasses(
       @Observes ProcessAnnotatedType pat) {
         if (pat.getAnnotatedType().isAnnotationPresent(Entity.class)) {
@@ -64,12 +187,32 @@ For now, we are only interested in the event ProcessAnnotatedType and therefore 
         }
     }
 }
-As mentioned earlier, we can also implement bean validations using CDI extensions. The chapters CDI and Java EE shown combinations of CDI, EJBs and JSF are manifold. A few of the mentioned pitfalls are not immediately recognizable or can only have an effect in productive operation and sometimes require good detailed knowledge. To counteract problematic constellations and at the same time ensure a more uniform application structure, we validate application-specific guidelines with the help of an additional CDI extension. There is no limit to the scope of implementation detail validation rules. All mechanisms, which by the std. Reflection APIs can be used to validate the application structure.
- 
+----
 
-In IdeaFork , we restrict ourselves to reviewing view controller beans and the package for services. In the previous chapter, we partially used EJBs as view controllers. As a result, we have spared ourselves an independent transactional service in these cases. In more complex applications, however, it is often necessary that only part of the JSF action method (s) is transactionally executed. For this and other reasons already mentioned in the CDI and Java EE chapters , our first validation rule is to make sure that EJBs do not run concurrently with @ViewController are annotated. Every offense should be recorded. At the end of the bootstrapping process, we want to stop the application launch in the event of an error and collect all violations as the reason for the deployment problem. 
-Since we want to validate the effective bean metadata, we use an Observer for the ProcessManagedBean event in Validate Listing Application Rules . The method #getAnnotatedBeanClass does not directly return the class itself, but rather an instance of type AnnotatedType, Through this instance, we can not only check physically available metadata, but also possibly dynamically added metadata that will later be effectively visible to the CDI container. If you want to check only the physical class and its metadata, you can use the #getJavaClass method of AnnotatedType . We collect rule violations as error messages in a list. In a second observer, this time for the event AfterDevloymentValidation , we evaluate the found violations. Although we could also abort the startup process via ProcessManagedBean , a collective output of all rule violations would not be possible here.
- public class AppStructureValidationExtension implements Extension {
+As mentioned earlier, we can also implement bean validations using CDI extensions. 
+The chapters CDI and Java EE shown combinations of CDI, EJBs and JSF are manifold. 
+A few of the mentioned pitfalls are not immediately recognizable or can only have an effect in productive operation and sometimes require good detailed knowledge. 
+To counteract problematic constellations and at the same time ensure a more uniform application structure, we validate application-specific guidelines with the help of an additional CDI extension. 
+There is no limit to the scope of implementation detail validation rules. 
+All mechanisms, which by the std. Reflection APIs can be used to validate the application structure.
+ 
+In `IdeaFork`, we restrict ourselves to reviewing view controller beans and the package for services. 
+In the previous chapter, we partially used EJBs as view controllers. 
+As a result, we have spared ourselves an independent transactional service in these cases. 
+In more complex applications, however, it is often necessary that only part of the JSF action method (s) is transactionally executed. 
+For this and other reasons already mentioned in the CDI and Java EE chapters, our first validation rule is to make sure that EJBs do not run concurrently with `@ViewController` are annotated. 
+Every offense should be recorded. 
+At the end of the bootstrapping process, we want to stop the application launch in the event of an error and collect all violations as the reason for the deployment problem. 
+Since we want to validate the effective bean metadata, we use an Observer for the `ProcessManagedBean` event in Listing Validate Application Rules. 
+The method #getAnnotatedBeanClass does not directly return the class itself, but rather an instance of type AnnotatedType, through this instance, we not only check physically available metadata, but also possibly dynamically added metadata that will later be effectively visible to the CDI container. 
+If you want to check only the physical class and its metadata, you can use the #getJavaClass method of AnnotatedType. 
+We collect rule violations as error messages in a list. 
+In a second observer, this time for the event `AfterDevloymentValidation`, we evaluate the found violations. 
+Although we could also abort the startup process via `ProcessManagedBean`, a collective output of all rule violations would not be possible here.
+
+[source,java]
+----
+public class AppStructureValidationExtension implements Extension {
   private static final Logger LOG = Logger.getLogger(/*...*/);
   private List<String> violations = new ArrayList<String>();
 
@@ -107,8 +250,17 @@ Since we want to validate the effective bean metadata, we use an Observer for th
         new IllegalStateException(violationMessage.toString()));
   }
 }
-With a second rule, we want to make sure that all beans in a service package have been cast as @Stateless -EJBs. In addition, we review beans annotated with @javax.ejb.Singleton and log a warning, as singleton EJBs with ConcurrencyManagementType.CONTAINER can quickly create an unwanted bottleneck in the application, or beans with ConcurrencyManagementType.BEAN are rarely needed are. A warning should also be logged if view controller beans do not conform to a given naming convention. Listing validating extended application rules shows the required changes compared to Validate application rules .
- public class AppStructureValidationExtension implements Extension {
+----
+
+With a second rule, we want to make sure that all beans in a service package have been cast as `@Stateless` -EJBs. 
+In addition, we review beans annotated with `@javax.ejb.Singleton` and log a warning, as singleton EJBs with `ConcurrencyManagementType.CONTAINER` can quickly create an unwanted bottleneck in the application, or beans with `ConcurrencyManagementType.BEAN` are rarely needed. 
+A warning should also be logged if view controller beans do not conform to a given naming convention. 
+
+Listing validating extended application rules shows the required changes compared to Validate application rules.
+
+[source,java]
+----
+public class AppStructureValidationExtension implements Extension {
   //...
   public void validateArtifacts(
     @Observes ProcessManagedBean pmb) {
@@ -148,7 +300,12 @@ With a second rule, we want to make sure that all beans in a service package hav
     }
   }
 }
-The self-defined application guidelines lead to two warnings and five violations with the current state of IdeaFork . The required adjustments are very simple. In addition to the exchange of individual annotations for equivalent annotations, which are also presented in the chapter CDI and Java EE , above all an additional EJB called IdeaService is required. Any changes to this transition, as well as the activation of AppStructureValidationExtension, are put in a commit in the IdeaFork Git repository .
- 
+----
 
-There are only a few limits to expandability, which makes CDI almost extensible with any concept. The following chapter, on the topic Apache DeltaSpike , illustrates further possibilities how CDI can be extended portably.
+The self-defined application guidelines lead to two warnings and five violations with the current state of `IdeaFork`. 
+The required adjustments are very simple. 
+In addition to the exchange of individual annotations for equivalent annotations, which are also presented in the chapter CDI and Java EE, above all an additional EJB called IdeaService is required. 
+Any changes to this transition, as well as the activation of AppStructureValidationExtension, are put in a commit in the IdeaFork Git repository.
+
+There are only a few limits to expandability, which makes CDI almost extensible with any concept. 
+The following chapter, on the topic Apache DeltaSpike, illustrates further possibilities how CDI can be extended portably.

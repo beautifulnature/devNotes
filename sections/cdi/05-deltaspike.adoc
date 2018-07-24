@@ -1,22 +1,50 @@
 == Apache Delta Spike
 
-In the previous chapters, we got to know different CDI concepts using the example application IdeaFork . Before we reduce IdeaFork to an efficient minimum in the next chapter , we will build the current state of IdeaForkcontinue in this chapter. For this we use a popular portable CDI extension called Apache DeltaSpike, which was founded in late 2011 to replace Apache MyFaces CODI and JBoss Seam3. A large part of all CDI-based applications used one of the two extensions at the time to benefit from additional concepts. CODI emerged from the requirements of large applications and was characterized by high stability and good performance in combination with innovative concepts. Similar to CODI, Seam3 offered some modules that improved CDI and integrated with other technologies. Although CODI provided fewer modules, the framework was preferred in many CDI-based JSF applications because the framework greatly facilitated the daily work, especially with CDI and JSF.
- 
+In the previous chapters, we got to know different CDI concepts using the example application `IdeaFork`. 
+Before we reduce IdeaFork to an efficient minimum in the next chapter, we continue to expand IdeaFork's current status in this chapter.
+For this we use a popular portable CDI extension called Apache DeltaSpike, which was founded in late 2011 to replace Apache MyFaces CODI and JBoss Seam3. 
+A large part of all CDI-based applications used one of the two extensions at the time to benefit from additional concepts. 
+CODI emerged from the requirements of large applications and was characterized by high stability and good performance in combination with innovative concepts. 
+Similar to CODI, Seam3 offered some modules that improved CDI and integrated with other technologies. 
+Although CODI provided fewer modules, the framework was preferred in many CDI-based JSF applications because the framework greatly facilitated the daily work, especially with CDI and JSF.
 
-The beginning was a bit sluggish, as some overlapping aspects had to be merged into a consistent API. With version 1.0 it finally happened and DeltaSpike covered the most successful concepts of CODI, whereby the migration of a CODI-based application in many cases was feasible in a few hours. In almost all areas, however, a complete re-implementation of the known functionalities was carried out in order to make them even more convenient and flexible at the same time. In addition, additional mechanisms and modules have been added that could be more easily implemented, including through parts originally sourced from Seam3. After some discussions and compromises, however, Seam3 only adopted a few implementations whereby the migration effort of a Seam3 application, depending on the parts used, can be more extensive. Some of the Seam3 modules have been moved to third-party projects. These modules are primarily the CDI integration of the corresponding projects, which will be developed and maintained by the projects themselves in the future. DeltaSpike thus provides primarily the direct improvement of CDI and other Java EE specifications, and also enables the portable use of CDI 1.x in Java SE projects. The practical extension of Java EE, but also of CDI itself, is the recipe for success of DeltaSpike. This helped the project to a diverse community and 2014 even to a "Duke's Choice Award". can be more extensive. Some of the Seam3 modules have been moved to third-party projects. These modules are primarily the CDI integration of the corresponding projects, which will be developed and maintained by the projects themselves in the future. DeltaSpike thus provides primarily the direct improvement of CDI and other Java EE specifications, and also enables the portable use of CDI 1.x in Java SE projects. The practical extension of Java EE, but also of CDI itself, is the recipe for success of DeltaSpike. This helped the project to a diverse community and 2014 even to a "Duke's Choice Award". can be more extensive. Some of the Seam3 modules have been moved to third-party projects. These modules are primarily the CDI integration of the corresponding projects, which will be developed and maintained by the projects themselves in the future. DeltaSpike thus provides primarily the direct improvement of CDI and other Java EE specifications, and also enables the portable use of CDI 1.x in Java SE projects. The practical extension of Java EE, but also of CDI itself, is the recipe for success of DeltaSpike. This helped the project to a diverse community and 2014 even to a "Duke's Choice Award". These modules are primarily the CDI integration of the corresponding projects, which will be developed and maintained by the projects themselves in the future. DeltaSpike thus provides primarily the direct improvement of CDI and other Java EE specifications, and also enables the portable use of CDI 1.x in Java SE projects. The practical extension of Java EE, but also of CDI itself, is the recipe for success of DeltaSpike. This helped the project to a diverse community and 2014 even to a "Duke's Choice Award". These modules are primarily the CDI integration of the corresponding projects, which will be developed and maintained by the projects themselves in the future. DeltaSpike thus provides primarily the direct improvement of CDI and other Java EE specifications, and also enables the portable use of CDI 1.x in Java SE projects. The practical extension of Java EE, but also of CDI itself, is the recipe for success of DeltaSpike. This helped the project to a diverse community and 2014 even to a "Duke's Choice Award". DeltaSpike thus provides primarily the direct improvement of CDI and other Java EE specifications, and also enables the portable use of CDI 1.x in Java SE projects. The practical extension of Java EE, but also of CDI itself, is the recipe for success of DeltaSpike. This helped the project to a diverse community and 2014 even to a "Duke's Choice Award". DeltaSpike thus provides primarily the direct improvement of CDI and other Java EE specifications, and also enables the portable use of CDI 1.x in Java SE projects. The practical extension of Java EE, but also of CDI itself, is the recipe for success of DeltaSpike. This helped the project to a diverse community and 2014 even to a "Duke's Choice Award".
- 
+The beginning was a bit sluggish, as some overlapping aspects had to be merged into a consistent API. 
+With version 1.0 it finally happened and DeltaSpike covered the most successful concepts of CODI, whereby the migration of a CODI-based application in many cases was feasible in a few hours. 
+In almost all areas, however, a complete re-implementation of the known functionalities was carried out in order to make them even more convenient and flexible at the same time. 
+In addition, additional mechanisms and modules have been added that could be more easily implemented, including through parts originally sourced from Seam3. 
+After some discussions and compromises, however, Seam3 only adopted a few implementations whereby the migration effort of a Seam3 application, depending on the parts used, can be more extensive. 
+Some of the Seam3 modules have been moved to third-party projects. 
+These modules are primarily the CDI integration of the corresponding projects, which will be developed and maintained by the projects themselves in the future. 
+DeltaSpike thus provides primarily the direct improvement of CDI and other Java EE specifications, and also enables the portable use of CDI 1.x in Java SE projects. 
+The practical extension of Java EE, but also of CDI itself, is the recipe for success of DeltaSpike. 
+This helped the project to a diverse community and 2014 even to a "Duke's Choice Award" can be more extensive. 
 
-Another success factor is the tested portability, which plays a central role since the beginning of the project. With the help of JBoss Arquillian, a comprehensive set of tests has been set up. OpenWebBeans and Weld releases each have their own build job in the Apache Software Foundation Continuous Integration Cluster. This enables automated testing that ensures the compatibility of DeltaSpike with as many configurations as possible. In addition to OpenWebBeans and Weld itself, the test suite is also regularly run in combination with several open-source servers. These include several versions of Apache TomEE, JBoss AS7 and WildFly, as well as Oracle GlassFish.
- 
+Another success factor is the tested portability, which plays a central role since the beginning of the project. 
+With the help of JBoss Arquillian, a comprehensive set of tests have been set up. 
+OpenWebBeans and Weld releases each have their own build job in the Apache Software Foundation Continuous Integration Cluster. 
+This enables automated testing that ensures the compatibility of DeltaSpike with as many configurations as possible. 
+In addition to OpenWebBeans and Weld itself, the test suite is also regularly run in combination with several open-source servers. 
+These include several versions of Apache TomEE, JBoss AS7 and WildFly, as well as Oracle GlassFish.
 
-Meanwhile, DeltaSpike is so extensive that the description of all its components would go beyond the scope of this book. In the following parts we will therefore look at the most central components and a few of the expansion options. To do that, let's start with our CDI-based JSF example application named IdeaFork and implement some of it.
+Meanwhile, DeltaSpike is so extensive that the description of all its components would go beyond the scope of this book. 
+In the following parts we will therefore look at the most central components and a few of the expansion options. 
+To do that, let's start with our CDI-based JSF example application named IdeaFork and implement some of it.
 
 === All for one core
-DeltaSpike consists of several largely independent modules based on DeltaSpike Core. The use of individual modules is optional. If a CDI-based application with DeltaSpike is to be improved, then at least DeltaSpike Core must be added. In addition to various utilities for CDI, DeltaSpike-Core includes additional functionality that is useful in both CDI-based Java SE and Java EE applications.
- 
 
-Before we enrich IdeaFork with mechanisms from DeltaSpike, we need to add DeltaSpike-Core as a dependency of IdeaFork . Normally, it is sufficient to define Core API as compile dependency and Core Impl as runtime dependency. Both can be seen in the Listing Maven configuration for DeltaSpike Core and are parameterized here with the separately defined Maven property $ {ds.version} .
- <dependency>
+DeltaSpike consists of several largely independent modules based on DeltaSpike Core. 
+The use of individual modules is optional. 
+If a CDI-based application with DeltaSpike is to be improved, then at least DeltaSpike Core must be added. 
+In addition to various utilities for CDI, DeltaSpike-Core includes additional functionality that is useful in both CDI-based Java SE and Java EE applications.
+
+Before we enrich IdeaFork with mechanisms from DeltaSpike, we need to add DeltaSpike-Core as a dependency of IdeaFork. 
+Normally, it is sufficient to define Core API as compile dependency and Core Impl as runtime dependency. 
+Both can be seen in the Listing <<.Maven configuration for DeltaSpike Core, Maven configuration for DeltaSpike Core>> and are parameterized here with the separately defined Maven property ${ds.version}.
+
+.Maven configuration for DeltaSpike Core
+[source,xml]
+----
+<dependency>
   <groupId>org.apache.deltaspike.core</groupId>
   <artifactId>deltaspike-core-api</artifactId>
   <version>${ds.version}</version>
@@ -27,20 +55,29 @@ Before we enrich IdeaFork with mechanisms from DeltaSpike, we need to add DeltaS
   <version>${ds.version}</version>
   <scope>runtime</scope>
 </dependency>
-In addition to DeltaSpike Core, we will look at the following modules in this book in part:
-Delta Spike Bean Validation
-Delta Spike Data
-Delta Spike JPA
-Delta Spike JSF
-Delta Spike Scheduler
-Delta Spike Servlet
-Delta Spike Test Control
-The DeltaSpike modules Security, Partial-Bean and Proxy are partly required for functionalities of the previously listed modules. All three modules can also be used independently. However, we will primarily look at their use in combination with other components of DeltaSpike.
- 
+----
 
-With the help of DeltaSpike-Core and the various modules we will improve IdeaFork step by step. Since some mechanisms can be illustrated primarily in combination with others in a meaningful way, we will not look at each module in isolation, but we will thematically change IdeaFork by combining different parts of DeltaSpike. Before we start with the IdeaFork transition , let's take a look at the available modules and their Maven configuration.
-Delta Spike Bean Validation
-Java EE6 defines a rudimentary integration between bean validation and CDI. Above all, CDI-managed constraint validators are not supported. This limitation has been fixed with Java EE7. In IdeaFork we have manually implemented this in BeanAwareConstraintValidatorFactory . Such integration is also provided by the module shown in Listing Maven Configuration for DeltaSpike Bean Validation .
+In addition to DeltaSpike Core, we will look at the following modules in this book in part:
+* Delta Spike Bean Validation
+* Delta Spike Data
+* Delta Spike JPA
+* Delta Spike JSF
+* Delta Spike Scheduler
+* Delta Spike Servlet
+* Delta Spike Test Control
+
+The DeltaSpike modules Security, Partial-Bean and Proxy are partly required for functionalities of the previously listed modules. 
+All three modules can also be used independently. 
+However, we will primarily look at their use in combination with other components of DeltaSpike.
+
+With the help of DeltaSpike-Core and the various modules we will improve IdeaFork step by step. 
+Since some mechanisms can be illustrated primarily in combination with others in a meaningful way, we will not look at each module in isolation, but we will thematically change IdeaFork by combining different parts of DeltaSpike. 
+Before we start with the IdeaFork transition, let's take a look at the available modules and their Maven configuration.
+
+*Delta Spike Bean Validation* +
+Java EE6 defines a rudimentary integration between bean validation and CDI. 
+Above all, CDI-managed constraint validators are not supported. 
+This limitation has been fixed with Java EE7. In IdeaFork we have manually implemented this in BeanAwareConstraintValidatorFactory . Such integration is also provided by the module shown in Listing Maven Configuration for DeltaSpike Bean Validation .
  <dependency>
   <groupId>org.apache.deltaspike.modules</groupId>
   <artifactId>deltaspike-bean-validation-module-api</artifactId>
