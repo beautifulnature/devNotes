@@ -1006,11 +1006,22 @@ Since session timeouts and their consequences are often neglected in application
 Listing <<.Manual use of dependent-scoped beans, Manual use of dependent-scoped beans>> contains several aspects that are of interest in such and similar cases.
 
 Instead of injecting the `BeanManager`, it can also be obtained via the `BeanManagerProvider` from DeltaSpike in a first step. 
-This is especially suitable for use in static methods, as well as for use in instances that are not managed by the CDI container. Using BeanManager s and BeanProvider # getDependent , the next step is to get a dependent-scoped bean of type ContextControl . This interface is not included in DeltaSpike Core, but in a separate part of DeltaSpike called CDI Control. Purely technical would be the detour via DependentProvider not required because the available implementations do not use @PreDestroy callbacks. However, the use shown in Listing Manual Use of dependent-scoped beans makes sense because DeltaSpike will otherwise write warnings to the log.
+This is especially suitable for use in static methods, as well as for use in instances that are not managed by the CDI container. 
+Using BeanManager's and BeanProvider#getDependent, the next step is to get a dependent-scoped bean of type ContextControl. 
+This interface is not included in DeltaSpike Core, but in a separate part of DeltaSpike called CDI Control. 
+Purely technical would be the detour via `DependentProvider` not required because the available implementations do not use `@PreDestroy` callbacks. 
+However, the use shown in Listing <<Manual Use of dependent-scoped beans, Manual Use of dependent-scoped beans>> makes sense because DeltaSpike will otherwise write warnings to the log.
 
-After the lookup via BeanProvider # getDependent , the contextual instance itself can be accessed via DependentProvider # get . In our case, we start the request context before UserActionEvent is fired and kill it before destroying the dependent-scoped instance of ContextControl using DependentProvider # destroy .
-Tip: In the background, a mocked request is connected to the current thread, which means that any request-scoped CDI beans can be reused until the request context is stopped. Through concepts such as these, all standard contexts can also be used in a CDI-based Java SE application or in unit tests. Indirectly we use this advantage since the first example, because the test control module internally also uses CDI-Control to start and stop the CDI container or to control the standard contexts as required.
- public void onLogout(User user, boolean manualLogout) {
+After the lookup via BeanProvider#getDependent, the contextual instance itself can be accessed via DependentProvider#get. 
+In our case, we start the request context before `UserActionEvent` is fired and kill it before destroying the dependent-scoped instance of ContextControl using DependentProvider#destroy.
+TIP: In the background, a mocked request is connected to the current thread, which means that any request-scoped CDI beans can be reused until the request context is stopped. 
+Through concepts such as these, all standard contexts can also be used in a CDI-based Java SE application or in unit tests. 
+Indirectly we use this advantage since the first example, because the test control module internally also uses CDI-Control to start and stop the CDI container or to control the standard contexts as required.
+
+.Manual Use of dependent-scoped beans
+[source,java]
+----
+public void onLogout(User user, boolean manualLogout) {
   if (manualLogout) {
     userActionEvent
       .fire(new UserActionEvent(new UserAction(LOGOUT, user)));
@@ -1032,7 +1043,8 @@ Tip: In the background, a mocked request is connected to the current thread, whi
     }
   }
 }
-Tip: Starting with version 1.1, CDI provides a replacement for the BeanManagerProvider with CDI.current (). GetBeanManager () .
+----
+TIP: Starting with version 1.1, CDI provides a replacement for the `BeanManagerProvider` with `CDI.current().GetBeanManager()`.
 
 In addition to these very CDI-specific tools, DeltaSpike Core also includes more general tools such as `ProxyUtils` and `AnnotationUtils`. 
 In `IdeaFork`, we've done the detection of proxy classes manually. 
