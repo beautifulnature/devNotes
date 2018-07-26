@@ -1141,37 +1141,84 @@ A look at the package `org.apache.deltaspike.core.util` is highly recommended.
 Even for aids that are not directly related to CDI itself.
 
 === Sure is safe
-In addition to CDI tools, DeltaSpike also provides new concepts for other specifications, such as JSF, to facilitate application development through additional type-safety and maintainability. An example of this is the view config. This mechanism allows the type-safe configurations of (JSF) pages.
-Tip: View configs are currently implemented specifically for JSF. However, the concept itself is independent of JSF and therefore DeltaSpike Core contains most interfaces and annotations. Thus, implementations for other UI frameworks based on DeltaSpike core are also possible. The JSF module of DeltaSpike provides an implementation for JSF and additionally allows the use of the optional annotations @View and @Folder .
-As described above, we now add the JSF module in IdeaFork so that we can create a type-safe view config for any JSF pages. Listing Minimal View Config illustrates the simplest variant without additional metadata.
- public class Index implements ViewConfig {
+In addition to CDI tools, DeltaSpike also provides new concepts for other specifications, such as JSF, to facilitate application development through additional type-safety and maintainability. 
+An example of this is the view config. 
+This mechanism allows the type-safe configurations of (JSF) pages.
+
+TIP: View configs are currently implemented specifically for JSF. 
+However, the concept itself is independent of JSF and therefore DeltaSpike Core contains most interfaces and annotations. 
+Thus, implementations for other UI frameworks based on DeltaSpike core are also possible. 
+The JSF module of DeltaSpike provides an implementation for JSF and additionally allows the use of the optional annotations `@View` and `@Folder`.
+
+As described above, we now add the JSF module in `IdeaFork` so that we can create a type-safe view config for any JSF pages. 
+Listing <<.Minimal View Config, Minimal View Config>> illustrates the simplest variant without additional metadata.
+
+.Minimal View Config
+[source,java]
+----
+public class Index implements ViewConfig {
 }
-Without additional use in the application, the configuration from Listing Minimal View Config only leads to path validation. The page configuration shown above defines the file path /index.xhtml . However , this file does not exist in IdeaFork . When an application with an invalid page configuration is started, DeltaSpike aborts the boot process and reports an invalid configuration. The file index.xhml is in our case stored in the directory pages . Correspondingly, the View config in Listing Minimal View-Config in a directory is required.
- public interface Pages {
+----
+
+Without additional use in the application, the configuration from Listing <<.Minimal View Config, Minimal View Config>> only leads to path validation. 
+The page configuration shown above defines the file path `/index.xhtml`. 
+However, this file does not exist in `IdeaFork`. 
+When an application with an invalid page configuration is started, DeltaSpike aborts the boot process and reports an invalid configuration. 
+The file `index.xhml` is in our case stored in the directory pages. 
+Correspondingly, the View config in Listing <<.Minimal View Config, Minimal View-Config>> in a directory is required.
+
+[source,java]
+----
+public interface Pages {
   class Index implements ViewConfig {}
 }
-Directories are represented by nested interfaces and concrete pages by classes that directly or indirectly implement the ViewConfig interface. When converting to a JSF View ID, the first letter is converted to a lowercase letter and a suffix is ​​added to JSF pages, resulting in the path /pages/index.xhtml in the case of Listing Minimal View-Config in a directory .
- 
+----
+Directories are represented by nested interfaces and concrete pages by classes that directly or indirectly implement the `ViewConfig` interface. 
+When converting to a JSF View-ID, the first letter is converted to a lowercase letter and a suffix is ​​added to JSF pages, resulting in the path `/pages/index.xhtml` in the case of Listing <<.Minimal View Config, Minimal View-Config>> in a directory.
 
-Apart from the automatic validation of the paths, this type-safe configuration can already be usefully used without additional metadata. In fact, view configs can also be used for a type-safe JSF navigation. Listing Minimal type-safe JSF navigation illustrates this using an action method that does not use a string as the return type, unlike a traditional action method.
- public Class<? extends ViewConfig> onJsfAction() {
+Apart from the automatic validation of the paths, this type-safe configuration can already be usefully used without additional metadata. 
+In fact, view configs can also be used for a type-safe JSF navigation. 
+Listing <<.Minimal type-safe JSF navigation, Minimal type-safe JSF navigation>> illustrates this using an action method that does not use a string as the return type, unlike a traditional action method.
+
+.Minimal type-safe JSF navigation
+[source,java]
+----
+public Class<? extends ViewConfig> onJsfAction() {
   //...
   return Pages.Index.class;
 }
-DeltaSpike automatically converts Pages.Index.class to /pages/index.xhtml , which gives the JSF implementation a normal View ID as the navigation target , and thus behaves like a standard implicit JSF navigation supported by the specification since JSF 2.0 ,
- 
+----
 
-The View-Config concept in combination with additional metadata really makes sense. Listing directory hierarchy with view configs shows a configuration as it is often used in practice. With @View to JSF-specific information such as the navigation mode can define and assign explicit names. However, @View does not need to be redefined for every page, but can be inherited through the inheritance hierarchy. Because one side only indirectly ViewConfig must implement, is in Listing directory hierarchy with View configs Pages of ViewConfig which means that all other configurations do not need a direct connection to any of the DeltaSpike interfaces. The inheritance hierarchy inherits @View to all page configurations that directly or indirectly implement the Pages interface.
- 
+DeltaSpike automatically converts `Pages.Index.class` to `/pages/index.xhtml`, which gives the JSF implementation a normal View-ID as the navigation target, and thus behaves like a standard implicit JSF navigation supported by the specification since JSF 2.0.
 
-The specification of REDIRECT as navigation mode changes the generated navigation strings . Thus, for example. From /pages/index.xhtml the value /pages/index.xhtml?faces-redirect=true . The same applies to all other pages except Pages.User.Login.class , since only this page configuration does not implement the Pages interface.
- 
+The View-Config concept in combination with additional metadata really makes sense. 
+Listing <<.directory hierarchy with view configs, directory hierarchy with view configs>> shows a configuration as it is often used in practice. 
+With `@View` let's you to specify JSF-specific information such as the navigation mode and assign explicit names. 
+However, `@View` does not need to be redefined for every page, but can be inherited through the inheritance hierarchy. 
+Because a page only indirectly implements `ViewConfig`, in Listing <<.directory hierarchy with View configs, directory hierarchy with View configs>> Pages derived from `ViewConfig`, whereby all other configurations do not need a direct connection to one of the interfaces of DeltaSpike. 
+The inheritance hierarchy inherits `@View` to all page configurations that directly or indirectly implement the `Pages` interface.
 
-Pages.User.Login.class instead extends the class org.apache.deltaspike.core.api.config.view.DefaultErrorView . This marker class for the error page of an application may only be extended by one configuration class. DeltaSpike needs this marker to navigate generically to the default error page of an application if an unhandled error occurs in the application. If a page other than the Error page is to be used at a later time, then only the configuration classes concerned need to be adapted accordingly.
- 
+The specification of REDIRECT as navigation mode changes the generated navigation strings. 
+Thus, for example. from `/pages/index.xhtml` the value `/pages/index.xhtml?faces-redirect=true`. 
+The same applies to all other pages except `Pages.User.Login.class`, since only this page configuration does not implement the Pages interface.
 
-In Listing Directory Hierarchy with View-Configs, it can also be seen that User is the Interface in PagesInterface is nested. This is required whenever there is a subfolder in the file system. Thus, the structure of the file system is reflected in the configuration. If we later rename only one of the orders and the type-safe configuration does not follow suit, then the next application start would end with an exception. Since the path configuration view config is interfaces and classes, updating is very easy. All modern Java IDEs can automatically update class or interface names throughout the project. At the latest the Java compiler checks if all references were changed correctly.
- @View(navigation = REDIRECT)
+`Pages.User.Login.class` instead extends the class `org.apache.deltaspike.core.api.config.view.DefaultErrorView`. 
+This marker class for the error page of an application may only be extended by one configuration class. 
+DeltaSpike needs this marker to navigate generically to the default error page of an application if an unhandled error occurs in the application. 
+If a page other than the Error page is to be used at a later time, then only the configuration classes concerned need to be adapted accordingly.
+
+In Listing <<.Directory Hierarchy with View-Configs, Directory Hierarchy with View-Configs>>, it can also be seen that `User` is the `Interface` in `Pages` `Interface` is nested. 
+This is required whenever there is a subfolder in the file system. 
+Thus, the structure of the file system is reflected in the configuration. 
+If we later rename only one of the orders and do not tighten the type-safe configuration accordingly, then the next application start would end with an exception. 
+Since the path configuration `View-Config` is interfaces and classes, updating is very easy. 
+All modern Java IDEs can automatically update class or interface names throughout the project. 
+At the latest the Java compiler checks if all references were changed correctly.
+
+.Directory Hierarchy with View-Configs
+[source,java]
+----
+@View(navigation = REDIRECT)
 public interface Pages extends ViewConfig {
   class Index implements Pages {}
 
@@ -1183,9 +1230,20 @@ public interface Pages extends ViewConfig {
     class Profile implements User {}
   }
 }
-Tip: The naming convention described above can be customized. A simple adaptation will be discussed in the next section of this chapter.
-Listing IdeaFork page configurations shows the IdeaFork page configuration for the existing JSF pages. We would not have to create a view config for each page, but for each configuration class, the associated JSF page must exist. Therefore, it is basically possible to dispense with the configuration of specific pages. If only directories are configured, it is possible, for example, to define security constraints for entire folders. In IdeaFork , we will use a combination as a next step by defining folder level security constraints and adding metadata to certain pages.
- @View(navigation = REDIRECT)
+----
+TIP: The naming convention described above can be customized. 
+A simple adaptation will be discussed in the next section of this chapter.
+
+Listing <<.IdeaFork page configurations, IdeaFork page configurations>> shows the `IdeaFork` page configuration for the existing JSF pages. 
+We would not have to create a `View-Config` for each page, but for each configuration class, the associated JSF page must exist. 
+Therefore, it is basically possible to dispense with the configuration of specific pages. 
+If only directories are configured, it is possible, for example, to define security constraints for entire folders. 
+In `IdeaFork`, we will use a combination as a next step by defining folder level security constraints and adding metadata to certain pages.
+
+.IdeaFork page configurations
+[source,java]
+----
+@View(navigation = REDIRECT)
 public interface Pages extends ViewConfig {
   class Index implements Pages {}
 
@@ -1216,8 +1274,16 @@ public interface Pages extends ViewConfig {
     class Summary implements Import {}
   }
 }
-Since directories are represented by interfaces and thus have their own type, the navigation destination can even be restricted by the return type of action methods. Listing Restrict navigation target via Return type shows one of the modified action methods of IdeaFork . Instead of Class <? extends ViewConfig> becomes Class <? extends Pages.Idea> uses. Since our own interfaces are used here, the implementation becomes more readable and additionally the Java compiler ensures that the navigation target must be in the directory / pages / idea .
- @ViewController
+----
+Since directories are represented by interfaces and thus have their own type, the navigation destination can even be restricted by the return type of action methods. 
+Listing <<.Restrict navigation target via Return type, Restrict navigation target via Return type>> shows one of the modified action methods of `IdeaFork`. 
+Instead of Class <? extends ViewConfig> becomes Class <? extends Pages.Idea> used. 
+Since our own interfaces are used here, the implementation becomes more readable and additionally the Java compiler ensures that the navigation target must be in the directory `/pages/idea`.
+
+.Restrict navigation target via Return type
+[source,java]
+----
+@ViewController
 public class IdeaCreateViewCtrl implements Serializable {
   //...
 
@@ -1227,8 +1293,19 @@ public class IdeaCreateViewCtrl implements Serializable {
     return Pages.Idea.Overview.class;
   }
 }
-Technically mixtures are possible. Listing options for return types is the correspondingly adapted version of the class MenuController . Here it becomes apparent that, as with the #home method, specifying Class <? extends Pages> the topmost home directory can be set as the navigation destination. The navigation itself can be performed to a page in this directory or to a page in one of the subdirectories. As an alternative, the complete path can already be specified by the return type. This is implemented , for example, in the method #login . In contrast, the methods #logout and #start where you can navigate to any valid view config configuration.
- @Named("menuBean")
+----
+Technically mixtures are possible. 
+Listing <<.options for return types, options for return types>> is the correspondingly adapted version of the class `MenuController`. 
+Here it becomes apparent that, as with the #home method, specifying Class <? extends Pages> the topmost home directory can be set as the navigation destination. 
+The navigation itself can be performed to a page in this directory or to a page in one of the subdirectories. 
+As an alternative, the complete path can already be specified by the return type. 
+This is implemented, for example, in the method #login. 
+In contrast, the methods #logout and #start where you can navigate to any valid view config configuration.
+
+.options for return types
+[source,java]
+----
+@Named("menuBean")
 @Model
 public class MenuController {
   @Inject
@@ -1258,8 +1335,17 @@ public class MenuController {
     return Pages.User.Registration.class;
   }
 }
-Apart from JSF action methods, type-safe folder and page configurations can also be used outside of JSF, for example for type-safe navigation. Listing Using ViewConfigResolver illustrates how IdeaImportServlet in IdeaFork can benefit from this concept. Compared to the previous implementation of this servlet , a so-called ViewConfigResolver can be injected. Using the #getViewConfigDescriptor method , we can query the corresponding configuration including all metadata with a path specification as a string or a class of type ViewConfig . In our case we get the configuration for Pages.Import.Summary.class and call the #getViewId method on the resulting descriptor to get the path as a string.
- @WebServlet("/idea/import")
+----
+Apart from JSF action methods, type-safe folder and page configurations can also be used outside of JSF, for example for type-safe navigation. 
+Listing <<.Using ViewConfigResolver, Using ViewConfigResolver>> illustrates how `IdeaImportServlet` in `IdeaFork` can benefit from this concept. 
+Compared to the previous implementation of this servlet, a so-called `ViewConfigResolver` can be injected. 
+Using the `#getViewConfigDescriptor` method, we can query the corresponding configuration including all metadata with a path specification as a string or a class of type `ViewConfig`. 
+In our case we get the configuration for `Pages.Import.Summary.class` and call the #getViewId method on the resulting descriptor to get the path as a string.
+
+.Using ViewConfigResolver
+[source,java]
+----
+@WebServlet("/idea/import")
 @MultipartConfig
 public class IdeaImportServlet extends HttpServlet {
   @Inject
@@ -1286,17 +1372,35 @@ public class IdeaImportServlet extends HttpServlet {
       .forward(request, response);
   }
 }
-For future refactorings, we no longer have to manually retrace a fixed string. In addition, modern Java IDEs not only simplify refactoring itself, but also search for specific page references. In IdeaFork's Git repository , all changes to this topic are consolidated and the entire application is converted to view configs.
-Tip: Inherited metadata can be overridden or expanded. For example, it is possible to use @View for a specific page configuration in order to adapt the behavior for individual pages or to extend the inherited information with additional information.
-We have not explicitly used the previously defined error page in IdeaFork . An obvious application is the error handling of certain exceptions. In a short example, we already got to know the exception-handling concept of DeltaSpike. In the next step, we want to combine these and other mechanisms to display the specified error page for unhandled IllegalStateException exceptions .
- 
+----
+For future refactorings, we no longer have to manually retrace a fixed string. 
+In addition, modern Java IDEs not only simplify refactoring itself, but also search for specific page references. 
+In IdeaFork's Git repository, all changes to this topic are consolidated and the entire application is converted to view configs.
 
-In Listing Exception handlers with navigation to DefaultErrorView , unhandled exceptions of type IllegalStateException are marked as handled. In addition, in the request-scoped exception handler, the exceptionDetected flag is set to true in such a case . The zero check for the FacesContext is required because request-scoped CDI beans can also be activated outside of a JSF request. Finally, @Handles (ordinal = Integer.MIN_VALUE) ensures that the handler method is called at the end of the handler chain.
- 
+TIP: Inherited metadata can be overridden or expanded. 
+For example, it is possible to use `@View` for a specific page configuration in order to adapt the behavior for individual pages or to extend the inherited information with additional information.
 
-In a further step, the class ErrorViewAwareExceptionHandler receives a CDI observer with the qualifier @BeforePhase (JsfPhaseId.RENDER_RESPONSE) for the event type PhaseEvent . If the flag exceptionDetected has been set to true in the current request , then ViewNavigationHandler # navigateTo in combination with a configuration class can be used to navigate to a JSF page. However, we do not want to navigate to a fixed page but to the currently configured error page. Because of this, DefaultErrorView.class passed as an argument. Since DeltaSpike knows this marker, the page configuration that derives from this marker class is searched in the background. If such a page configuration exists, internally the path represented by the configuration is used for effective navigation.
-Tip: DeltaSpike uses @BeforePhase and @AfterPhase to define two qualifiers that can be used in combination with any phase of the JSF request lifecycle.
- @RequestScoped
+We have not explicitly used the previously defined error page in `IdeaFork`. 
+An obvious application is the error handling of certain exceptions. 
+In a short example, we already got to know the exception-handling concept of DeltaSpike. 
+In the next step, we want to combine these and other mechanisms to display the specified error page for unhandled IllegalStateException exceptions.
+
+In Listing <<.Exception handlers with navigation to DefaultErrorView, Exception handlers with navigation to DefaultErrorView>>, unhandled exceptions of type IllegalStateException are marked as handled. 
+In addition, in the request-scoped exception handler, the `exceptionDetected` flag is set to `true` in such a case. 
+The `null` check for the FacesContext is required because request-scoped CDI beans can also be activated outside of a JSF request. 
+Finally, `@Handles (ordinal = Integer.MIN_VALUE)` ensures that the handler method is called at the end of the handler chain.
+
+In a further step, the class `ErrorViewAwareExceptionHandler` receives a CDI observer with the qualifier `@BeforePhase (JsfPhaseId.RENDER_RESPONSE)` for the event type `PhaseEvent`. 
+If the flag `exceptionDetected` has been set to `true` in the current request, then `ViewNavigationHandler#navigateTo` in combination with a configuration class can be used to navigate to a JSF page. 
+However, we do not want to navigate to a fixed page but to the currently configured error page. 
+Because of this, `DefaultErrorView.class` passed as an argument. 
+Since DeltaSpike knows this marker, the page configuration that derives from this marker class is searched in the background. 
+If such a page configuration exists, internally the path represented by the configuration is used for effective navigation.
+TIP: DeltaSpike uses `@BeforePhase` and `@AfterPhase` to define two qualifiers that can be used in combination with any phase of the JSF request Lifecycle.
+
+[source,java]
+----
+@RequestScoped
 @ExceptionHandler
 public class ErrorViewAwareExceptionHandler {
   private boolean exceptionDetected = false;
@@ -1327,11 +1431,27 @@ public class ErrorViewAwareExceptionHandler {
     }
   }
 }
-In addition to the metadata for view configs introduced so far, the JSF module also integrates the @Secured annotation of the security module of DeltaSpike. Basically, this is a kind of interceptor with which classes or individual methods can be annotated. This interceptor must specify at least one implementation of AccessDecisionVoter , which is used to check access to the method to be executed. In conjunction with the View Config concept, no method call is backed up, but the respectively configured directory or individual pages.
- 
+----
+In addition to the metadata for view configs introduced so far, the JSF module also integrates the `@Secured` annotation of the security module of DeltaSpike. 
+Basically, this is a kind of interceptor with which classes or individual methods can be annotated. 
+This interceptor must specify at least one implementation of `AccessDecisionVoter`, which is used to check access to the method to be executed. 
+In these cases, not only access to the directory is checked, but also on individual pages, which are mapped with View-Config classes.
 
-In Listing Securing Pages with @Secured , IdeaFork's View Config adds an additional marker interface called SecuredPages . SecuredPages looks like the configuration of a directory. In fact, it is an interface for collecting metadata. Technically, this interface could also be defined separately. In our case, SecuredPages extends the Pages interface to take over its metadata. In addition, SecuredPages is provided with the annotation @Secured . All directory configurations derived from SecuredPages are defined by the UserAwareAccessDecisionVoter secured, since this is specified at @Secured and inherited accordingly. If classes for the page configuration exist in such directories and implement a directory configuration saved with @Secured , these page configurations also inherit the definition of @Secured according to the general View Config rule . In these cases, not only access to the directory is checked, but also to individual pages, which are mapped with View-Config classes. Listing Securing Pages with @Secured illustrated by Pages.User.Profil.class that even individual pages can be secured, even if they are not contained in a secure directory.
- @View(navigation = REDIRECT)
+In Listing <<.Securing Pages with @Secured, Securing Pages with @Secured>>, IdeaFork's View Config adds an additional marker interface called SecuredPages. 
+SecuredPages looks like the configuration of a directory. 
+In fact, it is an interface for collecting metadata. 
+Technically, this interface could also be defined separately. 
+In our case, SecuredPages extends the Pages interface to take over its metadata. 
+In addition, SecuredPages is provided with the annotation @Secured. 
+All directory configurations derived from SecuredPages are protected by the `UserAwareAccessDecisionVoter`, since this is indicated at `@Secured` and inherited accordingly. 
+If classes for the page configuration exist in such directories and implement a directory configuration saved with `@Secured`, these page configurations also inherit the definition of `@Secured` according to the general View Config rule. 
+In these cases, not only access to the directory is checked, but also to individual pages, which are mapped with View-Config classes. 
+Listing <<.Securing Pages with `@Secured`, Securing Pages with `@Secured`>> illustrated by `Pages.User.Profil.class` that even individual pages can be secured, even if they are not contained in a secure directory.
+
+.Securing Pages with `@Secured`
+[source,java]
+----
+@View(navigation = REDIRECT)
 public interface Pages extends ViewConfig {
   class Index implements Pages {}
 
@@ -1365,8 +1485,16 @@ public interface Pages extends ViewConfig {
     class Summary implements Import {}
   }
 }
-Also SecuredPages can implement the indirect extension of ViewConfig be used to restrict navigation destinations. Listing SecuredPages as a navigation destination is the rearranged to view configs Navigation Controller of IdeaFork . The #toUserProfile method defines Class <? extends Pages.SecuredPages> as a return type, allowing only pages in secured directories to be navigated.
- @Named
+----
+
+Also SecuredPages can implement the indirect extension of ViewConfig be used to restrict navigation destinations. 
+Listing <<.SecuredPages as a navigation destination, SecuredPages as a navigation destination>> is the rearranged to view configs Navigation Controller of IdeaFork. 
+The #toUserProfile method defines Class <? extends Pages.SecuredPages> as a return type, allowing only pages in secured directories to be navigated.
+
+.SecuredPages as a navigation destination
+[source,java]
+----
+@Named
 @ApplicationScoped
 public class NavigationController {
   public Class<? extends Pages.Idea> toNewIdea() {
@@ -1385,11 +1513,22 @@ public class NavigationController {
     return Pages.User.Profile.class;
   }
 }
-An AccessDecisionVoter can either delegate its own security logic like UserAwareAccessDecisionVoter or forward the check to any security framework. In Listing AccessDecisionVoter with type-safe messages, we delegate to the ActiveUserHolder bean of IdeaFork .
- 
+----
 
-Is @Secured inherited a directory configuration by side configurations, then each AccessDecisionVoter , by @Secured is referenced, called several times. The first call is made for the page itself, and then, depending on the directory level that @Secured has inherited, it has its own call. For each call, a manual bean lookup is performed with the specified AccessDecisionVoter class. For example, in the case of Pages.Idea.Overview.class, the UserAwareAccessDecisionVoter # checkPermission method is used for Pages.Idea.Overview.class and Pages.Idea.class called on the found CDI bean. The access-control calls to directories and pages are differentiated only by the content of the metadata that can be accessed using the AccessDecisionVoterContext # getMetaData method .
- @RequestScoped
+An `AccessDecisionVoter` can either delegate its own security logic like `UserAwareAccessDecisionVoter` or forward the check to any security framework. 
+In Listing <<.`AccessDecisionVoter` with type-safe messages, `AccessDecisionVoter` with type-safe messages>> we delegate to the `ActiveUserHolder` bean of IdeaFork.
+
+If `@Secured` is passed on to a page configuration via a directory configuration, then every `AccessDecisionVoter` referenced by `@Secured` is called multiple times.
+The first call is made for the page itself, and then, depending on the directory level that `@Secured` has inherited, it has its own call.
+For each call, a manual bean lookup is performed with the specified `AccessDecisionVoter` class. 
+For example, in the case of `Pages.Idea.Overview.class`, the UserAwareAccessDecisionVoter#checkPermission method is used for Pages.Idea.Overview.class and Pages.Idea.class called on the found CDI bean. 
+The access-control calls to directories and pages are differentiated only by the content of the metadata that can be accessed using the AccessDecisionVoterContext#getMetaData method.
+
+.`AccessDecisionVoter` with type-safe messages
+[source,java]
+----
+.`AccessDecisionVoter` with type-safe messages
+@RequestScoped
 public class UserAwareAccessDecisionVoter
     extends AbstractAccessDecisionVoter {
 
@@ -1410,8 +1549,20 @@ public class UserAwareAccessDecisionVoter
     }
   }
 }
-Listing AccessDecisionVoter with type-safe messages also shows the use of type-safe messages in addition to a simple AccessDecisionVoter . UserMessage is an own interface, which is annotated with @MessageBundle . Listing Definition of type-safe messages shows a section of UserMessage . Each method defines a key that must exist in a resource bundle. If the name of the resource bundle is not explicitly specified, the name of the bundle corresponds to the fully qualified name of the interface. If the name of the key should be different, this can also be specified explicitly. If the key is eg. please_login instead of pleaseLogin , then the method can be annotated with @MessageTemplate ("{please_login}") . Alternatively, texts can be specified as in Listing Definition of type-safe messages .
- @MessageBundle
+----
+Listing <<.`AccessDecisionVoter` with type-safe messages, `AccessDecisionVoter` with type-safe messages>> also shows the use of type-safe messages in addition to a simple AccessDecisionVoter. 
+UserMessage is an own interface, which is annotated with @MessageBundle. 
+Listing <<.Definition of type-safe messages, Definition of type-safe messages>> shows a section of `UserMessage`. 
+Each method defines a key that must exist in a resource bundle. 
+If the name of the resource bundle is not explicitly specified, the name of the bundle corresponds to the fully qualified name of the interface. 
+If the name of the key should be different, this can also be specified explicitly. 
+If the key is eg. please_login instead of pleaseLogin, then the method can be annotated with `@MessageTemplate ("{please_login}") `. 
+Alternatively, texts can be specified as in Listing <<.Definition of type-safe messages, Definition of type-safe messages>>.
+
+.Definition of type-safe messages
+[source,java]
+----
+@MessageBundle
 public interface UserMessage {
     @MessageTemplate("Welcome %s!")
     String welcomeNewUser(String nickName);
@@ -1424,11 +1575,22 @@ public interface UserMessage {
 
     //...
 }
-The method #welcomeNewUser additionally illustrates that message parameters can be filled using method parameters. Any number of placeholders ("% s") are allowed in the message text , which are replaced in order with the values ​​passed to the method as arguments. If a parameter type is not a string, the #toString method is called. Thus, a type-safe parameterization is possible.
- 
+----
+The method #welcomeNewUser additionally illustrates that message parameters can be filled using method parameters. 
+Any number of placeholders ("% s") are allowed in the message text, which are replaced in order with the values ​​passed to the method as arguments. 
+If a parameter type is not a string, the #toString method is called. 
+Thus, a type-safe parameterization is possible.
 
-For JSF, there is also an extension of this concept, which is illustrated in listing- type secure JSF messages . In contrast to directly injecting UserMessage and using #pleaseLogin from the previous example, in this case an interface provided by the JSF module named JsfMessage is injected, which is typed on UserMessage . This allows the implicit creation of corresponding Faces messages via methods such as #addInfo and #addError . In our example, the text for #welcomeNewUser displayed on the interface as an informational message. In the background, DeltaSpike uses the locale that is active for the current JSF request and adds the created FacesMessage instance to the current FacesContext .
- @ViewController
+For JSF, there is also an extension of this concept, which is illustrated in Listing <<.type secure JSF messages, type secure JSF messages>>. 
+In contrast to directly injecting UserMessage and using #pleaseLogin from the previous example, in this case an interface provided by the JSF module named JsfMessage is injected, which is typed on UserMessage. 
+This allows the implicit creation of corresponding Faces messages via methods such as #addInfo and #addError. 
+In our example, the text for #welcomeNewUser displayed on the interface as an informational message. 
+In the background, DeltaSpike uses the locale that is active for the current JSF request and adds the created FacesMessage instance to the current FacesContext.
+
+.type secure JSF messages
+@ViewController
+[source,java]
+----
 public class LoginViewCtrl {
   //...
 
@@ -1454,8 +1616,15 @@ public class LoginViewCtrl {
 
   //...
 }
-Type-safe messages can also be used in EL expressions. For this purpose, the interface annotated with @MessageBundle must also be annotated with @Named . Listing EL Integration for type-safe messages shows the corresponding part of UserMessage , which can be addressed with the EL expression # {userMessage.warning ()} .
- @Named
+----
+Type-safe messages can also be used in EL expressions. 
+For this purpose, the interface annotated with `@MessageBundle` must also be annotated with `@Named`. 
+Listing <<.EL Integration for type-safe messages, EL Integration for type-safe messages>> shows the corresponding part of UserMessage, which can be addressed with the EL expression `#{userMessage.warning()}'.
+
+.EL Integration for type-safe messages
+[source,java]
+----
+@Named
 @MessageBundle
 public interface UserMessage {
   //...
@@ -1463,24 +1632,49 @@ public interface UserMessage {
   @MessageTemplate("Warning!")
   String warning();
 }
-Tip: With @MessageBundle annotated interfaces can additionally @MessageContextConfig be provided. With this annotation it is possible to change the default behavior via corresponding SPI implementations. For example, you can implement your own locale logic with a LocaleResolver or reference any message source or integrate your own MessageResolver .
- 
+----
+TIP: With `@MessageBundle` annotated interfaces can also be used additionally with `@MessageContextConfig`. 
+With this annotation it is possible to change the default behavior via corresponding SPI implementations. 
+For example, you can implement your own locale logic with a LocaleResolver or reference any message source or integrate your own MessageResolver.
 
-JSF pages can not only be improved with type-safe messages. Also POST -REQUESTS can use a component called preventDoubleSubmit be made "safer". Available in the http://deltaspike.apache.org/jsf namespace, this component ensures that a POST request can not be sent multiple times. To do this, as in listing using preventDoubleSubmit , the component must be embedded in a JSF form. In the background, a unique request token is used, which is checked by the server.
- <h:form>
+JSF pages can not only be improved with type-safe messages. 
+Also POST -REQUESTS can use a component called `preventDoubleSubmit` be made "safer". 
+Available in the http://deltaspike.apache.org/jsf namespace, this component ensures that a POST request can not be sent multiple times. 
+To do this, as in <<.Listing using `preventDoubleSubmit`, Listing using `preventDoubleSubmit`>>, the component must be embedded in a JSF form. 
+In the background, a unique request token is used, which is checked by the server.
+[source,java]
+----
+<h:form>
   <!-- ... -->
   <ds:preventDoubleSubmit/>
 </h:form>
-Tip: For Ajax requests via POST , according to JSF specification, the appropriate management is responsible. Therefore, no check of a request token is performed for such requests.
+----
+TIP: For Ajax requests via POST, according to JSF specification, the appropriate management is responsible. 
+Therefore, no check of a request token is performed for such requests.
 
 === Improve existing
-DeltaSpike generally enriches CDI and Java EE. In addition, existing concepts will be improved. An example of this is the annotation @JsfPhaseListener , which is used as a CDI bean in Listing PhaseListener . JSF phase listeners can be marked with this annotation to automatically activate them. Therefore, the usual configuration is omitted in the file faces-config.xml . Optionally, a priority can be specified via @ JsfPhaseListener # ordinal and other CDI beans can be injected into the phase listener.
- @JsfPhaseListener
+DeltaSpike generally enriches CDI and Java EE. 
+In addition, existing concepts will be improved. 
+An example of this is the annotation `@JsfPhaseListener`, which is used as a CDI bean in Listing<<.PhaseListener, PhaseListener>>. 
+JSF phase listeners can be marked with this annotation to automatically activate them. 
+Therefore, the usual configuration is omitted in the file `faces-config.xml`. 
+Optionally, a priority can be specified via @JsfPhaseListener#ordinal and other CDI beans can be injected into the phase listener.
+
+[source,java]
+----
+@JsfPhaseListener
 public class DebugPhaseListener implements PhaseListener {
   //...
 }
-In addition, @JsfPhaseListener can be combined with @Exclude . The JSF phase listener conditionally enabled in Listing PhaseListener is enabled by using @Exclude (exceptIfProjectStage = ProjectStage.Development.class) only if the Development level for the Project stage is set.
- @JsfPhaseListener
+----
+
+In addition, `@JsfPhaseListener` can be combined with `@Exclude`. 
+The JSF phase listener conditionally enabled in Listing <<.PhaseListener is enabled by using `@Exclude(exceptIfProjectStage = ProjectStage.Development.class)`, PhaseListener is enabled by using `@Exclude(exceptIfProjectStage = ProjectStage.Development.class)`>> only if the `Development` level for the Project stage is set.
+
+.PhaseListener is enabled by using `@Exclude(exceptIfProjectStage = ProjectStage.Development.class)`
+[source,java]
+----
+@JsfPhaseListener
 @Exclude(exceptIfProjectStage = ProjectStage.Development.class)
 public class DebugPhaseListener implements PhaseListener {
   private static final Logger LOG =
@@ -1501,8 +1695,18 @@ public class DebugPhaseListener implements PhaseListener {
     return PhaseId.ANY_PHASE;
   }
 }
-We also improve the window management, which can be optionally activated since JSF 2.2. The goal of this functionality is the correct handling of different browser windows / tabs, as this is not supported by the session scope. The abstract class javax.faces.lifecycle.ClientWindow was defined on the basis of experiences from frameworks like MyFaces CODI and served as a template for the interface of the same name org.apache.deltaspike.jsf.spi.scope.window.ClientWindow , which also works with JSF 2.0 or 2.1 can be used. Prior to JSF 2.2, for fully-accurate window management, the windowId component from the http://deltaspike.apache.org/jsf namespace must be included in each page. In IdeaFork we insert this component at the end of the template. Activate Listing Window Management shows the crucial part of the file main-template.xhtml .
- <!DOCTYPE html>
+----
+We also improve the window management, which can be optionally activated since JSF 2.2. 
+The goal of this functionality is the correct handling of different browser windows/tabs, as this is not supported by the session scope. 
+The abstract class `javax.faces.lifecycle.ClientWindow` was defined on the basis of experiences from frameworks like MyFaces CODI and served as a template for the interface of the same name `org.apache.deltaspike.jsf.spi.scope.window.ClientWindow`, which also works with JSF 2.0 or 2.1 can be used. 
+Prior to JSF 2.2, for fully-accurate window management, the `windowId` component from the http://deltaspike.apache.org/jsf namespace must be included in each page. 
+In IdeaFork we insert this component at the end of the template. 
+Listing <<.Activate Window Management, Activate Window Management>> shows the crucial part of the file `main-template.xhtml`.
+
+.Activate Window Management
+[source,xml]
+----
+<!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:h="http://java.sun.com/jsf/html"
       xmlns:ui="http://java.sun.com/jsf/facelets"
@@ -1515,11 +1719,25 @@ We also improve the window management, which can be optionally activated since J
     <ds:windowId/>
 </h:body>
 </html>
-Since JSF 2.2, you can choose between the standard window management of the JSF implementation and that of DeltaSpike. If JSF's ClientWindow functionality is explicitly enabled by configuration, then DeltaSpike uses the Window ID, which can be queried with javax.faces.lifecycle.ClientWindow # getId , and automatically disables its own window management. Otherwise, DeltaSpike itself handles the window management and forwards the information internally to JSF via javax.faces.lifecycle.Lifecycle # attachWindow , allowing JSF implementations to internally make some tweaks in managing the server-side state of the components.
- 
+----
 
-Correct server-side mapping of browser windows / tabs is required for DeltaSpike to provide additional scopes. The simplest of these scopes is the window scope, which is comparable to one session per browser window / tab. The JSF module of DeltaSpike activates the underlying window context before passing the JSF request lifecycle via the method org.apache.deltaspike.core.spi.scope.window.WindowContext # activateWindow . Listing window management with WindowContext makes it clear that the WindowContext interface can also be used to, for example, logout a window-scoped bean using the WindowContext # closeWindow method to destroy. Then the window context for the current window can be activated again via the method WindowContext # activateWindow . The previous window ID can be reused for this because it is no longer used after the call to WindowContext # closeWindow and is thus no worse than a newly generated ID. The advantage here is that we do not have to worry about updating the client-side Window ID. Depending on which implementation of ClientWindow is active, this could be very time-consuming.
- @Named("menuBean")
+Since JSF 2.2, you can choose between the standard window management of the JSF implementation and that of DeltaSpike. 
+If JSF's ClientWindow functionality is explicitly enabled by configuration, then DeltaSpike uses the WindowID, which can be queried with javax.faces.lifecycle.ClientWindow#getId, and automatically disables its own window management. 
+Otherwise, DeltaSpike itself handles the window management and forwards the information internally to JSF via javax.faces.lifecycle.Lifecycle#attachWindow, allowing JSF implementations to internally make some tweaks in managing the server-side state of the components.
+
+Correct server-side mapping of browser windows/tabs is required for DeltaSpike to provide additional scopes. 
+The simplest of these scopes is the window scope, which is comparable to one session per browser window/tab. 
+The JSF module of DeltaSpike activates the underlying window context before passing the JSF request lifecycle via the method org.apache.deltaspike.core.spi.scope.window.WindowContext#activateWindow. 
+Listing <<.window management with WindowContext, window management with WindowContext>> makes it clear that the WindowContext interface can also be used, for example, logout a window-scoped bean using the WindowContext#closeWindow method to destroy. 
+Then the window context for the current window can be activated again via the method WindowContext#activateWindow. 
+The previous windowID can be reused for this because it is no longer used after the call to WindowContext#closeWindow and is thus no worse than a newly generated ID. 
+The advantage here is that we do not have to worry about updating the client-side Window ID. 
+Depending on which implementation of ClientWindow is active, this could be very time-consuming.
+
+.window management with WindowContext
+[source,java]
+----
+@Named("menuBean")
 @Model //or just @RequestScoped, since @Named is overruled
 public class MenuController {
   @Inject
@@ -1541,8 +1759,16 @@ public class MenuController {
     windowContext.activateWindow(currentWindowId);
   }
 }
-In IdeaFork , enabling window management ensures that the window ID is not lost on manual calls. We have such a call, for example, in IdeaImportServlet . Listing Explicit Window Management demonstrates how to manually pass the Window ID.
- @WebServlet("/idea/import")
+----
+
+In IdeaFork, enabling window management ensures that the window ID is not lost on manual calls. 
+We have such a call, for example, in IdeaImportServlet. 
+Listing <<.Explicit Window Management, Explicit Window Management>> demonstrates how to manually pass the Window ID.
+
+.Explicit Window Management
+[source,java]
+----
+@WebServlet("/idea/import")
 @MultipartConfig
 public class IdeaImportServlet extends HttpServlet {
   @Inject
@@ -1573,8 +1799,15 @@ public class IdeaImportServlet extends HttpServlet {
       .forward(request, response);
   }
 }
-The same applies to our manual form on the page upload.xhtml . For manually defined forms and links, we must explicitly add the current Window ID, as neither DeltaSpike nor JSF can handle this, as implemented with the equivalent JSF components. In the Listing Window ID in EL expressions , the current Window ID with the EL expression # {dsWindowContext.currentWindowId} is added to the markup of the page.
- <ui:composition xmlns="http://www.w3.org/1999/xhtml"
+----
+
+The same applies to our manual form on the page `upload.xhtml`. 
+For manually defined forms and links, we must explicitly add the current Window ID, as neither DeltaSpike nor JSF can handle this, as implemented with the equivalent JSF components. 
+In the Listing <<.Window ID in EL expressions, Window ID in EL expressions>>, the current Window ID with the EL expression #{dsWindowContext.currentWindowId} is added to the markup of the page.
+
+[source,xml]
+----
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
                 xmlns:ui="http://java.sun.com/jsf/facelets"
                 template="/templates/main-template.xhtml">
 
@@ -1591,8 +1824,14 @@ The same applies to our manual form on the page upload.xhtml . For manually defi
     </div>
   </ui:define>
 </ui:composition>
-In IdeaFork we also have a self-generated HTML link in a second place. Listing Window ID for HTML links shows that we also need to extend this with the current Window ID, so that the window management is reliable on the server side.
- <ui:composition xmlns="http://www.w3.org/1999/xhtml"
+----
+In IdeaFork we also have a self-generated HTML link in a second place. 
+Listing <<.Window ID for HTML links, Window ID for HTML links>> shows that we also need to extend this with the current Window ID, so that the window management is reliable on the server side.
+
+.Window ID for HTML links
+[source,xml]
+----
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
                 xmlns:h="http://java.sun.com/jsf/html"
                 xmlns:ui="http://java.sun.com/jsf/facelets"
                 template="/templates/main-template.xhtml">
@@ -1608,12 +1847,32 @@ In IdeaFork we also have a self-generated HTML link in a second place. Listing W
     <!-- ... -->
   </ui:define>
 </ui:composition>
-Tip: The explicit specification of the Window ID can be omitted if JSF components are used instead of HTML tags. If, on the other hand, this is intentionally not done, then, for example, a JSF Command component must be embedded in the DeltaSpike component disableClientWindow . The rendered link or button does not receive a window ID.
-Which beans the window scope makes sense depends heavily on the specific requirements. In IdeaFork , we can introduce an additional concept to illustrate a potential use case. Previously, navigations to the previous page were also defined. We can implement this generically by introducing a BackNavigator that records the previous navigation history per browser window / tab on the server side. Listing Using @WindowScoped and PreViewConfigNavigateEvent shows a first version of BackNavigator , which is annotated with @WindowScoped . This allows us to use a CDI observer for the event PreViewConfigNavigateEvent can save the navigation history per browser window / tab. DeltaSpike fires this event for every JSF navigation that uses a type-safe view config. In IdeaFork there for each JSF page already a type-safe configuration, which we can use this event to implement the use case without any problems. This event can even be used to change the navigation destination in the Observer method. In the method BackNavigator # onNavigation No change is required as this method only needs to record the navigation history. Since we do not have an explicit back button on every page, we can restrict the recorded navigation history to, for example, 10 entries to avoid a memory leak. A little later we will replace this fixed maximum value with a more elegant concept.
- 
+----
+TIP: The explicit specification of the Window ID can be omitted if JSF components are used instead of HTML tags. 
+If, on the other hand, this is intentionally not done, then, for example, a JSF Command component must be embedded in the DeltaSpike component `disableClientWindow`. 
+The rendered link or button does not receive a window ID.
 
-The class BackNavigator additionally contains a second observer method called #onFacesRequestEnd , which is called before the FacesContext is destroyed at the end of a request. This is made possible by the qualifier org.apache.deltaspike.core.api.lifecycle.Destroyed , which can be used here as an event type in combination with FacesContext . Such an observer method is a simple alternative to a @PreDestroy callback of a request-scoped bean and additionally offers the advantage that the current faces context can still be accessed if necessary . In our case we set the flag backNavigationActive , because otherwise it could still have the old state for a subsequent request.
- @Named
+Which beans the window scope makes sense depends heavily on the specific requirements. 
+In `IdeaFork`, we can introduce an additional concept to illustrate a potential use case. 
+Previously, navigations to the previous page were also defined. 
+We can implement this generically by introducing a BackNavigator that records the previous navigation history per browser window/tab on the server side. 
+Listing <<.Using `@WindowScoped` and `PreViewConfigNavigateEvent`, Using `@WindowScoped` and `PreViewConfigNavigateEvent`>> shows a first version of BackNavigator, which is annotated with @WindowScoped. 
+This allows us to use a CDI observer for the event `PreViewConfigNavigateEvent` can save the navigation history per browser window/tab. 
+DeltaSpike fires this event for every JSF navigation that uses a type-safe `View-Config`. 
+IdeaFork already has a type-safe configuration for each JSF page, which allows us to easily use this event to implement the use case. 
+This event can even be used to change the navigation destination in the Observer method. 
+In the method BackNavigator#onNavigation No change is required as this method only needs to record the navigation history. 
+Since we do not have an explicit back button on every page, we can restrict the recorded navigation history to, for example, 10 entries to avoid a memory leak. 
+A little later we will replace this fixed maximum value with a more elegant concept.
+
+The class BackNavigator additionally contains a second observer method called #onFacesRequestEnd, which is called before the FacesContext is destroyed at the end of a request. 
+This is made possible by the qualifier `org.apache.deltaspike.core.api.lifecycle.Destroyed`, which can be used here as an event type in combination with FacesContext. 
+Such an observer method is a simple alternative to a `@PreDestroy` callback of a request-scoped bean and additionally offers the advantage that the current faces context can still be accessed if necessary. 
+In our case we set the flag backNavigationActive, because otherwise it could still have the old state for a subsequent request.
+
+[source,java]
+----
+@Named
 @WindowScoped
 public class BackNavigator implements Serializable {
   private Stack<Class<? extends ViewConfig>> previousViewStack =
@@ -1651,29 +1910,71 @@ public class BackNavigator implements Serializable {
     this.backNavigationActive = false;
   }
 }
-Tip: The Observer #onFacesRequestEnd method is called only if BackNavigator has already been used. This is only necessary because BackNavigator is stored in the window context and this must not be active on the first request in a browser window / tab. The reason for this is purely technical. Depending on the configured window management mode, it is possible that a redirect will cause an initial request to be aborted to the same URL so that the newly requested window ID can be added to the requested URL. This is necessary, for example, in order not to lose the window ID during a browser refresh of a page.
-In JSF pages, this mechanism can be used with the EL expression # {backNavigator.toPreviousView} . Listing Using BackNavigator displays a corresponding button that is used in IdeaFork on the profile.xhtml page .
- <h:commandButton class="btn btn-default" value="Back"
+----
+
+TIP: The Observer #onFacesRequestEnd method is called only if BackNavigator has already been used. 
+This is only necessary because BackNavigator is stored in the window context and this must not be active on the first request in a browser window/tab. 
+The reason for this is purely technical. 
+Depending on the configured window management mode, it is possible that a redirect will cause an initial request to be aborted to the same URL so that the newly requested window ID can be added to the requested URL. 
+This is necessary, for example, in order not to lose the window ID during a browser refresh of a page.
+
+In JSF pages, this mechanism can be used with the EL expression #{backNavigator.toPreviousView}. 
+Listing <<.Using BackNavigator, Using BackNavigator>> displays a corresponding button that is used in IdeaFork on the `profile.xhtml` page.
+
+.Using BackNavigator
+[source,xml]
+----
+<h:commandButton class="btn btn-default" value="Back"
                  action="#{backNavigator.toPreviousView}"/>
-Tip: The window context stores beans grouped by the window ID in the current session. Thus, window-scoped beans are also replicated as soon as session replication is performed in a cluster. As a result, window-scoped beans are also automatically destroyed as soon as a session is closed.
-An even more convenient alternative to @WindowScoped is a scope based on the window scope, which enables more efficient memory usage. This is the so-called View-Access Scope. In a nutshell , @ViewAccessScoped exists Beans for a JSF page as soon as they are accessed and are not disposed of until they are no longer accessed after a JSF navigation to another page. This is very similar to the view scope of JSF itself. The main difference is that View-Access-scoped beans are not destroyed by navigating to another page before the rendering process. Only when a bean is no longer accessed during the rendering of the new page will the destruction of that one contextual instance take place. Thus, every instance stored in this context can have its own lifetime.
- 
+----
+TIP: The window context stores beans grouped by the window ID in the current session. 
+Thus, window-scoped beans are also replicated as soon as session replication is performed in a cluster. 
+As a result, window-scoped beans are also automatically destroyed as soon as a session is closed.
 
-If, for example, a @ViewAccessScoped Bean is used as a wizard controller in a wizard and thus addressed at each wizard step, the @ViewAccessScoped Bean is available for the entire wizard and is automatically disposed of by DeltaSpike as soon as the wizard is ended and the subsequent one Page no longer uses the wizard controller. In the background, the view-access context collects the contextual instances in a @WindowScoped bean. For this reason, @ViewAccessScoped beans are per definition managed per browser window / tab and as soon as the session or the window context is ended, all @ViewAccessScoped beans are also destroyed.
- 
+An even more convenient alternative to `@WindowScoped` is a scope based on the window scope, which enables more efficient memory usage. 
+This is the so-called View-Access Scope. 
+In a nutshell, `@ViewAccessScoped` exists Beans for a JSF page as soon as they are accessed and are not disposed of until they are no longer accessed after a JSF navigation to another page. 
+This is very similar to the view scope of JSF itself. 
+The main difference is that `View-Access-scoped` beans are not destroyed by navigating to another page before the rendering process. 
+Only when a bean is no longer accessed during the rendering of the new page will the destruction of that one contextual instance take place. 
+Thus, every instance stored in this context can have its own lifetime.
 
-In the previous step, in the IdeaFork page template , we 've already used the windowId component to ensure that window management is fully enabled. Therefore, without further preparation, we can convert the view controller beans in IdeaFork to the view access scope. For this purpose, we implement the stereotype annotation @ViewController . Listing Using @ViewAccessScoped shows the new implementation of this annotation, in which we use the annotation @ViewAccessScoped instead of @RequestScoped . Since the view access scope and the session scope are passable, we have to follow the CDI rules that we have in chapter CDI basic concepts , all @ViewController Beans provided with the marker interface java.io.Serializable . Also, in IdeaFork , we've modified some @ViewController beans by explicitly defining them as @SessionScoped Beans. This is no longer necessary because we initially wanted to extend the life of these view controllers only slightly.
- @Target(TYPE)
+If, for example, a `@ViewAccessScoped` Bean is used as a wizard controller in a wizard and thus addressed at each wizard step, the @ViewAccessScoped Bean is available for the entire wizard and is automatically disposed of by DeltaSpike as soon as the wizard is ended and the subsequent Page no longer uses the wizard controller. 
+In the background, the view-access context collects the contextual instances in a `@WindowScoped` bean. 
+For this reason, `@ViewAccessScoped` beans are per definition managed per browser window/tab and as soon as the session or the window context is ended, all @ViewAccessScoped beans are also destroyed.
+
+In the previous step, in the IdeaFork page template, we've already used the windowId component to ensure that window management is fully enabled. 
+Therefore, without further preparation, we can convert the view controller beans in IdeaFork to the view access scope. 
+For this purpose, we implement the stereotype annotation `@ViewController`. 
+Listing <<.Using @ViewAccessScoped, Using @ViewAccessScoped>> shows the new implementation of this annotation, in which we use the annotation `@ViewAccessScoped` instead of `@RequestScoped`. 
+Since the view access scope and the session scope are passivable, we have to follow the CDI rules that we have in chapter CDI basic concepts, all @ViewController Beans provided with the marker interface `java.io.Serializable`. 
+Also, in `IdeaFork`, we've modified some `@ViewController` beans by explicitly defining them as `@SessionScoped` Beans. 
+This is no longer necessary because we initially wanted to extend the life of these view controllers only slightly.
+
+.Using @ViewAccessScoped
+[source,java]
+----
+@Target(TYPE)
 @Retention(RUNTIME)
-
 @Stereotype
-
 @ViewAccessScoped
 @Named
 public @interface ViewController {
 }
-In IdeaFork we use two listeners for the PreRenderView event of JSF, which are integrated with the tag f: event in the pages index.xhtml and list.xhtml . As a type-safe alternative, DeltaSpike's @PreRenderView annotation can be used for such callback methods. Since there are usually several view controllers in an application, a connection between a page and the responsible view controller must be defined. For example, the annotation @ViewControllerRef used by DeltaSpike. It is obvious that the configuration of the view controller is also done in the view config of the application. Listing Using @ViewControllerRef displays a correspondingly expanded section of the IdeaFork View Config . The value is referenced by the view controller class.
- @View(navigation = REDIRECT)
+----
+
+In IdeaFork we use two listeners for the `PreRenderView` event of JSF, which are integrated with the tag `f:event` in the pages `index.xhtml` and `list.xhtml`. 
+As a type-safe alternative, DeltaSpike's `@PreRenderView` annotation can be used for such callback methods. 
+Since there are usually several view controllers in an application, a connection between a page and the responsible view controller must be defined. 
+For example, the annotation `@ViewControllerRef` used by DeltaSpike. 
+It is obvious that the configuration of the view controller is also done in the view config of the application. 
+Listing <<.Using `@ViewControllerRef`, Using `@ViewControllerRef`>> displays a correspondingly expanded section of the IdeaFork View Config. 
+The value is referenced by the view controller class.
+
+.Using `@ViewControllerRef`
+[source,java]
+----
+@View(navigation = REDIRECT)
 public interface Pages extends ViewConfig {
   @ViewControllerRef(IndexViewCtrl.class)
   class Index implements Pages {}
@@ -1689,8 +1990,18 @@ public interface Pages extends ViewConfig {
 
   //...
 }
-This configuration enables type-safe callback methods in the specified CDI bean. Listing using @PreRenderView representatively shows the implementation in IdeaListViewCtrl , wherein the method #onPreRenderView with @PreRenderView is annotated. This allows the associated f: event tag to be removed from the JSF page. In the case of @PreRenderView it is checked at runtime before the rendering process whether there is a view config for the page to be rendered, which is annotated with @ViewControllerRef . If this is the case, then the @PreRenderView called annotated method, if one exists.
- @ViewController
+----
+
+This configuration enables type-safe callback methods in the specified CDI bean. 
+Listing <<.using `@PreRenderView`, using `@PreRenderView`>> representatively shows the implementation in `IdeaListViewCtrl`, wherein the method #onPreRenderView with @PreRenderView is annotated. 
+This allows the associated `f:event` tag to be removed from the JSF page. 
+In the case of `@PreRenderView` it is checked at runtime before the rendering process whether there is a view config for the page to be rendered, which is annotated with `@ViewControllerRef`. 
+If this is the case, then the `@PreRenderView` annotated method called, if one exists.
+
+.using `@PreRenderView`
+[source,java]
+----
+@ViewController
 public class IdeaListViewCtrl implements Serializable {
   @Inject
   private IdeaService ideaService;
@@ -1707,20 +2018,46 @@ public class IdeaListViewCtrl implements Serializable {
   }
   //...
 }
-Tip: @PreRenderView is the most common view controller annotation. There are also the view controller annotations @InitView , @PreViewAction and @PostRenderView . @InitView callback methods are called before or after a JSF request-lifecycle phase if the view ID is set or if the value of the view ID has changed. @PreViewAction Callback methods are executed before an action method, where the following action method is independent of the configured callback method. @PostRenderView Callback methods are called as soon as the rendering process of the associated page is finished. For example, resources can be released without increasing the latency from the browser's point of view.
-So far, we have come to know some aspects of the View Config concept that can be used directly without any additional effort. In addition, DeltaSpike allows you to define custom view-config metadata to implement your own concepts. Own metadata is created in the same way as the already available metadata of DeltaSpike itself. The only difference lies in the evaluation. While DeltaSpike evaluates the provided annotations and contains the corresponding implementations, self-defined metadata is added to the metadata model based on the same rules, which can then be queried. Of course, since this is your own metadata, appropriate logic must be implemented,
- 
+----
+TIP: `@PreRenderView` is the most common view controller annotation. 
+There are also the view controller annotations `@InitView`, `@PreViewAction` and `@PostRenderView`. 
+`@InitView` callback methods are called before or after a JSF request-lifecycle phase if the view ID is set or if the value of the view ID has changed. 
+`@PreViewAction` Callback methods are executed before an action method, where the following action method is independent of the configured callback method. 
+`@PostRenderView` Callback methods are called as soon as the rendering process of the associated page is finished. 
+For example, resources can be released without increasing the latency from the browser's point of view.
 
-In IdeaFork , for example, we can create our own annotation @EntryPoint . In this case, the standard Java rules for annotations must always be followed. As can be seen in listing usage of @ViewMetaData , the @EntryPoint annotation must also be marked with the annotation @ViewMetaData so that DeltaSpike generates a corresponding entry in the ViewConfig metadata model.
- @Target({TYPE})
+So far, we have come to know some aspects of the View Config concept that can be used directly without any additional effort. 
+In addition, DeltaSpike allows you to define custom view-config metadata to implement your own concepts. 
+Own metadata is created in the same way as the already available metadata of DeltaSpike itself. 
+The only difference lies in the evaluation. 
+While DeltaSpike evaluates the provided annotations and contains the corresponding implementations, self-defined metadata is added to the metadata model based on the same rules, which can then be queried. 
+Of course, since this is your own metadata, appropriate logic must be implemented.
+
+In IdeaFork, for example, we can create our own annotation `@EntryPoint`. 
+In this case, the standard Java rules for annotations must always be followed. 
+As can be seen in Listing <<.`Usage of `@ViewMetaData`, Usage of `@ViewMetaData`>>, the `@EntryPoint` annotation must also be marked with the annotation `@ViewMetaData` so that DeltaSpike generates a corresponding entry in the `ViewConfig` metadata model.
+
+.`Usage of `@ViewMetaData`
+[source,java]
+----
+@Target({TYPE})
 @Retention(RUNTIME)
 @Documented
-
 @ViewMetaData
 public @interface EntryPoint {
 }
-As mentioned before, it is not enough to create an annotation. In addition, the associated functionality must be implemented. The @EntryPoint annotation in IdeaFork is meant to mark all pages that are stand-alone. Therefore, certain accumulated data can be reset as soon as such pages are navigated. Listing Using own view metadata shows a section of the IdeaFork view config where some page configurations have been extended with the @EntryPoint annotation .
- @View(navigation = REDIRECT)
+----
+
+As mentioned before, it is not enough to create an annotation. 
+In addition, the associated functionality must be implemented. 
+The `@EntryPoint` annotation in IdeaFork is meant to mark all pages that are stand-alone. 
+Therefore, certain accumulated data can be reset as soon as such pages are navigated. 
+Listing <<.Using own view metadata, Using own view metadata>> shows a section of the IdeaFork view config where some page configurations have been extended with the `@EntryPoint` annotation.
+
+.Using own view metadata
+[source,java]
+----
+@View(navigation = REDIRECT)
 public interface Pages extends ViewConfig {
   @ViewControllerRef(IndexViewCtrl.class)
   class Index implements Pages {}
@@ -1752,8 +2089,16 @@ public interface Pages extends ViewConfig {
 
   //...
 }
-The previous implementation of BackNavigator can use this new marker annotation to reset the navigation history, instead of setting an upper limit for the entries in the navigation history. Listing Using EntryPointNavigationEvent displays a snippet from the Advanced BackNavigator . In the #onNavigation method , the review of the fixed upper limit is omitted. As compensation, there is an Observer method for the newly created (marker) Event EntryPointNavigationEvent , in which the previous navigation history is reset and then the current page is added.
- @Named
+----
+The previous implementation of BackNavigator can use this new marker annotation to reset the navigation history, instead of setting an upper limit for the entries in the navigation history. 
+Listing <<.Using EntryPointNavigationEvent, Using EntryPointNavigationEvent>> displays a snippet from the Advanced BackNavigator. 
+In the #onNavigation method, the review of the fixed upper limit is omitted. 
+As compensation, there is an Observer method for the newly created (marker) Event `EntryPointNavigationEvent`, in which the previous navigation history is reset and then the current page is added.
+
+.Using EntryPointNavigationEvent
+[source,java]
+----
+@Named
 @WindowScoped
 public class BackNavigator implements Serializable {
   //...
@@ -1781,8 +2126,21 @@ public class BackNavigator implements Serializable {
 
   //...
 }
-Since EntryPointNavigationEvent is also a separate event, it must be generated when navigating to a page marked @EntryPoint . Therefore, in IdeaFork, we create a class named EntryPointHandler , which contains the #checkEntryPoints observer method shown in Listing's own view metadata . EntryPointNavigationEvent is fired as usual via the injected interface javax.enterprise.event.Event . For this event to be fired at all, it must be checked whether the page configuration with @EntryPoint is marked. For such evaluations, DeltaSpike provides the injectable interface ViewConfigResolver . The #getViewConfigDescriptor method can be passed the current view ID, which contains the current FacesContext or the current View root. If there is a view config entry, the method ViewConfigDescriptor # getMetaData can be used to check whether the annotation @EntryPoint has been stored in the ViewConfigDescriptor of this page . Since we do not want to fire this event when the current request comes from the same entry point page, we can remember the View Config class from the last entry point. Therefore, it is obvious To manage the EntryPointHandler from the Window context, which is why we annotate the class with @WindowScoped .
- @WindowScoped
+----
+
+Since `EntryPointNavigationEvent` is also a separate event, it must be generated when navigating to a page marked `@EntryPoint`. 
+Therefore, in IdeaFork, we create a class named `EntryPointHandler`, which contains the #checkEntryPoints observer method shown in Listing<<own view metadata, own view metadata>>. 
+`EntryPointNavigationEvent` is fired as usual via the injected interface `javax.enterprise.event.Event`. 
+For this event to be fired at all, it must be checked whether the page configuration with `@EntryPoint` is marked. 
+For such evaluations, DeltaSpike provides the injectable interface `ViewConfigResolver`. 
+The #getViewConfigDescriptor method can be passed the current view ID, which contains the current FacesContext or the current View root. 
+If there is a view config entry, the method ViewConfigDescriptor#getMetaData can be used to check whether the annotation `@EntryPoint` has been stored in the ViewConfigDescriptor of this page. 
+Since we do not want to fire this event when the current request comes from the same entry point page, we can remember the View Config class from the last entry point. 
+Therefore, it is obvious to manage the EntryPointHandler from the Window context, which is why we annotate the class with `@WindowScoped`.
+
+[source,java]
+----
+@WindowScoped
 public class EntryPointHandler implements Serializable {
   private Class<? extends ViewConfig> previousEntryPoint;
 
@@ -1827,11 +2185,30 @@ public class EntryPointHandler implements Serializable {
     }
   }
 }
-It does not always need its own metadata to make adjustments. If, for example, only the name of a directory or a file is to be changed, this can be done directly with the aid of @Folder or @View . In order to use further functionalities of DeltaSpike we create a wizard with which own ideas can be promoted. For this purpose, a PromotionRequest should be generated. Promotion requests can be searched and promoted by other users. Promoted ideas should then be visible on the start page for all users.
- 
+----
 
-The wizard for creating a promotion request should consist of the pages pages / promotion / step1.xhtml , pages / promotion / step2.xhtml and pages / promotion / summary.xhtml . Listing Explicit assignment of names illustrates the customization of directory and file names. The configuration interface for the directory of the wizard is called PromotionWizard . However, the path for this directory is pages / promotion / instead of pages / promotionWizard , since the interface is annotated with @Folder (name = "promotion") . The configuration class for the last page of the wizard is called Listing Explicit name assignment Pages.PromotionWizard.FinalStep.class and is annotated with @View (name = "summary") , which will also change the path for this page to pages / promotion / summary.xhtml . Pages.PromotionWizard.FinalStep.class implements the interface PromotionWizard , which extends SecuredPages . Since SecuredPages itself extends the Pages interface, FinalStep inherits the metadata from Pages via this inheritance hierarchy. @View (navigation = REDIRECT) is not used by @View (name = "summary") DeltaSpike automatically merges the information, which results in the result @View (name = "summary", navigation = REDIRECT) at runtime . However, information is merged only if a value is not explicitly specified. If we were to annotate FinalStep with @View (name = "summary", navigation = FORWARD) , then we would override the navigation mode originally defined by the Pages interface.
- @View(navigation = REDIRECT)
+It does not always need its own metadata to make adjustments. 
+If, for example, only the name of a directory or a file is to be changed, this can be done directly with the aid of `@Folder` or `@View`. 
+In order to use further functionalities of DeltaSpike we create a wizard with which own ideas can be promoted. 
+For this purpose, a PromotionRequest should be generated. 
+Promotion requests can be searched and promoted by other users. 
+Promoted ideas should then be visible on the start page for all users.
+
+The wizard for creating a promotion request should consist of the pages `pages/promotion/step1.xhtml`, `pages/promotion/step2.xhtml` and `pages/promotion/summary.xhtml`. 
+Listing <<.Explicit assignment of names, Explicit assignment of names>> illustrates the customization of directory and file names. 
+The configuration interface for the directory of the wizard is called PromotionWizard. 
+However, the path for this directory is `pages/promotion/` instead of `pages/promotionWizard`, since the interface is annotated with `@Folder(name = "promotion")`. 
+The configuration class for the last page of the wizard is called Listing <<.Explicit name assignment, Explicit name assignment>> Pages.PromotionWizard.FinalStep.class and is annotated with @View (name = "summary"), which will also change the path for this page to `pages/promotion/summary.xhtml`. 
+Pages.PromotionWizard.FinalStep.class implements the interface PromotionWizard, which extends SecuredPages. 
+Since SecuredPages itself extends the Pages interface, FinalStep inherits the metadata from Pages via this inheritance hierarchy. 
+@View (navigation = REDIRECT) is not used by @View (name = "summary") DeltaSpike automatically merges the information, which results in the result @View (name = "summary", navigation = REDIRECT) at runtime. 
+However, information is merged only if a value is not explicitly specified. 
+If we were to annotate FinalStep with @View (name = "summary", navigation = FORWARD), then we would override the navigation mode originally defined by the Pages interface.
+
+.Explicit assignment of names
+[source,java]
+----
+@View(navigation = REDIRECT)
 public interface Pages extends ViewConfig {
   //...
 
@@ -1850,7 +2227,9 @@ public interface Pages extends ViewConfig {
     class FinalStep implements PromotionWizard {}
   }
 }
-If required, even a completely separate naming convention can be introduced. JsfBaseConfig defined in addition to some other configuration options also options for default name Builder s such as. JsfBaseConfig.ViewConfigCustomization.CUSTOM_DEFAULT_FOLDER_NAME_BUILDER . The stored configuration key is called org.apache.deltaspike.jsf.api.config.view.Folder $ DefaultFolderNameBuilder and allows for a custom implementation of org.apache.deltaspike.jsf.api.config.view.Folder $ NameBuilderwhich can be activated via the already presented configuration mechanism of DeltaSpike and used for the entire application. Alternatively, the naming can be adapted for part of the view config. For directories, this is possible through @ Folder # folderNameBuilder . Listing Changing individual paths shows how the view configuration of IdeaFork can be extended for the second new area, if the structure of the view config does not correspond to the actual directory structure in the application. The interface PromotionSelectionArea is with @Folder (folderNameBuilder = PromotionSelectionArea.CustomFolderNameBuilder.class) annotates to change the naming convention for this directory configuration. Our goal is to put JSF pages in the directory / pages / promotion / selection . The directory configuration will change to Listing Individual Paths, however, represented by Pages.PromotionSelectionArea.class .
+----
+If required, even a completely separate naming convention can be introduced. 
+JsfBaseConfig defined in addition to some other configuration options also options for default name Builder s such as. JsfBaseConfig.ViewConfigCustomization.CUSTOM_DEFAULT_FOLDER_NAME_BUILDER . The stored configuration key is called org.apache.deltaspike.jsf.api.config.view.Folder $ DefaultFolderNameBuilder and allows for a custom implementation of org.apache.deltaspike.jsf.api.config.view.Folder $ NameBuilderwhich can be activated via the already presented configuration mechanism of DeltaSpike and used for the entire application. Alternatively, the naming can be adapted for part of the view config. For directories, this is possible through @ Folder # folderNameBuilder . Listing Changing individual paths shows how the view configuration of IdeaFork can be extended for the second new area, if the structure of the view config does not correspond to the actual directory structure in the application. The interface PromotionSelectionArea is with @Folder (folderNameBuilder = PromotionSelectionArea.CustomFolderNameBuilder.class) annotates to change the naming convention for this directory configuration. Our goal is to put JSF pages in the directory / pages / promotion / selection . The directory configuration will change to Listing Individual Paths, however, represented by Pages.PromotionSelectionArea.class .
  @View(navigation = REDIRECT)
 public interface Pages extends ViewConfig {
   //...
@@ -1928,7 +2307,6 @@ public interface Pages extends ViewConfig {
 }
 Tip: If parameters are to be added dynamically, then we would have to inject NavigationParameterContext, for example, into a view controller and dynamically call its methods.
 After successfully adjusting individual paths, we take a closer look at the controllers of the two new sections. In the view configuration for the new wizard, we have set up a view controller for Pages.PromotionWizard.Step1.class . The wizard should be controlled continuously by a controller called PromotionWizardCtrl . This can be done using the previously presented View Access Scope. However, in our case we want to explicitly define the lifetime of the controller. At the end of the wizard, the controller instance should be destroyed immediately. If this were the only requirement, then we could use the conversation scope of CDI itself. However, this one has some limitations and it can even be unexpected at worst BusyConversationException come with Ajax requests. For these and other reasons, DeltaSpike implemented its own conversation concept, which was adopted by MyFaces CODI just like @WindowScoped and @ViewAccessScoped . In DeltaSpike, however, the name of the annotation has been renamed and thus CODI conversations are available in DeltaSpike under the name of grouped conversations. Similarly, the associated annotation is @GroupedConversationScoped and is used in listing use of clustered conversations for PromotionWizardCtrl .
- 
 
 Grouped conversations differ in some aspects from standard CDI conversations. Each bean exists in a separate conversation, which does not have to be started explicitly. In contrast, the CDI conversation scope only has a large conversation that must be started explicitly. The section of PromotionWizardCtrl shown in Listing Using Grouped Conversations also shows how the bean's current grouped conversation can be ended. GroupedConversation provides only the #close method , which in our case is the current instance of PromotionWizardCtrl immediately removed from the grouped conversation context. The current instance then exists only for the remaining execution time of the method in which GroupedConversation # close was called. For the next (external) method call, a new instance of the class is created and stored in the grouped conversation context.
  @Named
