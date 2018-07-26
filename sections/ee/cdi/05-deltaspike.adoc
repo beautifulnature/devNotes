@@ -2229,8 +2229,19 @@ public interface Pages extends ViewConfig {
 }
 ----
 If required, even a completely separate naming convention can be introduced. 
-JsfBaseConfig defined in addition to some other configuration options also options for default name Builder s such as. JsfBaseConfig.ViewConfigCustomization.CUSTOM_DEFAULT_FOLDER_NAME_BUILDER . The stored configuration key is called org.apache.deltaspike.jsf.api.config.view.Folder $ DefaultFolderNameBuilder and allows for a custom implementation of org.apache.deltaspike.jsf.api.config.view.Folder $ NameBuilderwhich can be activated via the already presented configuration mechanism of DeltaSpike and used for the entire application. Alternatively, the naming can be adapted for part of the view config. For directories, this is possible through @ Folder # folderNameBuilder . Listing Changing individual paths shows how the view configuration of IdeaFork can be extended for the second new area, if the structure of the view config does not correspond to the actual directory structure in the application. The interface PromotionSelectionArea is with @Folder (folderNameBuilder = PromotionSelectionArea.CustomFolderNameBuilder.class) annotates to change the naming convention for this directory configuration. Our goal is to put JSF pages in the directory / pages / promotion / selection . The directory configuration will change to Listing Individual Paths, however, represented by Pages.PromotionSelectionArea.class .
- @View(navigation = REDIRECT)
+`JsfBaseConfig` defines options for default besides some other configuration options for example JsfBaseConfig.ViewConfigCustomization.CUSTOM_DEFAULT_FOLDER_NAME_BUILDER. 
+The stored configuration key is called org.apache.deltaspike.jsf.api.config.view.Folder$DefaultFolderNameBuilder and allows for a custom implementation of org.apache.deltaspike.jsf.api.config.view.Folder$NameBuilder which can be activated via the already presented configuration mechanism of DeltaSpike and used for the entire application. 
+Alternatively, the naming can be adapted for part of the view config. 
+For directories, this is possible through @Folder#folderNameBuilder. 
+Listing <<.Changing individual paths, Changing individual paths>> shows how the view configuration of IdeaFork can be extended for the second new area, if the structure of the view config does not correspond to the actual directory structure in the application. 
+The interface PromotionSelectionArea is with `@Folder(folderNameBuilder = PromotionSelectionArea.CustomFolderNameBuilder.class)` annotates to change the naming convention for this directory configuration. 
+Our goal is to put JSF pages in the directory `/pages/promotion/selection`. 
+The directory configuration is in Listing <<.Changing individual paths, .Changing individual paths>> however, represented by Pages.PromotionSelectionArea.class.
+
+.Changing individual paths
+[source,java]
+----
+@View(navigation = REDIRECT)
 public interface Pages extends ViewConfig {
   //...
 
@@ -2246,8 +2257,19 @@ public interface Pages extends ViewConfig {
     }
   }
 }
-CustomFolderNameBuilder in Listing Folder-NameBuilder is the simplest way to change a single directory. Before DeltaSpike stores the final definitions of a view config as an invariable viewConfigDescriptor , the view config is available as a modifiable node structure, with ViewConfigNode being the type of a node. We will look at how View-Config metadata can be changed later. Since we only want to change the path of a directory, it suffices to have the class Pages.PromotionSelectionArea.class with the result of the method ViewConfigNode # getSource to compare. If the source is the configuration class in question, the customPathUsed flag is set to true so that the #isDefaultValueReplaced method can later provide this information. In addition, the string "/ pages / promotion / selection" is returned. The creation of the remaining directory names is delegated to DefaultFolderNameBuilder , which does not change the result for the other directory configurations .
- class CustomFolderNameBuilder extends Folder.DefaultFolderNameBuilder {
+----
+`CustomFolderNameBuilder` in Listing <<.Folder-NameBuilder, Folder-NameBuilder>> is the simplest way to change a single directory. 
+Before DeltaSpike stores the final definitions of a view config as an invariable viewConfigDescriptor, the view config is available as a modifiable node structure, with ViewConfigNode being the type of a node. 
+We will look at how View-Config metadata can be changed later. 
+Since we only want to change the path of a directory, it suffices to have the class `Pages.PromotionSelectionArea.class` with the result of the method ViewConfigNode#getSource to compare. 
+If the source is the configuration class in question, the `customPathUsed` flag is set to `true` so that the #isDefaultValueReplaced method can later provide this information. 
+In addition, the string "/pages/promotion/selection" is returned. 
+The creation of the remaining directory names is delegated to DefaultFolderNameBuilder, which does not change the result for the other directory configurations.
+
+.Folder-NameBuilder
+[source,java]
+----
+class CustomFolderNameBuilder extends Folder.DefaultFolderNameBuilder {
   private boolean customPathUsed = false;
 
   @Override
@@ -2266,8 +2288,18 @@ CustomFolderNameBuilder in Listing Folder-NameBuilder is the simplest way to cha
     return super.isDefaultValueReplaced() || this.customPathUsed;
   }
 }
-Custom NameBuilders usually implement their own naming conventions and not just replace single names. Such NameBuilder implementations are globally enabled as previously mentioned. On the other hand, combining an implementation like Name Matched in Listing can make sense if an application does not yet follow a uniform naming convention and a corresponding conversion is only carried out step by step. NameBuilder implementations can be customized not only for directories but also for files. Name builders for directories and files are independent of each other, and therefore the View config can combine with them as in Listing @View can be extended to additionally specify the names of the files explicitly.
- @View(navigation = REDIRECT)
+----
+
+Custom NameBuilders usually implement their own naming conventions and not just replace single names. 
+Such NameBuilder implementations are globally enabled as previously mentioned. 
+An implementation as in Listing <<.Combine customized names, Combine customized names>> On the other hand, it may be useful if an application does not yet follow a uniform naming convention and a corresponding conversion is only carried out step by step. 
+NameBuilder implementations can be customized not only for directories but also for files. 
+Name builders for directories and files are independent of each other, and therefore the View config can combine with them as in Listing @View can be extended to additionally specify the names of the files explicitly.
+
+.Combine customized names
+[source,java]
+----
+@View(navigation = REDIRECT)
 public interface Pages extends ViewConfig {
   //...
 
@@ -2285,8 +2317,19 @@ public interface Pages extends ViewConfig {
     //...
   }
 }
-Since JSF 2.0, JSF actions are also possible via GET requests. To automatically accept request parameters, the marker "includeViewParams = true" can be added to the navigation string . For this, @View also provides a type-safe configuration, which can be seen in listing navigation parameters via View-Config . Parameters can also be specified by using @NavigationParameter at view config level. The parameter value can be a fixed string or an EL expression. Alternatively, you can use action methods with @NavigationParameter or @ NavigationParameter.List be annotated to restrict parameters to certain action methods.
- @View(navigation = REDIRECT)
+----
+
+Since JSF 2.0, JSF actions are also possible via GET requests. 
+To automatically accept request parameters, the marker "includeViewParams = true" can be added to the navigation string. 
+For this, `@View` also provides a type-safe configuration, which can be seen in Listing <<.navigation parameters via View-Config, navigation parameters via View-Config>>. 
+Parameters can also be specified by using `@NavigationParameter` at view config level. 
+The parameter value can be a fixed string or an EL expression. 
+Alternatively, you can use action methods with `@NavigationParameter` or `@NavigationParameter.List` be annotated to restrict parameters to certain action methods.
+
+.navigation parameters via View-Config
+[source,java]
+----
+@View(navigation = REDIRECT)
 public interface Pages extends ViewConfig {
   //...
 
@@ -2305,11 +2348,34 @@ public interface Pages extends ViewConfig {
     //...
   }
 }
-Tip: If parameters are to be added dynamically, then we would have to inject NavigationParameterContext, for example, into a view controller and dynamically call its methods.
-After successfully adjusting individual paths, we take a closer look at the controllers of the two new sections. In the view configuration for the new wizard, we have set up a view controller for Pages.PromotionWizard.Step1.class . The wizard should be controlled continuously by a controller called PromotionWizardCtrl . This can be done using the previously presented View Access Scope. However, in our case we want to explicitly define the lifetime of the controller. At the end of the wizard, the controller instance should be destroyed immediately. If this were the only requirement, then we could use the conversation scope of CDI itself. However, this one has some limitations and it can even be unexpected at worst BusyConversationException come with Ajax requests. For these and other reasons, DeltaSpike implemented its own conversation concept, which was adopted by MyFaces CODI just like @WindowScoped and @ViewAccessScoped . In DeltaSpike, however, the name of the annotation has been renamed and thus CODI conversations are available in DeltaSpike under the name of grouped conversations. Similarly, the associated annotation is @GroupedConversationScoped and is used in listing use of clustered conversations for PromotionWizardCtrl .
+----
 
-Grouped conversations differ in some aspects from standard CDI conversations. Each bean exists in a separate conversation, which does not have to be started explicitly. In contrast, the CDI conversation scope only has a large conversation that must be started explicitly. The section of PromotionWizardCtrl shown in Listing Using Grouped Conversations also shows how the bean's current grouped conversation can be ended. GroupedConversation provides only the #close method , which in our case is the current instance of PromotionWizardCtrl immediately removed from the grouped conversation context. The current instance then exists only for the remaining execution time of the method in which GroupedConversation # close was called. For the next (external) method call, a new instance of the class is created and stored in the grouped conversation context.
- @Named
+TIP: If parameters are to be added dynamically, then we would have to inject `NavigationParameterContext`, for example, into a view controller and dynamically call its methods.
+
+After successfully adjusting individual paths, we take a closer look at the controllers of the two new sections. 
+In the view configuration for the new wizard, we have set up a view controller for Pages.PromotionWizard.Step1.class. 
+The wizard should be controlled continuously by a controller called PromotionWizardCtrl. 
+This can be done using the previously presented View Access Scope. 
+However, in our case we want to explicitly define the lifetime of the controller. 
+At the end of the wizard, the controller instance should be destroyed immediately. 
+If this were the only requirement, then we could use the conversation scope of CDI itself. 
+However, this one has some limitations and it can even be unexpected at worst BusyConversationException come with Ajax requests. 
+For these and other reasons, DeltaSpike implemented its own conversation concept, which was adopted by MyFaces CODI just like `@WindowScoped` and `@ViewAccessScoped`. 
+In DeltaSpike, however, the name of the annotation has been renamed and thus CODI conversations are available in DeltaSpike under the name of grouped conversations. 
+Similarly, the associated annotation is @GroupedConversationScoped and is used in Listing <<.use of clustered conversations, use of clustered conversations>> for PromotionWizardCtrl.
+
+Grouped conversations differ in some aspects from standard CDI conversations. 
+Each bean exists in a separate conversation, which does not have to be started explicitly. 
+In contrast, the CDI conversation scope only has a large conversation that must be started explicitly. 
+The section of PromotionWizardCtrl shown in Listing <<.Using Grouped Conversations, Using Grouped Conversations>> also shows how the bean's current grouped conversation can be ended. 
+GroupedConversation provides only the #close method, which in our case is the current instance of PromotionWizardCtrl immediately removed from the grouped conversation context. 
+The current instance then exists only for the remaining execution time of the method in which GroupedConversation#close was called. 
+For the next (external) method call, a new instance of the class is created and stored in the grouped conversation context.
+
+.use of clustered conversations
+[source,java]
+----
+@Named
 @GroupedConversationScoped
 public class PromotionWizardCtrl implements Serializable {
     @Inject
@@ -2323,8 +2389,15 @@ public class PromotionWizardCtrl implements Serializable {
         return Pages.Index.class;
     }
 }
-Since by default every @GroupedConversationScoped Bean is stored in an isolated conversation, there can be several parallel and independent conversations. Should it be necessary to terminate all active grouped conversations, then GroupedConversationManager can be used. Listing Using GroupedConversationManager shows a possible extension of EntryPointHandler to close all grouped conversations on each entry point page.
- @WindowScoped
+----
+Since by default every @GroupedConversationScoped Bean is stored in an isolated conversation, there can be several parallel and independent conversations. 
+Should it be necessary to terminate all active grouped conversations, then GroupedConversationManager can be used. 
+Listing <<.Using GroupedConversationManager, Using GroupedConversationManager>> shows a possible extension of EntryPointHandler to close all grouped conversations on each entry point page.
+
+.Using GroupedConversationManager
+[source,java]
+----
+@WindowScoped
 public class EntryPointHandler implements Serializable {
   private Class<? extends ViewConfig> previousEntryPoint;
 
@@ -2352,16 +2425,31 @@ public class EntryPointHandler implements Serializable {
     }
   }
 }
-Tip: If a bean is not destroyed by an explicit method call, this happens as soon as the window context or the underlying session is closed.
-In the new page area, which is defined by Pages.PromotionSelectionArea.class , one should not use one controller for all pages, but one each. If an idea is promoted on the page /pages/promotion/selection/promote.xhtml , then not all (grouped) conversations should be terminated, not just the controller of this page. Therefore, we can define a group for all controller beans in the page area Pages.PromotionSelectionArea.class , which allows all beans of a group to be collected in a collective manner. If there are other active @GroupedConversationScoped beans that are assigned to another group, they will remain active. listing Explicit grouping of conversations shows a section of the classes PromotionRequestListViewCtrl and PromotionRequestSelectionViewCtrl . Both classes are annotated in addition to the annotation @GroupedConversationScoped with the CDI qualifier @ConversationGroup , which specifies the group type-safe. Any class or (marker) interface can be used for this purpose.
- @Named
+----
+TIP: If a bean is not destroyed by an explicit method call, this happens as soon as the window context or the underlying session is closed.
+
+In the new page area, which is defined by Pages.PromotionSelectionArea.class, one should not use one controller for all pages, but one each. 
+If an idea is promoted on the page `/pages/promotion/selection/promote.xhtml`, then not all (grouped) conversations should be terminated, not just the controller of this page. 
+Therefore, we can define a group for all controller beans in the page area Pages.PromotionSelectionArea.class, which allows all beans of a group to be collected in a collective manner. 
+If there are other active `@GroupedConversationScoped` beans that are assigned to another group, they will remain active. 
+Listing <<.Explicit grouping of conversations, Explicit grouping of conversations>> shows a section of the classes `PromotionRequestListViewCtrl` and `PromotionRequestSelectionViewCtrl`. 
+Both classes are annotated in addition to the annotation `@GroupedConversationScoped` with the CDI qualifier `@ConversationGroup`, which specifies the group type-safe. 
+Any class or (marker) interface can be used for this purpose.
+
+.Explicit grouping of conversations
+[source,java]
+----
+@Named
 @GroupedConversationScoped
 @ConversationGroup(Pages.PromotionSelectionArea.class)
 public class PromotionRequestListViewCtrl implements Serializable {
 
     //...
 }
+----
 
+[source,java]
+----
 @Named
 @GroupedConversationScoped
 @ConversationGroup(Pages.PromotionSelectionArea.class)
@@ -2369,9 +2457,19 @@ public class PromotionRequestSelectionViewCtrl implements Serializable {
 
     //...
 }
-Our goal was to finish collecting all view controllers of the Pages.PromotionSelectionArea.class page area . Thus, it is obvious to reuse this interface for grouping the beans in listing ends of grouped conversations . Finally, an idea is promoted by the method PromotionRequestSelectionViewCtrl # promote , in which the entire (conversation) group is terminated by calling GroupedConversationManager # closeConversationGroup . The parameter used here again is the type-safe group, in this case Pages.PromotionSelectionArea.class .
-Tip: Technically, any class or interface can be used to group @GroupedConversationScoped beans. Normally, however, it is obvious, for example, to use the type-safe view config here as well.
- @Named
+----
+Our goal was to finish collecting all view controllers of the Pages.PromotionSelectionArea.class page area. 
+Thus, it is obvious to reuse this interface for grouping the beans in Listing <<.ends of grouped conversations, ends of grouped conversations>>. 
+Finally, an idea is promoted by the method PromotionRequestSelectionViewCtrl#promote, in which the entire (conversation) group is terminated by calling GroupedConversationManager#closeConversationGroup. 
+The parameter used here again is the type-safe group, in this case Pages.PromotionSelectionArea.class.
+
+TIP: Technically, any class or interface can be used to group @GroupedConversationScoped beans. 
+Normally, however, it is obvious, for example, to use the type-safe view config here as well.
+
+.ends of grouped conversations
+[source,java]
+----
+@Named
 @GroupedConversationScoped
 @ConversationGroup(Pages.PromotionSelectionArea.class)
 public class PromotionRequestSelectionViewCtrl implements Serializable {
@@ -2389,8 +2487,23 @@ public class PromotionRequestSelectionViewCtrl implements Serializable {
 
   //...
 }
-The previously created wizard for creating a promotion request works in principle. However, there is no guarantee that the wizard will be started from the specified entry point. By bookmarking or manually entering the URL you can jump directly to any wizard step. This can lead to an inconsistent state in the application. To avoid this, we can create another custom annotation for the view config. Change Listing View metadata shows a possible variant named @Wizard . In contrast to @EntryPoint , this annotation is not only marked with @ViewMetaData , but also becomes a ConfigPreProcessor used to find the page configuration of a wizard annotated with @EntryPoint , unless the entry point is specified explicitly with Wizard # entryPoint . So that the subsequent logic does not have to cover different constellations, a new instance of @Wizard is created using AnnotationInstanceProvider # of and the page configuration annotated with @EntryPoint is set as the value for Wizard # entryPoint . The same result can be achieved with a separate literal class for @Wizard . By using AnnotationInstanceProvider We therefore save ourselves the creation of such a literal class.
- @Target({ TYPE })
+----
+
+The previously created wizard for creating a promotion request works in principle. 
+However, there is no guarantee that the wizard will be started from the specified entry point. 
+By bookmarking or manually entering the URL you can jump directly to any wizard step. 
+This can lead to an inconsistent state in the application. 
+To avoid this, we can create another custom annotation for the view config. 
+Listing <<.Change View metadata, Change View metadata>> shows a possible variant named `@Wizard`. 
+In contrast to `@EntryPoint`, this annotation is not only marked with `@ViewMetaData`, but also becomes a `ConfigPreProcessor` used to find the page configuration of a wizard annotated with `@EntryPoint`, unless the entry point is specified explicitly with Wizard#entryPoint. 
+So that the subsequent logic does not have to cover different constellations, a new instance of @Wizard is created using AnnotationInstanceProvider#of and the page configuration annotated with @EntryPoint is set as the value for Wizard#entryPoint. 
+The same result can be achieved with a separate literal class for @Wizard. 
+By using AnnotationInstanceProvider We therefore save ourselves the creation of such a literal class.
+
+.Change View metadata
+[source,java]
+----
+@Target({ TYPE })
 @Retention(RUNTIME)
 @Documented
 
@@ -2421,8 +2534,12 @@ public @interface Wizard {
     }
   }
 }
-Listing using changeable view metadata shows the use of @Wizard in the Pages.PromotionWizard interface . The aforementioned metadata change results in the @Wizard (entryPoint = Pages.PromotionWizard.Step1.class) information at runtime , which is passed through the metadata inheritance to Pages.PromotionWizard.Step1.class , Pages.PromotionWizard.Step2.class, and Pages .PromotionWizard.FinalStep.class is inherited.
- @View(navigation = REDIRECT)
+----
+Listing <<.Change View metadata, Change View metadata>> shows the use of @Wizard in the Pages.PromotionWizard interface. 
+The aforementioned metadata change results in the @Wizard (entryPoint = Pages.PromotionWizard.Step1.class) information at runtime, which is passed through the metadata inheritance to Pages.PromotionWizard.Step1.class, Pages.PromotionWizard.Step2.class, and Pages.PromotionWizard.FinalStep.class is inherited.
+[source,java]
+----
+@View(navigation = REDIRECT)
 public interface Pages extends ViewConfig {
   //...
 
@@ -2439,8 +2556,17 @@ public interface Pages extends ViewConfig {
     class FinalStep implements PromotionWizard {}
   }
 }
-As with @EntryPoint , @Wizard must also be evaluated at the appropriate location. This can also be implemented in the EntryPointHandler class . The original method #checkEntryPoints is called in Listing Combined evaluation of own metadata #checkEntryPointsAndWizardSteps and extended by an additional block in which an existing @Wizard annotation for the current page is checked to see if the wizard was originally entered via the referenced entry point. If this is not the case then it will be over the injected ViewNavigationHandler a navigation performed at this entry point. Thus, there can be no inconsistent state in the application, since the Wizard is always entered via the specified entry point.
- @WindowScoped
+----
+As with `@EntryPoint`, `@Wizard` must also be evaluated at the appropriate location. 
+This can also be implemented in the EntryPointHandler class. 
+The original method #checkEntryPoints in Listing <<.Combined evaluation of own metadata, Combined evaluation of own metadata>> #checkEntryPointsAndWizardSteps is called and extended by an additional block in which an existing `@Wizard` annotation for the current page is checked to see if the wizard was originally entered via the referenced entry point. 
+If this is not the case then it will be over the injected `ViewNavigationHandler` a navigation performed at this entry point. 
+Thus, there can be no inconsistent state in the application, since the Wizard is always entered via the specified entry point.
+
+.Combined evaluation of own metadata
+[source,java]
+----
+@WindowScoped
 public class EntryPointHandler implements Serializable {
   private Class<? extends ViewConfig> previousEntryPoint;
 
@@ -2483,8 +2609,14 @@ public class EntryPointHandler implements Serializable {
     }
   }
 }
-However, the logic implemented for @Wizard does not ensure that a wizard actually has a defined entry point. To check this during the application start, a ConfigDescriptorValidator can be implemented and activated as in listing using @ViewConfigRoot via @ViewConfigRoot .
- @ViewConfigRoot(
+----
+However, the logic implemented for @Wizard does not ensure that a wizard actually has a defined entry point. 
+To check this during the application start, a ConfigDescriptorValidator can be implemented and activated as in Listing <<using `@ViewConfigRoot` via `@ViewConfigRoot`, using `@ViewConfigRoot` via `@ViewConfigRoot`>>.
+
+.using `@ViewConfigRoot` via `@ViewConfigRoot`
+[source,java]
+----
+@ViewConfigRoot(
   configDescriptorValidators = IdeaForkViewMetaDataValidator.class)
 @View(navigation = REDIRECT)
 public interface Pages extends ViewConfig {
@@ -2505,8 +2637,15 @@ public interface Pages extends ViewConfig {
 
   //...
 }
-Implementations of the ConfigDescriptorValidator interface can validate logical relationships of View Config metadata , as in ConfigDescriptorValidator's listing implementation . In IdeaForkViewMetaDataValidator , it is validated whether there is at most one @Wizard instance per ViewConfigDescriptor instance and the default value for Wizard # entryPoint has been replaced with a specific entry point. Either by specifying explicitly with the @Wizard annotation itself or by combining it with @EntryPoint , which we initially implemented in Wizard $ EntryPointProcessor .
- public class IdeaForkViewMetaDataValidator
+----
+Implementations of the `ConfigDescriptorValidator` interface can validate logical relationships of View Config metadata, as in Listing <<ConfigDescriptorValidator's implementation, ConfigDescriptorValidator's implementation>>. 
+In `IdeaForkViewMetaDataValidator`, it is validated whether there is at most one @Wizard instance per ViewConfigDescriptor instance and the default value for Wizard # entryPoint has been replaced with a specific entry point. 
+Either by specifying explicitly with the @Wizard annotation itself or by combining it with @EntryPoint, which we initially implemented in Wizard $ EntryPointProcessor.
+
+.ConfigDescriptorValidator's implementation
+[source,java]
+----
+public class IdeaForkViewMetaDataValidator
     implements ConfigDescriptorValidator {
 
   @Override
@@ -2531,8 +2670,14 @@ Implementations of the ConfigDescriptorValidator interface can validate logical 
     return true;
   }
 }
-Tip: With @ViewConfigRoot not only the View-Config concept can be extended or adjusted, but in combination with eg @ApplicationScoped this annotation is required if the bean-discovery-mode annotated available since CDI 1.1 is activated.
-In this chapter we learned about some view-config mechanisms and how they can be combined with other functionalities of DeltaSpike. In addition, further customization options and annotations are available. For example, the configuration of view controller can be decentralized with @ViewRef . In the next part we will take a closer look at the integration with other libraries, alternative concepts for Java EE mechanisms and the early use of EE7 functionalities in an EE6 application.
+----
+TIP: With `@ViewConfigRoot` not only the View-Config concept can be extended or adjusted, but in combination with eg @ApplicationScoped this annotation is required if the bean-discovery-mode annotated available since CDI 1.1 is activated.
+
+In this chapter we learned about some view-config mechanisms and how they can be combined with other functionalities of DeltaSpike. 
+In addition, further customization options and annotations are available. 
+For example, the configuration of view controller can be decentralized with `@ViewRef`. 
+In the next part we will take a closer look at the integration with other libraries, alternative concepts for Java EE mechanisms and the early use of EE7 functionalities in an EE6 application.
+
 === Flexibility with alternatives
 So far, we have primarily used DeltaSpike in this chapter to extend standard CDI concepts or other Java EE specifications such as JSF. Apart from such enhancements, DeltaSpike also provides alternatives to existing Java EE concepts. Some alternatives, such as type-safe project stages and the type-safe JSF navigation, we have already met. However, this section discusses alternatives, each of which is available as a separate module from DeltaSpike. The main difference to the equivalent mechanisms of Java EE is the higher flexibility. All alternatives can, for example, also be used outside Java EE servers. In addition, additional extension points offer new possibilities for expanding or completely changing the standard behavior.
  
