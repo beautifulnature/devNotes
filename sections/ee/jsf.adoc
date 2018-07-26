@@ -1,0 +1,38 @@
+= JavaServer Faces
+:revdate: 2016-05-01
+:copyright-year: 2016
+:language: en
+:title-intro-en: Cereals and pulses
+:title-main-en: Specifications and test methods
+:title-part-en: Rice
+:toc:
+:sectnumlevels: 9
+:stem:
+:xrefstyle: short
+:appendix-caption: Annex
+:appendix-refsig: Annex
+:section-refsig: Clause
+:table-caption: Table
+:example-caption: Figure
+
+include::jsf/01-introduction.adoc[]
+include::jsf/02-concepts.adoc[]
+include::jsf/03-standardJSFcomponents.adoc[]
+include::jsf/04-advancedJSF.adoc[]
+include::jsf/05-resources.adoc[]
+include::jsf/06-customcomponents.adoc[]
+include::jsf/07-ajax.adoc[]
+include::jsf/08-html5.adoc[]
+include::jsf/09-cdi.adoc[]
+include::jsf/10-primefaces.adoc[]
+include::jsf/11-facesflows.adoc[]
+include::jsf/12-jsf_fullstack_cdi.adoc[]
+include::jsf/13-spring.adoc[]
+include::jsf/14-jsf_fullstack_spring.adoc[]
+include::jsf/15-tobago.adoc[]
+include::jsf/aa-annex-a.adoc[]
+include::jsf/ab-annex-b.adoc[]
+include::jsf/ac-annex-c.adoc[]
+include::jsf/ad-annex-d.adoc[]
+include::jsf/ae-annex-e.adoc[]
+include::jsf/b0-bibliography.adoc[]

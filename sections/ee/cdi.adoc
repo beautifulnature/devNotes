@@ -1,4 +1,4 @@
-= SE
+= CDI
 :revdate: 2016-05-01
 :copyright-year: 2016
 :language: en
@@ -15,4 +15,10 @@
 :table-caption: Table
 :example-caption: Figure
 
-include::sections/se/test.adoc[]
+include::cdi/01-introduction.adoc[]
+include::cdi/02-basics.adoc[]
+include::cdi/03-java_ee.adoc[]
+include::cdi/04-extensions.adoc[]
+include::cdi/05-deltaspike.adoc[]
+include::cdi/06-cdi_lite.adoc[]
+include::cdi/07-integration.adoc[]

@@ -1,4 +1,4 @@
-= SE
+= JavaServer Faces
 :revdate: 2016-05-01
 :copyright-year: 2016
 :language: en
@@ -15,4 +15,4 @@
 :table-caption: Table
 :example-caption: Figure
 
-include::sections/se/test.adoc[]
+include::jax-rs/test.adoc[]

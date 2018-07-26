@@ -1,4 +1,4 @@
-= SE
+= EE
 :revdate: 2016-05-01
 :copyright-year: 2016
 :language: en
@@ -15,4 +15,6 @@
 :table-caption: Table
 :example-caption: Figure
 
-include::sections/se/test.adoc[]
+include::sections/ee/cdi.adoc[]
+include::sections/ee/jax-rs.adoc[]
+include::sections/ee/jsf.adoc[]
