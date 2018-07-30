@@ -8,7 +8,7 @@ In the case of JSF, several new functionalities are even supported only in conju
 Also outside the Java EE platform, CDI enjoys great popularity. 
 Virtually every popular framework, which is integrated with dependency injection frameworks, supports CDI directly or at least allows for easy integration. 
 It is no longer easy to find a popular framework without a CDI module. 
-An application framework without included CDI support is the actuator framework Akka (see http://akka.io). 
+An application framework without included CDI support is the actor framework Akka (see http://akka.io). 
 We take this as an opportunity to illustrate the simple integration of CDI with other frameworks.
 
 === CDI integration by Producer
@@ -39,7 +39,7 @@ In addition, we can also facilitate the sending of messages to actors for CDI be
 In `EntityProcessorInterceptor` of `IdeaForkLite` so far the event `IdeaChangedEvent` fired synchronously. 
 To fire the asynchronous variant of this event via an actor, we must add a corresponding actor reference. 
 Since interceptors preserve the lifetime of the intercepted CDI bean, we should not inject this actor reference directly. 
-Technically this would be possible, but as mentioned above, actuator references may become invalid. 
+Technically this would be possible, but as mentioned above, actor references may become invalid. 
 Thus, it is advisable to choose the shortest possible scope for CDI beans in which actor references are to be injected. 
 One possible variant in IdeaForkLite is the outsourcing of the aforementioned event logic to a CDI bean named IdeaEventBroadcaster, which, for example, is stored in the previously presented transaction scope of DeltaSpike. 
 As we'll see in the next steps, the actor reference itself must be a dependent-scoped CDI bean. 
@@ -69,21 +69,24 @@ public class EntityChangedEventBroadcaster {
 }
 ----
 With the method ActorRef#tell we can send a message to the underlying actor, which is delivered asynchronously by Akka. 
-The processing of the message thus transmitted can take place, for example, as in listing actor with CDI support . 
-Akka's only requirement to implement a Java actor is the extension of the UntypedActor class , which specifies the #onReceive actor method . 
+The processing of the message thus transmitted can take place, for example, as in Listing <<.actor with CDI support, actor with CDI support>>. 
+Akka's only requirement is to implement a Java actor the extension of the UntypedActor class, which specifies the #onReceive actor method. 
 Each message to an actor is processed by this method in its own actor thread. 
-In listing actor with CDI support , a CDI event ( javax.enterprise.event.Event). 
-By typing on IdeaChangedEvent and the self-defined @Async qualifier, we can fire a specially qualified CDI event within the actor instance. 
+In Listing <<.actor with CDI support, actor with CDI support>>, a CDI event (`javax.enterprise.event.Event`) is also injected via Constructor-Injection.
+By typing on `IdeaChangedEvent` and the self-defined `@Async` qualifier, we can fire a specially qualified CDI event within the actor instance. 
 Effective firing of the CDI event using the #fire method is synchronous. 
 However, because the #onReceive method itself is executed asynchronously, firing the CDI event from the EntityChangedEventBroadcaster view is asynchronous and does not block its further execution. 
-The qualifier @Async serves only to distinguish or to select this new event type.
- public class IdeaChangedEventActor extends UntypedActor {
+The qualifier `@Async` serves only to distinguish or to select this new event type.
+
+.actor with CDI support
+[source,java]
+----
+public class IdeaChangedEventActor extends UntypedActor {
   private final Event<IdeaChangedEvent> entityChangedEvent;
 
   @Inject
   public IdeaChangedEventActor(
     @Async Event<IdeaChangedEvent> entityChangedEvent) {
-
     this.entityChangedEvent = entityChangedEvent;
   }
 
@@ -96,12 +99,18 @@ The qualifier @Async serves only to distinguish or to select this new event type
     }
   }
 }
-@Async IdeaChangedEvent represents a synchronous CDI event fired in an asynchronous actuator thread. 
-The CDI Event Observer, which appears in Listing CDI Event Observer for @Async IdeaChangedEvent, follows the traditional CDI Observer rules accordingly. 
-The @Async qualifier limits the observer only to events fired in our case by IdeaChangedEventActor . 
-Thus, the observer runs in the same thread as IdeaChangedEventActor , but in a different thread than EntityChangedEventBroadcaster . 
-As a result, the execution of EntityProcessorInterceptor also becomes or the processing of the entire web request is not blocked.
- @ApplicationScoped
+----
+
+`@Async` `IdeaChangedEvent` represents a synchronous CDI event fired in an asynchronous actor thread. 
+The CDI Event Observer, which appears in Listing <<.CDI Event Observer for `@Async` `IdeaChangedEvent`,  CDI Event Observer for `@Async` `IdeaChangedEvent`>>, follows the traditional CDI Observer rules accordingly. 
+The `@Async` qualifier limits the observer only to events fired in our case by `IdeaChangedEventActor`. 
+Thus, the observer runs in the same thread as `IdeaChangedEventActor`, but in a different thread than `EntityChangedEventBroadcaster`. 
+As a result, the execution of `EntityProcessorInterceptor` also becomes or the processing of the entire web request is not blocked.
+
+.CDI Event Observer for `@Async` `IdeaChangedEvent`
+[source,java]
+----
+@ApplicationScoped
 public class IdeaHistoryProcessor {
     @Inject
     private ObjectConverter currentObjectConverter;
@@ -122,14 +131,20 @@ public class IdeaHistoryProcessor {
         entityChangeRepository.save(entityChange);
     }
 }
+----
+
 The next step covers two aspects. 
-In listing notification of Akka actuators , we used an injector point of type ActorRef . 
+In Listing <<.Notification by Akka Actors, Notification by Akka Actors>>, we used an injector point of type `ActorRef`. 
 Since Akka currently does not have its own CDI module, we need a CDI producer for this type. 
-As already mentioned, we need an additional CDI qualifier so that we can determine in the producer for which actuator type an actuator reference should be created. 
-Listing Own CDI qualifier for actuators shows a possible variant of such a qualifier. 
-So we do not need a CDI producer for every specific actuator type, just a generic producer for all ActorRef injection points , we need to mark all annotation members that are not needed for mapping to a generic producer method with @Nonbinding . 
-In our example, we evaluate all the annotation members in the producer method ourselves and therefore have to annotate all with @Nonbinding .
- @Qualifier
+As already mentioned, we need an additional CDI qualifier so that we can determine in the producer for which actor type an actor reference should be created. 
+Listing <<Custom CDI qualifier for actors, Custom CDI qualifier for actors>> shows a possible variant of such a qualifier. 
+So we do not need a CDI producer for every specific actor type, just a generic producer for all `ActorRef` injection points, we need to mark all annotation members that are not needed for mapping to a generic producer method with `@Nonbinding`. 
+In our example, we evaluate all the annotation members in the producer method ourselves and therefore have to annotate all with `@Nonbinding`.
+
+.Custom CDI qualifier for actors
+[source,java]
+----
+@Qualifier
 @Retention(RUNTIME)
 @Target({METHOD, FIELD})
 public @interface Actor {
@@ -141,37 +156,49 @@ public @interface Actor {
   @Nonbinding
   String systemName() default AKKA_DEFAULT;
 }
-Instead of creating a separate CDI producer for each actuator type, in our case IdeaChangedEventActor and in the next section UserRegisteredEventActor , Listing Producer for actor references illustrates a generic producer method for all ActorRef injection points in combination with the qualifier @Actor . 
-The actuator class required for this is first created in the CDI bean with @Actor # type , in our current example with @Actor (type = IdeaChangedEventActor.class), stated. In the previous CDI producers, we mostly used CDI qualifiers only for the assignment of injection point and producer. 
-Such producers then generated an instance independent of the injection point, which was assigned to the injection point. In our current example, this is not possible because the result of the producer depends on metadata of the respective injection point. 
-In other words, our producer method must evaluate the metadata of the injection point dynamically in order to obtain the required information from @Actor in this specific case . In other words, we need the metadata of the reference variables , in our example ActorRef asyncBroadcaster, evaluate before we can create a contextual instance, which is assigned to this reference variable by the CDI container. This approach may seem unnecessarily complicated at first glance, but is required whenever a generic producer for injection points of a type with different metadata is to be implemented. 
-For such special cases, CDI defines the interface javax.enterprise.inject.spi.InjectionPoint . 
-Each producer method for dependent-scoped beans can optionally use an InjectionPoint parameter to evaluate the definition of the particular injection point. Each time a producer method is called, the CDI container fills this parameter with an InjectionPointInstance that represents the current injection point .
+----
+Instead of creating a separate CDI producer for each actor type, in our case `IdeaChangedEventActor` and in the next section `UserRegisteredEventActor`, Listing <<.Producer for actor references, Producer for actor references>> illustrates a generic producer method for all `ActorRef` injection points in combination with the qualifier `@Actor`. 
+The actor class required for this is first created in the CDI bean with `@Actor#type`, in our current example with `@Actor(type = IdeaChangedEventActor.class)`, stated. 
+In the previous CDI producers, we mostly used CDI qualifiers only for the assignment of injection point and producer. 
+Such producers then generated an instance independent of the injection point, which was assigned to the injection point. 
+In our current example, this is not possible because the result of the producer depends on metadata of the respective injection point. 
+In other words, our producer method must evaluate the metadata of the injection point dynamically in order to obtain the required information from `@Actor` in this specific case. 
+In other words, we need the metadata of the reference variables, in our example `ActorRef` `asyncBroadcaster`, evaluate before we can create a contextual instance, which is assigned to this reference variable by the CDI container. 
+This approach may seem unnecessarily complicated at first glance, but is required whenever a generic producer for injection points of a type with different metadata is to be implemented. 
+For such special cases, CDI defines the interface `javax.enterprise.inject.spi.InjectionPoint`. 
+Each producer method for dependent-scoped beans can optionally use an `InjectionPoint` parameter to evaluate the definition of the particular injection point. 
+Each time a producer method is called, the CDI container fills this parameter with an `InjectionPointInstance` that represents the current injection point.
 
-Methods such as InjectionPoint #getAnnotated#getAnnotation can be used to access metadata of the current injection point. 
-In Listing Producer for actor references , we get the @Actor instance from the injection point via the just mentioned method. 
-This instance of the @Actor annotation contains all the values ​​we specified at the injection point and needed to generate an appropriate ActorRef . 
-@Actor # type returns IdeaChangedEventActor.class in our example , and @Actor # systemName returns the default value default .
-Tip: We know that @Actor is present in our example because our Producer method is responsible for all ActorRef injection points marked with the @Actor qualifier.
-With the information just extracted, we can delegate the generation of the actuator system to Akka. 
-The necessary call of Akka is encapsulated in the method #getActorSystem . 
-The result of this call is an instance of the akka.actor.ActorSystem type , which can be used to create an actorref . 
-Details can be found in the Git repository of IdeaForkLite . 
-The actuator system created by Akka can be stored in a map. 
-With every further access to the same actuator system, the already generated actuator system is used. 
-To cache the actor systems directly in an ActorRefProducer instance for the runtime of the application, this class is called @ApplicationScoped annotated.
-Tip: The Producer method is annotated next to @Produces also with the qualifier @Actor . 
-Since @Actor # type does not define a default value, as is the case with @Actor # systemName , we must specify any valid value at this location to avoid compilation errors. 
-The akka.actor.Actor.class value specified here is ignored at runtime since it is required only for the compilation process.
-The final step in the Producer method from Listing Producer for Actors References allows injecting CDI beans into actor instances. 
-If this is an actuator implementation derived from UntypedActor , then the actuator system is informed that CdiAwareCreator should be used to generate the actuator instances. 
-CdiAwareCreator implements the interface akka.japi.Creator and is initialized with the desired actuator class. 
-Since we should use dependent-scoped beans as actuators, we delegate in the method CdiAwareCreator # create to BeanProvider # getDependent # get . 
-The method BeanProvider # getDependent is the class of the actuator instance to be created. 
-As a result, this helper method from DeltaSpike returns an instance of the type org.apache.deltaspike.core.api.provider.DependentProvider . 
-This data structure encapsulates the dependent-scoped instance together with the associated metadata, which is required for a later destruction of the instance by the call DependentProvider # destroy . 
+Methods such as `InjectionPoint#getAnnotated#getAnnotation` can be used to access metadata of the current injection point. 
+In Listing <<.Producer for actor references, Producer for actor references>>, we get the `@Actor` instance from the injection point via the just mentioned method. 
+This instance of the `@Actor` annotation contains all the values ​​we specified at the injection point and needed to generate an appropriate `ActorRef`. 
+`@Actor#type` returns `IdeaChangedEventActor.class` in our example, and `@Actor#systemName` returns the Default value `default`.
+TIP: We know that `@Actor` is present in our example because our Producer method is responsible for all `ActorRef` injection points marked with the `@Actor` qualifier.
+
+With the information just extracted, we can delegate the generation of the actor system to Akka. 
+The necessary call of Akka is encapsulated in the method `#getActorSystem`. 
+The result of this call is an instance of the `akka.actor.ActorSystem` type, which can be used to create an `ActorRef`. 
+Details can be found in the Git repository of `IdeaForkLite`. 
+The actor system created by Akka can be stored in a map. 
+With every further access to the same actor system, the already generated actor system is used. 
+To cache the actor systems directly in an `ActorRefProducer` instance for the runtime of the application, this class is called `@ApplicationScoped` annotated.
+TIP: The Producer method is annotated next to `@Produces` also with the qualifier `@Actor`. 
+Since `@Actor#type` does not define a default value, as is the case with `@Actor#systemName`, we must specify any valid value at this location to avoid compilation errors. 
+The `akka.actor.Actor.class` value specified here is ignored at runtime since it is required only for the compilation process.
+
+The final step in the Producer method from Listing <<.Producer for Actors References, Producer for Actors References>> allows injecting CDI beans into actor instances. 
+If this is an actor implementation derived from `UntypedActor`, then the actor system is informed that `CdiAwareCreator` should be used to generate the actor instances. 
+`CdiAwareCreator` implements the interface `akka.japi.Creator` and is initialized with the desired actor class. 
+Since we should use dependent-scoped beans as actors, we delegate in the method `CdiAwareCreator#create` to `BeanProvider#getDependent#get`. 
+The method `BeanProvider#getDependent` is the class of the actor instance to be created. 
+As a result, this helper method from DeltaSpike returns an instance of the type `org.apache.deltaspike.core.api.provider.DependentProvider`. 
+This data structure encapsulates the dependent-scoped instance together with the associated metadata, which is required for a later destruction of the instance by the call `DependentProvider#destroy`. 
 By calling the method #get we provide the dependent-scoped instance to Akka.
- @ApplicationScoped
+
+.Producer for actor references
+[source,java]
+----
+@ApplicationScoped
 public class ActorRefProducer {
   private Map<String, ActorSystem> actorSystemMap =
     new HashMap<String, ActorSystem>();
@@ -239,26 +266,31 @@ public class ActorRefProducer {
     }
   }
 }
-Akka internally registers the provided instance and creates the corresponding instance of the type ActorRef , which we finally return as result of the producer method. 
+----
+Akka internally registers the provided instance and creates the corresponding instance of the type `ActorRef`, which we finally return as result of the producer method. 
 Producer methods in which information of the injection point is evaluated must produce dependent-scoped beans. 
 Since Akka does not have an extended scope concept anyway, we do not have to consider any additional aspects when integrating both containers here.
 
-The destruction of actor instances accepts Akka (at present) itself, whereby we can not call as usual DependentProvider # destroy . 
-For this reason, we can use @PostConstruct in such integrated actors , but not @PreDestroy . 
-If we annotated a callback method with @PreDestroy , then it would not be called.
+The destruction of actor instances accepts Akka (at present) itself, whereby we can not call as usual `DependentProvider#destroy`. 
+For this reason, we can use `@PostConstruct` in such integrated actors, but not `@PreDestroy`. 
+If we annotated a callback method with `@PreDestroy`, then it would not be called.
 
-However, we have to manually stop the generated actuator systems ourselves when shutting down the application. 
-In the @PreDestroy callback method named ActorRefProducer # cleanup we call the method akka.actor.ActorSystem # shutdown on the respective instance.
+However, we have to manually stop the generated actor systems ourselves when shutting down the application. 
+In the `@PreDestroy` callback method named `ActorRefProducer#cleanup` we call the method `akka.actor.ActorSystem#shutdown` on the respective instance.
 
-Due to the integration of Akka and CDI beans, we have to change the scope of MonitoredStorage . 
-So far we have assigned this CDI bean with @RequestScoped to the request context. 
-However, the request context in an actor thread is not active and thus we have to use the @ApplicationScoped , for example , because it is always active. 
+Due to the integration of Akka and CDI beans, we have to change the scope of `MonitoredStorage`. 
+So far we have assigned this CDI bean with `@RequestScoped` to the request context. 
+However, the request context in an actor thread is not active and thus we have to use the `@ApplicationScoped`, for example, because it is always active. 
 Of course, this change assumes that the bean is thread-safe.
 
-In our CDI extension for the validation of application structures, we can add an additional check for actuators. 
-Listing validation of actor beans shows an example of such validation. 
+In our CDI extension for the validation of application structures, we can add an additional check for actors. 
+Listing <<.validation of actor beans, validation of actor beans>> shows an example of such validation. 
 In our case, we check whether all actor classes are implemented explicitly or implicitly as dependent-scoped beans.
- public class AppStructureValidationExtension implements Extension {
+
+.validation of actor beans
+[source,java]
+----
+public class AppStructureValidationExtension implements Extension {
   private List<String> violations = new ArrayList<String>();
 
   public void validateArtifacts(@Observes ProcessManagedBean pmb,
@@ -293,15 +325,17 @@ In our case, we check whether all actor classes are implemented explicitly or im
     }
   }
 }
- 
+----
 
 In the second section of this chapter, we integrate CDI and Spring. 
 In the accompanying examples, we also build on the integration with Akka.
+
 === Beans from other worlds
 Over time, various dependency injection frameworks have emerged. 
 Some even directly or indirectly inspired the CDI Expert Group in defining CDI. 
 While, for example, JBoss Seam has been replaced by CDI and Apache DeltaSpike, projects such as Google Guice and the Spring Framework continue to exist alongside CDI. 
-The functionality is similar for some of the available alternatives. CDI is often used in many Java EE applications, since CDI since Java EE 6 is part of the platform and leaves nothing to be desired compared to the alternatives.
+The functionality is similar for some of the available alternatives. 
+CDI is often used in many Java EE applications, since CDI since Java EE 6 is part of the platform and leaves nothing to be desired compared to the alternatives.
 
 As similar as the individual dependency injection frameworks are, so different are the associated ecosystems. 
 Especially the Spring Framework has many extensions due to its long history. How useful or necessary the individual extensions are depends very much on the field of application. 
@@ -479,7 +513,7 @@ public class MailService {
   }
 }
 Based on this preliminary work, we can add another actor in IdeaForkLite , via which asynchronous emails can be sent after a successful registration. 
-Again, we could trigger a synchronous CDI event with the @Async qualifier in the asynchronous actuator thread .
+Again, we could trigger a synchronous CDI event with the @Async qualifier in the asynchronous actor thread .
 This is not necessary for our use case and therefore we delegate mails asynchronously in the listing directly to the previously implemented mail service . 
 In addition, we need an event called UserRegisteredEvent , which is shown in the same listing.
  public class UserRegisteredEvent extends EntityChangedEvent<User> {

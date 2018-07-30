@@ -1,45 +1,130 @@
-8 CDI Micro
-For some years, topics such as cloud computing and smaller deployment units have been heavily pushed. Some PaaS platforms have allowed Java EE 6 to deploy standards-compliant EE applications without modification. In many cases, however, Java EE itself is no longer at the center of architectural considerations, but rather represents a possible variant. Applications are increasingly being subdivided into independent small modules that can be deployed independently. In this context, so-called micro-deployments have become common practice. There are different forms, for which there are sometimes different definitions, perspectives and recommendations. Often, the different approaches are referenced by the term "microservices". View IdeaFork in smaller deployment units .
- 
+== CDI Micro
+For some years, topics such as cloud computing and smaller deployment units have been heavily pushed. 
+Some PaaS platforms have allowed Java EE 6 to deploy standards-compliant EE applications without modification. 
+In many cases, however, Java EE itself is no longer at the center of architectural considerations, but rather represents a possible variant. 
+Applications are increasingly being subdivided into independent small modules that can be deployed independently. 
+In this context, so-called micro-deployments have become common practice. 
+There are different forms, for which there are sometimes different definitions, perspectives and recommendations. 
+Often, the different approaches are referenced by the term "microservices". 
+View IdeaFork in smaller deployment units.
 
-The communication between services or modules takes place via a predefined protocol. Inter-module communication via REST spread very quickly in this context, because by definition, a loose coupling is made possible and modules can therefore be implemented with different technologies. However, one condition is not the use of REST. In principle any protocol supported by the technologies of all modules can be used. The properties of HTTP (v1.0 and v1.1) make use of alternatives such as "gRPC" in some projects. Instead of JSON as serialization format in this case is set to protocol buffers. This can optimize communication between services and sometimes significantly reduce latency. The more services required to process a single client request, the more important such aspects become. So far we have IdeaFork is based on various Java EE specifications and continues to do so in this chapter. Components of Java EE, such as JAX-RS, are also used outside of the platform to build applications with micro-deployments. Therefore, we follow our previous path and dispense with proprietary approaches such as "gRPC".
- 
+The communication between services or modules takes place via a predefined protocol. 
+Inter-module communication via `REST` spread very quickly in this context, because by definition, a loose coupling is made possible and modules can therefore be implemented with different technologies. 
+However, one condition is not the use of `REST`. 
+In principle any protocol supported by the technologies of all modules can be used. 
+The properties of HTTP (v1.0 and v1.1) make use of alternatives such as "gRPC" in some projects. 
+Instead of JSON as serialization format in this case is set to protocol buffers. 
+This can optimize communication between services and sometimes significantly reduce latency. 
+The more services required to process a single client request, the more important such aspects become. 
+So far we have `IdeaFork` is based on various Java EE specifications and continues to do so in this chapter. 
+Components of Java EE, such as JAX-RS, are also used outside of the platform to build applications with micro-deployments. 
+Therefore, we follow our previous path and dispense with proprietary approaches such as "gRPC".
 
-8.1 EE or not EE
-Java EE servers have been considered slow-paced for a long time. Only a few application servers support micro-deployments directly. Nowadays, this situation is different. There are hardly any servers that start slowly, servers with high resource consumption or servers without embedded mode. The quest for current runtime environments and the associated faster release cycles finally resulted in a new community and the unofficial micro-profiles. Originally this initiative defined a subset of Java EE with CDI, JAX-RS and JSON-P. Meanwhile, there are also specifications that have been implemented outside the JCPs. Some parts, especially the configuration specification, have been extracted from open source projects such as Apache DeltaSpike and could be incorporated into Java EE in the future.
- 
+=== EE or not EE
+Java EE servers have been considered slow-paced for a long time. 
+Only a few application servers support micro-deployments directly. 
+Nowadays, this situation is different. 
+There are hardly any servers that start slowly, servers with high resource consumption or servers without embedded mode. 
+The quest for current runtime environments and the associated faster release cycles finally resulted in a new community and the unofficial micro-profiles. 
+Originally this initiative defined a subset of Java EE with CDI, JAX-RS and JSON-P. 
+Meanwhile, there are also specifications that have been implemented outside the JCPs. 
+Some parts, especially the configuration specification, have been extracted from open source projects such as Apache DeltaSpike and could be incorporated into Java EE in the future.
 
-There are many competing new approaches to Cloud and Micro Deployments apart from Java EE and the Micro-Profile. As usual, Java EE does not try to enforce its own paths, but rather specifies proven technologies. For this reason, this chapter focuses primarily on the specifications included in Java EE and extends them as necessary.
-8.2 IdeaForkMicro
-Instead of refactoring IdeaForkLite, we will completely rebuild the application step by step. We can keep some parts unchanged, while making other parts even leaner and adding new concepts when needed. As the functionality of IdeaFork itself will not change, we will only discuss excerpts of some of the changes. There will be least change in the UI part. Our goal is to take over the previous implementation in the UI as far as possible. Although JSF basically allows the division into several almost independent modules, we could not benefit from functionalities such as window scope. IdeaForkMicro will thus consist of a monolithic UI layer, which communicates via REST with the individual independent backend modules. Each module stores data in a data structure optimized for the module. Redundant data are not only a side effect of this structuring concept, but a "desired" effect. Both the backend modules and the UI module are stored in a git repository named IdeaForkMicro , where the most important steps are divided into individual commits.
- 
+There are many competing new approaches to Cloud and Micro Deployments apart from Java EE and the Micro-Profile. 
+As usual, Java EE does not try to enforce its own paths, but rather specifies proven technologies. 
+For this reason, this chapter focuses primarily on the specifications included in Java EE and extends them as necessary.
+=== `IdeaForkMicro`
+Instead of refactoring `IdeaForkLite`, we will completely rebuild the application step by step. 
+We can keep some parts unchanged, while making other parts even leaner and adding new concepts when needed. 
+As the functionality of `IdeaFork` itself will not change, we will only discuss excerpts of some of the changes. 
+There will be least change in the UI part. 
+Our goal is to take over the previous implementation in the UI as far as possible. 
+Although JSF basically allows the division into several almost independent modules, we could not benefit from functionalities such as window scope. 
+`IdeaForkMicro` will thus consist of a monolithic UI layer, which communicates via `REST` with the individual independent backend modules. 
+Each module stores data in a data structure optimized for the module. 
+Redundant data are not only a side effect of this structuring concept, but a "desired" effect. 
+Both the backend modules and the UI module are stored in a git repository named `IdeaForkMicro`, where the most important steps are divided into individual commits.
 
-Due to the manifold possibilities of micro-deployments, we can only concentrate on partial aspects in this chapter. This is intended primarily as a suggestion and illustrates among other things how the communication between modules with partial beans can be encapsulated and simplified. In addition, we will discuss new mechanisms from CDI 1.1 through 2.0 in IdeaForkMicro to flow in. Compared to the previous chapters, therefore, it is not the aim to consider as many aspects as possible, which can be directly transferred to productive projects. Rather, for example, the prototype for inter-module communication helps to experiment quickly and easily with different modules without having to familiarize themselves in advance with topics such as service discovery and container solutions. If micro-deployments are actually to be used in a project, then you will not be able to avoid these and other topics. However, for example, a professional service discovery solution can be integrated in a similar manner via partial beans.
- 
+Due to the manifold possibilities of micro-deployments, we can only concentrate on partial aspects in this chapter. 
+This is intended primarily as a suggestion and illustrates among other things how the communication between modules with partial beans can be encapsulated and simplified. 
+In addition, we will discuss new mechanisms from CDI 1.1 through 2.0 in `IdeaForkMicro` to flow in. 
+Compared to the previous chapters, therefore, it is not the aim to consider as many aspects as possible, which can be directly transferred to productive projects. 
+Rather, for example, the prototype for inter-module communication helps to experiment quickly and easily with different modules without having to familiarize themselves in advance with topics such as service discovery and container solutions. 
+If micro-deployments are actually to be used in a project, then you will not be able to avoid these and other topics. 
+However, for example, a professional service discovery solution can be integrated in a similar manner via partial beans.
 
-8.3 modules via modules
-How exactly an application is subdivided into modules is a science in itself and both opinions and recommendations are sometimes very different in this supposedly simple topic. Two questions are of central importance to us. We already anticipated the question of splitting the UI. In contrast to the SCS approach ("Self-Contained Systems") we will be the IdeaFork-UI not split on individual modules. The second question is about the module boundaries of the backend modules and is a bit more extensive, as we have to find an answer to the communication overhead here. In order to minimize this, we will reduce the communication between modules to the absolute minimum. At the same time, we must ensure that the failure of a module does not disable the entire application. This aspect should not be neglected, as the remote communication between modules by definition not only increases latency, but also introduces additional sources of error.
- 
+=== modules via modules
+How exactly an application is subdivided into modules is a science in itself and both opinions and recommendations are sometimes very different in this supposedly simple topic. 
+Two questions are of central importance to us. 
+We already anticipated the question of splitting the UI. 
+Unlike the Self-Contained Systems (SCS) approach, we will not split the IdeaFork UI into individual modules. 
+The second question is about the module boundaries of the backend modules and is a bit more extensive, as we have to find an answer to the communication overhead here. 
+In order to minimize this, we will reduce the communication between modules to the absolute minimum. 
+At the same time, we must ensure that the failure of a module does not disable the entire application. 
+This aspect should not be neglected, as the remote communication between modules by definition not only increases latency, but also introduces additional sources of error.
 
-IdeaFork itself is a fairly small application, which limits the possibilities of modularization. An obviously independent part consists of the user registration and the login. The necessary backend module will be called User-Service. In IdeaForkLite Although we only have an e-mail notification at the end of the registration process, we still store it in our own module, which is called asynchronously. The management of the ideas also takes over a separate module called Idea-Service. Both User and Idea Service archive changes asynchronously via a module we call History Service. All modules can obtain configurations via the config service. Due to the communication overhead, however, we will use a two-stage concept here, which can additionally compensate for the possible failure of the config service.
-8.4 At the pulse of time
-Independent modules allow the use of different technology stacks. For the modules of IdeaForkMicro we define CDI and JAX-RS as the absolute minimum. As mentioned, the UI module remains almost unchanged and thus continues to rely on Java EE v6 or v7. However, we want to get started as fast as possible while simplifying the build configuration. So far, IdeaFork or IdeaForkLite deployed in TomEE, JBoss AS, WildFly, and GlassFish. Each of these servers enables the implementation of proprietary micro-deployments. Therefore, we could at least decide each module for a server explicitly. The application code is still portable through the Java EE APIs, but we also need a proprietary starter for the server. In IdeaForkMicro For each module we will use a class which is stored in the base directory "dev-starter". For each server, we could implement our own implementation of less than an average of 10 lines of configuration and initialization code based on each server's proprietary deployment API. We decide however for two new servers. For the UI module we chose JBoss WildFly-Swarm. This is a modular server that allows only certain parts of JBoss WildFly to be used. Apache Meecrowave is used for the backend modules. The name Meecrowave is an allusion to micro-deployments, but has little in common with the micro-profile specification. If necessary, Meecrowave can be upgraded to a Micro-Profile compliant server. Meecrowave itself is a lean server, combining primarily Apache Tomcat as a servlet container, Apache OpenWebBeans as a CDI implementation, Apache CXF as a JAX-RS implementation, and Apache Johnzon for JSON-P (= JSON-Processing). The result is a high-performance server, which is ready to use in just a few seconds. Another positive side effect for us is the support of CDI 2.0. Thus, for example, we can use asynchronous CDI events instead of EJBs or Akka for asynchronous events. Another positive side effect for us is the support of CDI 2.0. Thus, for example, we can use asynchronous CDI events instead of EJBs or Akka for asynchronous events. Another positive side effect for us is the support of CDI 2.0. Thus, for example, we can use asynchronous CDI events instead of EJBs or Akka for asynchronous events.
-8.5 Project layout
-Instead of a build configuration in the root directory of the project, there are only three folders left in our base directory. In the directory "ui" we will put the slightly adapted UI layer of IdeaForkLite , while we create a folder per service in the directory "backend". The "config" directory is the third folder and will contain a generic extension that provides easy access to a central config service. 
-The beginning is the user service. In the directory backend / ideafork_user-service we create a build configuration, which in addition to the APIs for CDI 2.0, JAX-RS 2.0 and JPA 2.1 and dependencies for the corresponding implementations and demo purposes "H2" as an in-memory database gradually defined. We also add dependencies to DeltaSpike Core, JPA, and -Data. Apart from slightly different versions, this corresponds to a subset of the previous dependencies of IdeaForkLite . Completely new is the Dependency to Meecrowave, which we have with org.apache.meecrowave as groupId and meecrowave-core as artifactId and provided as scope define. We need this dependency for the implementation of a starter class, with which we can start the application in an embedded instance of the server from the IDE. No special IDE plugin is needed for this. Since we implement an independent module, we can easily switch from Java 7 to Java 8. Both Meecrowave and DeltaSpike are compatible with Java 8. If there were other services with dependencies for which this is not the case, we could, if necessary, for the appropriate modules on an older version of Java to use until an upgrade is possible.
-8.6 Every start is easy
-Meecrowave can be started in different ways. In addition to a Maven plugin Meecrowave provides a simple API to start an embedded instance. For this purpose, we create the class DevUserServerStarter in the user service module . The easiest way to start the server via Java API is:
- 
+`IdeaFork` itself is a fairly small application, which limits the possibilities of modularization. 
+An obviously independent part consists of the user registration and the login. 
+The necessary backend module will be called User-Service. 
+In `IdeaForkLite` although we only have an e-mail notification at the end of the registration process, we still store it in our own module, which is called asynchronously. 
+The management of the ideas also takes over a separate module called Idea-Service. 
+Both User and Idea Service archive changes asynchronously via a module we call History Service. 
+All modules can obtain configurations via the config service. 
+Due to the communication overhead, however, we will use a two-stage concept here, which can additionally compensate for the possible failure of the config service.
+=== On the pulse of time
+Independent modules allow the use of different technology stacks. 
+For the modules of `IdeaForkMicro` we define CDI and JAX-RS as the absolute minimum. 
+As mentioned, the UI module remains almost unchanged and thus continues to rely on Java EE v6 or v7. 
+However, we want to get started as fast as possible while simplifying the build configuration. 
+So far, `IdeaFork` or `IdeaForkLite` deployed in TomEE, JBoss AS, WildFly, and GlassFish. 
+Each of these servers enables the implementation of proprietary micro-deployments. 
+Therefore, we could at least decide each module for a server explicitly. 
+The application code is still portable through the Java EE APIs, but we also need a proprietary starter for the server. 
+In `IdeaForkMicro` for each module we will use a class which is stored in the base directory "dev-starter". 
+For each server, we could implement our own implementation of less than an average of 10 lines of configuration and initialization code based on each server's proprietary deployment API. 
+We decide however for two new servers. 
+For the UI module we chose JBoss WildFly-Swarm. 
+This is a modular server that allows only certain parts of JBoss WildFly to be used. 
+Apache Meecrowave is used for the backend modules. 
+The name Meecrowave is an allusion to micro-deployments, but has little in common with the micro-profile specification. 
+If necessary, Meecrowave can be upgraded to a Micro-Profile compliant server. 
+Meecrowave itself is a lean server, combining primarily Apache Tomcat as a servlet container, Apache OpenWebBeans as a CDI implementation, Apache CXF as a JAX-RS implementation, and Apache Johnzon for JSON-P (= JSON-Processing). 
+The result is a high-performance server, which is ready to use in just a few seconds. 
+Another positive side effect for us is the support of CDI 2.0, thus, for example, we can use asynchronous CDI events instead of EJBs or Akka for asynchronous events.
+=== Project layout
+Instead of a build configuration in the root directory of the project, there are only three folders left in our base directory. 
+In the directory "ui" we will put the slightly adapted UI layer of `IdeaForkLite`, while we create a folder per service in the directory "backend". 
+The "config" directory is the third folder and will contain a generic extension that provides easy access to a central config service.
 
- 
+The beginning is the user service. 
+In the directory `backend / ideafork_user-service` we create a build configuration, which in addition to the APIs for CDI 2.0, JAX-RS 2.0 and JPA 2.1 and dependencies for the corresponding implementations and demo purpose "H2" as an in-memory database gradually defined. 
+We also add dependencies to DeltaSpike -Core, -JPA, and -Data. 
+Apart from slightly different versions, this corresponds to a subset of the previous dependencies of `IdeaForkLite`. 
+Completely new is the Dependency to `Meecrowave`, which we have with `org.apache.meecrowave` as `groupId` and `meecrowave-core` as `artifactId` and `provided` defined as scope. 
+We need this dependency for the implementation of a starter class, with which we can start the application in an embedded instance of the server from the IDE. 
+No special IDE plugin is needed for this. 
+Since we implement an independent module, we can easily switch from Java 7 to Java 8. 
+Both Meecrowave and DeltaSpike are compatible with Java 8. 
+If there were other services with dependencies for which this is not the case, If necessary, we could use an older version of Java for the corresponding modules until an upgrade is possible.
+=== Every start is easy
+`Meecrowave` can be started in different ways. 
+In addition to a Maven plugin Meecrowave provides a simple API to start an embedded instance. 
+For this purpose, we create the class `DevUserServerStarter` in the user service module. 
+The easiest way to start the server via Java API is:
 
-new Meecrowave (). bake (). await ();
- 
+new Meecrowave().bake().await();
 
- 
+Much easier is the launch of an EE Micro Server barely possible. 
+With regard to micro-deployments, the first pitfall is already hidden here. 
+Unlike a monolith, we want to start each module in its own server instance. 
+For this to be possible locally, each instance must use its own port. 
+Without a container solution such as Docker, we have to give the server a corresponding port for each instance. 
+In our case, we load the configured port with the DeltaSpike ConfigResolver.
 
-Much easier is the launch of an EE Micro Server barely possible. With regard to micro-deployments, the first pitfall is already hidden here. Unlike a monolith, we want to start each module in its own server instance. For this to be possible locally, each instance must use its own port. Without a container solution such as Docker, we have to give the server a corresponding port for each instance. In our case, we load the configured port with the DeltaSpike ConfigResolver.
- public class DevUserServerStarter {
+.Meecrowave starter class
+[source,java]
+----
+public class DevUserServerStarter {
   public static void main(String[] args) {
     Meecrowave.Builder builder = new Meecrowave.Builder();
     String configuredPort =
@@ -49,23 +134,38 @@ Much easier is the launch of an EE Micro Server barely possible. With regard to 
       new Meecrowave(builder).bake().await();
   }
 }
-Listing Meecrowave starter class makes it clear that in a traditional main method we can adapt Meecrowave with a few lines and finally start. The value for user-service.http.port can be stored as usual in the file META-INF / apache-deltaspike.properties or another active Config-Source (by DeltaSpike). In our case, we want to store the port in the build config and therefore need a placeholder. Thus, the configuration in META-INF / apache-deltaspike.properties looks like this:
- 
+----
 
- 
+Listing <<.Meecrowave starter class, Meecrowave starter class>> makes it clear that in a traditional main method we can adapt `Meecrowave` with a few lines and finally start. 
+The value for `user-service.http.port` can be stored as usual in the file `META-INF/apache-deltaspike.properties` or another active `Config-Source` (by DeltaSpike). 
+In our case, we want to store the port in the build config and therefore need a placeholder. 
+Thus, the configuration in `META-INF/apache-deltaspike.properties` looks like this:
 
-service.name = user-service
- 
+----
+service.name=user-service
+user-service.http.port=${app.http.port} 
+----
 
-user-service.http.port = $ {} app.http.port
- 
+The value of `service.name` is the basis for the port configuration of the module. 
+The value configured here serves as a prefix for the port configuration. 
+With `[prefix].http.port` the port of a service module is configured. 
+This would allow us even to store port configurations in a central `Config-Source` (from DeltaSpike). 
+The placeholder `${app.http.port}` is replaced here by Maven. 
+As a result, the properties entry `<app.http.port>8082</app.http.port>` in the build configuration is missing here. 
+`service.name` plays a subordinate role for us at this point. 
+However, in one of the next steps we will add a CDI extension called `Remote-Access-Lite`, which requires exactly this type of port configuration.
+=== From Lite to Micro
+The basic technologies and basic features of `IdeaForkLite` do not change. 
+For the modularization, however, small changes are necessary, which we carry out step by step. 
+We can accept `BaseEntity`, `User` and `PasswordManager` without any changes. 
+For `EntityManagerProducer`, we only change the name of the persistence unit so that each service module can use a unique persistence unit name. 
+This makes the mapping in the IDE a little easier if we want to open several modules in parallel. 
+Since we also want to streamline `IdeaForkMicro` at the same time, we reduce the used interceptors in `UserRepository` to `@org.apache.deltaspike.jpa.api.transaction.Transactional` and simplify the implementation seen in Listing <<.Simplified User Repository, Simplified User Repository>>.
 
- 
-
-The value of service.name is the basis for the port configuration of the module. The value configured here serves as a prefix for the port configuration. With [prefix] .http.port the port of a service module is configured. This would allow us even to store port configurations in a central config source (from DeltaSpike). The placeholder $ {app.http.port} is replaced here by Maven. As a result, the properties entry <app.http.port> 8082 </app.http.port> in the build configuration is missing here . service.name plays a subordinate role for us at this point. However, in one of the next steps we will add a CDI extension called Remote Access Lite, which requires exactly this type of port configuration.
-8.7 From Lite to Micro
-The basic technologies and basic features of IdeaForkLite do not change. For the modularization, however, small changes are necessary, which we carry out step by step. We can accept BaseEntity , User and PasswordManager without any changes. For EntityManagerProducer , we only change the name of the persistence unit so that each service module can use a unique persistence unit name. This makes the mapping in the IDE a little easier if we want to open several modules in parallel. Since we also want to streamline IdeaForkMicro at the same time, we reduce the used interceptors into UserRepository on @ org.apache.deltaspike.jpa.api.transaction.Transactional and simplify the implementation seen in Listing Simplified User Repository .
- @Transactional(qualifier = Default.class)
+.Simplified User Repository
+[source,java]
+----
+@Transactional(qualifier = Default.class)
 @Repository
 public interface UserRepository extends EntityRepository<User, String> {
   @Query(
@@ -78,9 +178,27 @@ public interface UserRepository extends EntityRepository<User, String> {
     singleResult = OPTIONAL)
   User loadByEmail(String email);
 }
-We do not necessarily need the file META-INF / beans.xml with Meecrowave. Since CDI 1.1, this configuration file is optional and the interceptor for @Transactional is already preconfigured by DeltaSpike. Without the beans.xml file , only classes become CDI beans if they are annotated with CDI annotations that are valid for the definition of beans. These annotations are also called bean-defining annotations. These include, for example, scope, stereotype, interceptor and decorator annotations. For this reason we can do without @Exclude for the class BaseEntity . The default behavior described above implicitly ensures that this class and the derived IdeaFork entities are not CDI beans. 
-In order to be able to test the acquired classes, we add, in addition to JUnit, org.apache.meecrowave: meecrowave-junit as a test dependency. Listing CDI test with Meecrowave shows a simple test case that allows us to test the inherited logic. We use the class MonoMeecrowave.Rule in the constructor of UserTest to fill the defined injection points of the class with Meecrowave. Unlike the previously used CdiTestRunner from DeltaSpike, this step must be performed manually. Later we will be this TestRule also for testing the JAX-RS endpoints, which we will add in the next step. IdeaForkMicro's Git repository also includes other test methods besides the Listing CDI test with Meecrowave .
- public class UserTest {
+----
+
+We do not need necessarily the file `META-INF/beans.xml` with `Meecrowave`. 
+Since CDI 1.1, this configuration file is optional and the interceptor for `@Transactional` is already preconfigured by DeltaSpike. 
+Without the beans.xml file, only classes become CDI beans if they are annotated with CDI annotations that are valid for the definition of beans. 
+These annotations are also called bean-defining annotations. 
+These include, for example, scope, stereotype, interceptor and decorator annotations. 
+For this reason we can do without `@Exclude` for the class `BaseEntity`. 
+The default behavior described above implicitly ensures that this class and the derived `IdeaFork` entities are not CDI beans.
+
+In order to be able to test the acquired classes, we add, in addition to JUnit, `org.apache.meecrowave:meecrowave-junit` as a test dependency. 
+Listing <<.CDI test with Meecrowave, CDI test with Meecrowave>> shows a simple test case that allows us to test the inherited logic. 
+We use the class `MonoMeecrowave.Rule` in the constructor of `UserTest` to fill the defined injection points of the class with `Meecrowave`. 
+Unlike the previously used `CdiTestRunner` from DeltaSpike, this step must be performed manually. 
+Later we will also use this `TestRule` also for testing the JAX-RS endpoints, which we will add in the next step. 
+`IdeaForkMicro`'s Git repository also includes other test methods besides the Listing <<.CDI test with Meecrowave, CDI test with Meecrowave>>.
+
+.CDI test with Meecrowave
+[source,java]
+----
+public class UserTest {
   @ClassRule
   public static final MonoMeecrowave.Rule RULE =
     new MonoMeecrowave.Rule();
@@ -118,13 +236,36 @@ In order to be able to test the acquired classes, we add, in addition to JUnit, 
  
   //...
 }
-Basically, the test methods of UserTest are about testing the CDI beans directly. At this point, we know that the acquired CDI beans are working as expected. However, if we start the application with our starter class, we notice that our new module starts but does not provide any functionality to the outside and therefore can not be used. To change this, we add a JAX-RS endpoint. As usual with JAX-RS, we start with a subclass of javax.ws.rs.core.Application . In Listing Autom. Findable JAX-RS application, we annotate the class UserApplication additionally with @ javax.enterprise.context.Dependent, The use of @Dependent or @ApplicationScoped ensures that Meecrowave finds the class and registers it internally. In our case, the entry path consists directly of the version number. This is unique in IdeaForkMicro because a meecrowave instance contains only one module in a version.
- @Dependent
+----
+Basically, the test methods of `UserTest` are about testing the CDI beans directly. 
+At this point, we know that the acquired CDI beans are working as expected. 
+However, if we start the application with our starter class, we notice that our new module starts but does not provide any functionality to the outside and therefore can not be used. 
+To change this, we add a JAX-RS endpoint. 
+As usual with JAX-RS, we start with a subclass of `javax.ws.rs.core.Application`. 
+In Listing <<.Automatically Findable JAX-RS Application, Automatically Findable JAX-RS Application>>, we annotate the class `UserApplication` additionally with `@javax.enterprise.context.Dependent`. 
+The use of `@Dependent` or `@ApplicationScoped` ensures that `Meecrowave` finds the class and registers it internally. 
+In our case, the entry path consists directly of the version number. 
+This is unique in `IdeaForkMicro` because a meecrowave instance contains only one module in a version.
+
+.Automatically Findable JAX-RS Application
+[source,java]
+----
+@Dependent
 @ApplicationPath("/v1/")
 public class UserApplication extends Application {
 }
-Listing JAX-RS resource for user registration shows a simple JAX-RS resource with which new users can be registered. In our minimal example a user with e-mail, nickname and password is created. All further information is optional and can be transmitted later with an update request. This is not a best practice proposal, but primarily helps to keep our examples minimal while illustrating different concepts. Therefore, we also forego an extra level of encapsulation of the registration logic and implement the logic directly in the REST endpoint. If we had other technologies for endpoints in addition to the REST API, then such an encapsulation would of course be preferable, so that the actual logic does not have to be implemented several times.
- @Path("registration")
+----
+Listing <<.JAX-RS resource for user registration, JAX-RS resource for user registration>> shows a simple JAX-RS resource with which new users can be registered. 
+In our minimal example a user with e-mail, nickname and password is created. 
+All further information is optional and can be transmitted later with an update request. 
+This is not a best practice proposal, but primarily helps to keep our examples minimal while illustrating different concepts. 
+Therefore, we also forego an extra level of encapsulation of the registration logic and implement the logic directly in the `REST` endpoint. 
+If we had other technologies for endpoints in addition to the `REST` API, then such an encapsulation would of course be preferable, so that the actual logic does not have to be implemented several times.
+
+.JAX-RS resource for user registration
+[source,java]
+----
+@Path("registration")
 @ApplicationScoped
 public class SimpleRegistrationResource {
   @Inject
@@ -160,9 +301,35 @@ public class SimpleRegistrationResource {
     return Response.status(Response.Status.CONFLICT).build();
   }
 }
-The POST method from listing JAX-RS Resource for user registration accepts RegistrationRequest as the first parameter. This class is a simple Java bean with the necessary properties to submit user data. Meecrowave converts valid JSON strings into instances of this class, if possible. For the answer to the REST client we could directly use the user instance, since this autom. is converted to a JSON string. In the concrete example this would have the side effect that we would send the password hash to the client. Information such as these can be filtered in various ways as needed. We use the class PublicUserResponse for this, This defines the same properties as the class User except the password property. Furthermore, it can be explicitly controlled whether the e-mail address should be included in the response. This fact even allows for dynamic limitations at runtime. If we also want to adjust the response in certain situations, we use the class javax.ws.rs.core.Response as the return type as in Listing JAX-RS Resource for user registration . An example of this is the change of the status code to Response.Status.CONFLICT , if there should already be a registered user with the provided e-mail address.
-If we start our user service again, not only will our CDI beans be deployed, but also our new JAX-RS resource. Meecrowave outputs all active URIs during the boot process. Thus, the first part of our user service module is complete and we can add a test for the newly defined REST interface. We collect these tests in the class UserWorkflowTest . MonoMeecrowave.Rule also helps us here . Instead of injecting CDI beans directly into our test class as before, we use this test rule in Listing JAX-RS Test with Meecrowave to access the current port of the container. In the @Before callback method, we continue to access our UserRepository directly to clear the saved users before each test. Here we could also go over a REST endpoint. We refrain from doing so in our case because, apart from testing, we would not have any use for such an endpoint. However, all test methods strictly use the defined API of our REST resource or resources that we also define and test. We will not elaborate on the details of the test methods, as they primarily use the standard JAX-RS client API.
- public class UserWorkflowTest {
+----
+The `POST` method from Listing <<.JAX-RS Resource for user registration, JAX-RS Resource for user registration>> accepts `RegistrationRequest` as the first parameter. 
+This class is a simple Java bean with the necessary properties to submit user data. 
+`Meecrowave` converts valid JSON strings into instances of this class, if possible. 
+For the answer to the `REST` client we could directly use the user instance, since this is automatically converted to a JSON string. 
+In the concrete example this would have the side effect that we would send the password hash to the client. 
+Information such as these can be filtered in various ways as needed. 
+We use the class `PublicUserResponse` for this, this defines the same properties as the class `User` except the `password` property. 
+Furthermore, it can be explicitly controlled whether the `e-mail` address should be included in the response. 
+This fact even allows for dynamic limitations at runtime. 
+If we also want to adjust the response in certain situations, we use the class `javax.ws.rs.core.Response` as the return type as in Listing <<.JAX-RS Resource for user registration, JAX-RS Resource for user registration>>. 
+An example of this is the change of the status code to `Response.Status.CONFLICT`, if there is already a registered user with the provided e-mail address.
+
+If we start our user service again, not only will our CDI beans be deployed, but also our new JAX-RS resource. 
+Meecrowave outputs all active URIs during the boot process. 
+Thus, the first part of our user service module is complete and we can add a test for the newly defined `REST` interface. 
+We collect these tests in the class `UserWorkflowTest`. 
+`MonoMeecrowave.Rule` also helps us here. 
+Instead of injecting CDI beans directly into our test class as before, we use this test rule in Listing <<.JAX-RS Test with Meecrowave, JAX-RS Test with Meecrowave>> to access the current port of the container. 
+In the `@Before` callback method, we continue to access our `UserRepository` directly to clear the saved users before each test. 
+Here we could also go over a `REST` endpoint. 
+We refrain from doing so in our case because, apart from testing, we would not have any use for such an endpoint. 
+However, all test methods strictly use the defined API of our `REST` resource or resources that we also define and test. 
+We will not elaborate on the details of the test methods, as they primarily use the standard JAX-RS client API.
+
+.JAX-RS Test with Meecrowave
+[source,java]
+----
+public class UserWorkflowTest {
   @ClassRule
   public static final MonoMeecrowave.Rule RULE =
     new MonoMeecrowave.Rule();
@@ -221,11 +388,32 @@ If we start our user service again, not only will our CDI beans be deployed, but
     Assert.assertEquals("gp@test.org", createdUser.getEmail());
   }
 }
-The previously described functionality for registering new users should be available without authentication. In the next step, we implement a REST resource to be used by the login page. In the previous chapters we have the current user after successfully logging in Active User Holder stored -Bean and called only protected service methods when the method #isLoggedIn the value true has returned. This was possible because services were not encapsulated in standalone modules. Since we move services into different modules in this chapter, they need to be backed up differently. There are various possibilities. Without going into the pros and cons, we use JWT (JSON Web Token) in IdeaForkMicro . In order to avoid having to implement the JWT integration ourselves, we use a small article for JAX-RS called JWT-Authentication-Lite. The API of this prototype consists of two annotations and a class, which are very easy to use. Services that should only be usable with successful authentication are additionally marked with the annotation @AuthenticationRequired marked. In addition, all services must use the same shared secret, which we deposit under the key jwt_secret in a valid config source (by DeltaSpike). In IdeaForkMicro we use the file META-INF / apache-deltaspike.properties . However, we only use a placeholder as value, which is replaced by Maven. Thus, for example, we could automatically adjust the shared secret per stage via a build pipeline. Alternatively, we could, of course, perform the configuration, for example, with system properties.
- 
+----
 
-The login resource is a special case because here the JWT token must be generated in the background. We can do this with the help of the second annotation named @LoginEntryPoint . Listing Simple Login shows a simple implementation of the login resource.
- @Path("user-action")
+The previously described functionality for registering new users should be available without authentication. 
+In the next step, we implement a `REST` resource to be used by the login page. 
+In the previous chapters we have saved the current user in the `ActiveUserHolder` -Bean after successful login and protected service methods are called only if the #isLoggedIn method returns true. 
+This was possible because services were not encapsulated in standalone modules. 
+Since we move services into different modules in this chapter, they need to be backed up differently. 
+There are various possibilities. 
+Without going into the pros and cons, we use JWT (JSON Web Token) in `IdeaForkMicro`. 
+In order to avoid having to implement the JWT integration ourselves, we use a small implementation for JAX-RS called JWT-Authentication-Lite. 
+The API of this prototype consists of two annotations and a class, which are very easy to use. 
+Services that should only be usable with successful authentication are additionally marked with the annotation `@AuthenticationRequired`. 
+In addition, all services must use the same `Shared-Secret`, which we deposit under the key `jwt_secret` in a valid `Config-Source` (by DeltaSpike). 
+In `IdeaForkMicro` we use the file `META-INF/apache-deltaspike.properties`. 
+However, we only use a placeholder as value, which is replaced by Maven. 
+Thus, for example, we could automatically adjust the `Shared-Secret` per stage via a build pipeline. 
+Alternatively, we could, of course, perform the configuration, for example, with system properties.
+
+The login resource is a special case because here the JWT token must be generated in the background. 
+We can do this with the help of the second annotation named `@LoginEntryPoint`. 
+Listing <<.Simple Login, Simple Login>> shows a simple implementation of the login resource.
+
+.Simple Login
+[source,java]
+----
+@Path("user-action")
 @ApplicationScoped
 public class SimpleLoginResource {
   @Inject
@@ -273,14 +461,43 @@ public class SimpleLoginResource {
     return Response.status(Response.Status.UNAUTHORIZED).build();
   }
 }
- 
+----
+
+[source,java]
+----
 public class LoginRequest {
     private String email;
     private String password;
  
     //+ getters and setters
 }
-We already know the Beans UserRepository and PasswordManager from the previous chapters. Both were taken from IdeaForkLite without modification . By contrast, IdentityHolder is a request-scoped bean contained in JWT-Authentication-Lite. If a saved user is found for the submitted e-mail address and the password hash matches, we can pass on the e-mail address to IdentityHolder . In the background, a JWT token is created with this e-mail address, which is transferred to the HTTP header. At each follow-up request to JAX-RS, resources returned by @AuthenticationRequired protected, this token must be retransmitted. JWT-Authentication-Lite verifies the JWT token with the help of the Shared-Secrets. As metadata, the token contains the e-mail address and a timestamp for the validity period. Only if a token has been successfully verified and is still valid, the e-mail address for this request will be in the IdentityHolder-Bean taken. Similar to an HTTP session, the validity is extended if a token was used within a certain time window. However, it should be noted that autom. a new token with a new validity period is issued. For clients, however, this makes no difference, since they should normally always use the transmitted token and the exact content is not relevant, since the token must be sent again unchanged at the next request. In the case of IdeaForkMicro tokens are only transmitted during communication between different services. For example, if we had a JavaScript application that runs in the browser and communicates directly with the REST resources, then additional backup such as HTTPS instead of HTTP would be advisable. Since we stay with JSF for the IdeaFork UI, this is not necessarily required for the whole application. Especially if outwardly only the server on which the IdeaFork -UI deployed is reachable. After this brief JWT digression, it looks like IdeaForkMicro is more complex than IdeaForkLite , as we are in IdeaForkLite for example, had to worry about no tokens. This is one of the consequences of the division into modular services and has nothing directly to do with the characteristics of CDI or JAX-RS. Apart from the possible scalability per service, we will also see further advantages of such a modularization in the course of the chapter. At the end of the chapter, we will include the endpoints just introduced in the UI module. For the time being we are adding tests for our login logic. Listing Simples Login Test Target shows the method for creating the login target, which we add to the class UserWorkflowTest and call it in the #createTarget method .
+----
+We already know the Beans `UserRepository` and `PasswordManager` from the previous chapters. 
+Both were taken from `IdeaForkLite` without modification. 
+By contrast, `IdentityHolder` is a request-scoped bean contained in `JWT-Authentication-Lite`. 
+If a saved user is found for the submitted e-mail address and the password hash matches, we can pass on the e-mail address to `IdentityHolder`. 
+In the background, a JWT token is created with this e-mail address, which is transferred to the HTTP header. 
+At each follow-up request to JAX-RS, resources returned protected by `@AuthenticationRequired`, this token must be retransmitted. 
+`JWT-Authentication-Lite` verifies the JWT token with the help of the `Shared-Secrets`. 
+As metadata, the token contains the e-mail address and a timestamp for the validity period. 
+Only if a token has been successfully verified and is still valid, the e-mail address for this request will be in the IdentityHolder-Bean. 
+Similar to an HTTP session, the validity is extended if a token was used within a certain time window. 
+However, it should be noted that automatically a new token with a new validity period is issued. 
+For clients, however, this makes no difference, since they should normally always use the transmitted token and the exact content is not relevant, since the token must be sent again unchanged at the next request. 
+In the case of `IdeaForkMicro` tokens are only transmitted during communication between different services. 
+For example, if we had a JavaScript application that runs in the browser and communicates directly with the `REST` resources, then additional backup such as HTTPS instead of HTTP would be advisable. 
+Since we stay with JSF for the IdeaFork UI, this is not necessarily required for the whole application. 
+Especially if outwardly only the server on which the IdeaFork -UI deployed is reachable. 
+After this brief JWT digression, it looks like `IdeaForkMicro` is more complex than `IdeaForkLite`, as we are in `IdeaForkLite` for example, had to not worry about tokens. 
+This is one of the consequences of the division into modular services and has nothing directly to do with the characteristics of CDI or JAX-RS. 
+Apart from the possible scalability per service, we will also see further advantages of such a modularization in the course of the chapter. 
+At the end of the chapter, we will include the endpoints just introduced in the UI module. 
+For the time being we are adding tests for our login logic. 
+Listing <<.Simple Login Test Target, Simple Login Test Target>> shows the method for creating the login target, which we add to the class `UserWorkflowTest` and call it in the `#createTarget` method.
+
+.Simple Login Test Target
+[source,java]
+----
  private static void createLoginTarget(int testHttpPort) {
   String applicationPath =
     UserApplication.class.getAnnotation(ApplicationPath.class).value();
@@ -292,7 +509,15 @@ We already know the Beans UserRepository and PasswordManager from the previous c
   URI uri = UriBuilder.fromUri(baseUserUrl).build();
   loginTarget = client.target(uri);
 }
-We've already used the basic logic of this method for #createUserRegistrationTarget . The main difference is that we fix the last part of the path. If we changed this part of the path in SimpleLoginResource later, we would have to follow the change in each test. Listing Dynamic Login Test Target shows how to prevent this with a few extra lines by dynamically searching for @LoginEntryPoint .
+----
+We've already used the basic logic of this method for #createUserRegistrationTarget. 
+The main difference is that we fix the last part of the path. 
+If we changed this part of the path in `SimpleLoginResource` later, we would have to follow the change in each test. 
+Listing <<.Dynamic Login Test Target, Dynamic Login Test Target>> shows how to prevent this with a few extra lines by dynamically searching for `@LoginEntryPoint`.
+
+.Dynamic Login Test Target
+[source,java]
+----
  private static void createLoginTarget(int testHttpPort) {
   String applicationPath =
     UserApplication.class.getAnnotation(ApplicationPath.class).value();
@@ -314,8 +539,15 @@ We've already used the basic logic of this method for #createUserRegistrationTar
   URI uri = UriBuilder.fromUri(baseUserUrl).build();
   loginTarget = client.target(uri);
 }
-With loginTarget we can submit a request to the login resource in our tests after successful registration. In the listing user login test , the last step checks whether a token has been issued. Again, we use the standard JAX-RS client API.
- @Test
+----
+With `loginTarget` we can submit a request to the login resource in our tests after successful registration. 
+In the Listing <<.user login test, user login test>>, the last step checks whether a token has been issued. 
+Again, we use the standard JAX-RS client API.
+
+.user login test
+[source,java]
+----
+@Test
 public void loginUser() {
   registerUser();
   User user = new User("gp@test.org", "xyz");
@@ -341,7 +573,13 @@ private Response registerUser() {
   Assert.assertEquals("gp@test.org", createdUser.getEmail());
   return response;
 }
-Listing test of an invalid login finally tests a login request with the wrong password. In this case, HTTP-401 (Unauthorized) is returned from our JAX-RS resource.
+----
+Listing <<.test of an invalid login, test of an invalid login>> finally tests a login request with the wrong password. 
+In this case, HTTP-401 (Unauthorized) is returned from our JAX-RS resource.
+
+.test of an invalid login
+[source,java]
+----
    @Test
   public void failedLogin() {
     registerUser();
@@ -354,9 +592,23 @@ Listing test of an invalid login finally tests a login request with the wrong pa
     Assert.assertEquals(
       UNAUTHORIZED.getStatusCode(), response.getStatus());
 }
-8.8 Asynchronous CDI events
-Up to this point, we could have implemented all the functionality with any EE v6 or v7 server. As mentioned earlier, the goal of initiatives such as Micro-Profile and Meecrowave is not only to provide the most efficient runtime environment possible, but also the most up-to-date possible. In the case of CDI, version 2.0 was finalized several months before Java EE 8 and productively usable implementations were available within a few weeks. But until all EE servers have integrated all the specifications of a new EE version, it usually takes much more time. EE 8 promises to refute this often criticized aspect of something, since the scope was kept deliberately smaller than, for example, in EE 6. With servers like Meecrowave, however, we have the advantage of keeping up with the times and of being able to use new features shortly after the specification has been completed. In IdeaForkMicro uses this fact to implement asynchronous events with the new board resources of CDI 2.0. For this we use in listing Asynchronous CDI events fire as usual an injection point of the type javax.enterprise.event.Event . Instead of #fire , we call the new #fireAsync method . A little later we'll see why we need to pass the current token to the UserChangedEvent instance in Listing Asynchronous CDI events .
- @ApplicationScoped
+----
+=== Asynchronous CDI events
+Up to this point, we could have implemented all the functionality with any EE v6 or v7 server. 
+As mentioned earlier, the goal of initiatives such as `Micro-Profile` and `Meecrowave` is not only to provide the most efficient runtime environment possible, but also the most up-to-date possible. 
+In the case of CDI, version 2.0 was finalized several months before Java EE 8 and productively usable implementations were available within a few weeks. 
+But until all EE servers have integrated all the specifications of a new EE version, it usually takes much more time. 
+EE 8 promises to refute this often criticized aspect of something, since the scope was kept deliberately smaller than, for example, in EE 6. 
+With servers like `Meecrowave`, however, we have the advantage of keeping up with the times and of being able to use new features shortly after the specification has been completed. 
+In `IdeaForkMicro` uses this fact to implement asynchronous events with the new board resources of CDI 2.0. 
+For this we use in Listing <<.Asynchronous CDI events, Asynchronous CDI events>> fire as usual an injection point of the type `javax.enterprise.event.Event`. 
+Instead of #fire, we call the new #fireAsync method. 
+A little later we'll see why we need to pass the current token to the `UserChangedEvent` instance in Listing <<.Asynchronous CDI events, Asynchronous CDI events>>.
+
+.Asynchronous CDI events
+[source,java]
+----
+@ApplicationScoped
 public class UserChangeBroadcaster {
   @Inject
   private AuthenticationManager authenticationManager;
@@ -383,8 +635,18 @@ public class UserChangeBroadcaster {
     }
   }
 }
-The second difference can be found on the Observer page. As shown in Listing CDI Observer for asynchronous events , an observer for asynchronous CDI events must use @ObservesAsync instead of @Observes . Thus, event classes can be used for both synchronous and asynchronous events. The distinction is made only by the corresponding fire method and by the annotation matching on the Observer page. If, for example, a synchronous event is converted to an asynchronous event at a later time, then it is not enough to just switch the method call to #fireAsync . Will the transition to @ObservesAsync omitted, events are no longer delivered because there are no methods with @ObservesAsync . If we were to call both #fireAsync and #fire one after the other, we can optionally use @ObservesAsync or @Observes on the Observer page without having to consider the fire method used .
- @ApplicationScoped
+----
+The second difference can be found on the Observer page. 
+As shown in Listing <<.CDI Observer for asynchronous events, CDI Observer for asynchronous events>>, an observer for asynchronous CDI events must use `@ObservesAsync` instead of `@Observes`. 
+Thus, event classes can be used for both synchronous and asynchronous events. 
+The distinction is made only by the corresponding fire method and by the annotation matching on the Observer page. 
+If, for example, a synchronous event is converted to an asynchronous event at a later time, then it is not enough to just switch the method call to #fireAsync. 
+Will the transition to `@ObservesAsync` omitted, events are no longer delivered because there are no methods with `@ObservesAsync`. 
+If we were to call both `#fireAsync` and `#fire` one after the other, we can optionally use `@ObservesAsync` or `@Observes` on the Observer page without having to consider the fire method used.
+
+[source,java]
+----
+@ApplicationScoped
 public class UserActivityObserver {
   @Inject
   private UserActionRepository userActionRepository;
@@ -394,25 +656,72 @@ public class UserActivityObserver {
       userActionRepository.save(userActionEvent.getUserAction());
   }
 }
-There will be more notes on CDI 2.0 in the following sections. Asynchronous events and the somewhat later prioritization of events represent the most interesting new feature in IdeaForkMicro in CDI 2.0.
-8.9 Removed and yet so close
-So far we have implemented all described steps in the user service module. As mentioned earlier, there will be several modules in IdeaForkMicro . The next service modules are Notification Service for sending e-mail notifications and the Archive Service, which we use to archive changes to entities separately. Both service modules are not yet implemented at this time. However, the interface of the modules is already foreseeable. So far we have already used RegistrationRequest in the endpoint SimpleRegistrationResource . This Java bean defines the properties email , nickName , firstName , lastName, and password . Only the latter is defined in the RegistrationRequest class itself. The remaining properties are contained in a base class named UserRequest . UserRequest can thus also be reused for the message to the notification service. Listing REST-Resource Client as a partial bean shows how we want to address the notification service that still needs to be created.
- @ApplicationScoped
+----
+There will be more notes on CDI 2.0 in the following sections. 
+Asynchronous events and the somewhat later prioritization of events represent the most interesting new feature in `IdeaForkMicro` in CDI 2.0.
+
+=== Distant yet so close
+So far we have implemented all described steps in the user service module. 
+As mentioned earlier, there will be several modules in `IdeaForkMicro`. 
+The next service modules are `Notification-Service` for sending e-mail notifications and the `Archive-Service`, which we use to archive changes to entities separately. 
+Both service modules are not yet implemented at this time. 
+However, the interface of the modules is already foreseeable. 
+So far we have already used `RegistrationRequest` in the endpoint `SimpleRegistrationResource`. 
+This Java bean defines the properties email, nickName, firstName, lastName, and password. 
+Only the latter is defined in the `RegistrationRequest` class itself. 
+The remaining properties are contained in a base class named `UserRequest`. 
+`UserRequest` can thus also be reused for the message to the `Notification-Service`. 
+Listing <<.`REST`-Resource Client as a partial bean, `REST`-Resource Client as a partial bean>> shows how we want to address the `Notification-Service` that still needs to be created.
+
+.`REST`-Resource Client as a partial bean
+[source,java]
+----
+@ApplicationScoped
 @ResourceClient(name = "notifications", version = "v1")
 public interface NotificationResource {
   @POST
   @Path("/welcome")
   void sendWelcomeMessage(UserRequest notificationRequest);
 }
-The annotation @ResourceClient from Listing REST-Resource Client as partial bean is provided by the CDI extension Remote-Access-Lite and is based on the partial-bean concept of DeltaSpike. We can inject and use the interface NotificationResource like a conventional CDI bean. In the concrete example, when calling NotificationResource # sendWelcomeMessage, the service with the name "notifications" in version "v1" is searched for and a "POST request" is sent to "/ welcome". In @POST and @Path is are the already known JAX-RS annotations. Consequently, only @ResourceClient a separate annotation, which allows easier access to remote services. In the background, the address of the service is determined, combined with the path information and the request is made via the JAX-RS client API. For this to be possible, each module registers in a decentrally distributed data structure at the start of the application. For each REST endpoint, an entry is created which is automatically replicated to all participating modules and updated at regular intervals. Although we do not use a container solution such as Docker, we do not need to explicitly know information from other modules, such as ports, because this information is also automatically registered in the background and replicated between service instances. Equipped with this knowledge we can in Listing Remote Archiving via Partial-Bean immediately continues with the integration of the Archive module. In this case, EntityChangeRequest is a Java bean with the properties entityAsJson , id , version, and a readonly property creationTimestamp , which is used only for messages to the archive service.
- @ApplicationScoped
+----
+The annotation `@ResourceClient` from Listing <<`REST`-Resource Client as partial bean, `REST`-Resource Client as partial bean>> is provided by the CDI extension `Remote-Access-Lite` and is based on the partial-bean concept of DeltaSpike. 
+We can inject and use the interface `NotificationResource` like a conventional CDI bean. 
+In the concrete example, when calling `NotificationResource#sendWelcomeMessage`, the service with the name "notifications" in version "v1" is searched for and a "POST request" is sent to "/welcome". 
+In `@POST` and `@Path` are the already known JAX-RS annotations. 
+Consequently, only `@ResourceClient` a separate annotation, which allows easier access to remote services. 
+In the background, the address of the service is determined, combined with the path information and the request is made via the JAX-RS client API. 
+For this to be possible, each module registers in a decentrally distributed data structure at the start of the application. 
+For each `REST` endpoint, an entry is created which is automatically replicated to all participating modules and updated at regular intervals. 
+Although we do not use a container solution such as Docker, we do not need to explicitly know information from other modules, such as ports, because this information is also automatically registered in the background and replicated between service instances. 
+Equipped with this knowledge we can in Listing <<.Remote Archiving via Partial-Bean, Remote Archiving via Partial-Bean>> immediately continues with the integration of the Archive module. 
+In this case, `EntityChangeRequest` is a Java bean with the properties entityAsJson, id, version, and a readonly property creationTimestamp, which is used only for messages to the archive service.
+
+.Remote Archiving via Partial-Bean
+[source,java]
+----
+@ApplicationScoped
 @ResourceClient(name = "archive", version = "v1")
 public interface ArchiveResource {
   @POST
   void recordChange(EntityChangeRequest entityChangeRequest);
 }
-If a service is not available at runtime, the CDI extension stops processing and a warning is logged. More extensive error handling is possible, but not part of the Remote Access Lite Extension, as it is a prototype intended primarily to avoid the need for an additional container or service discovery solution for IdeaForkMicro . In addition, this CDI extension again demonstrates the versatility of Apache DeltaSpike's partial beans and other mechanisms, and may serve as inspiration for further CDI extensions. By the just shown partial beans NotificationResource and ArchiveResource We can already implement the connection to these modules in the user service module as if we already had the two other modules available. Listing Manually Transferred Tokens Shows Calling NotificationResource # sendWelcomeMessage and Listing Asynchronous Archiving Using ArchiveResource # recordChange . In both listings, the call is made in an asynchronous observer method. In the onUserRegisteredEvent method the current token must be set manually because tokens are automatically taken over in a thread only after being checked. By contrast, asynchronous observer methods are executed by another thread, and therefore the automatism does not apply at this point. The token thus set is then automatically processed again. Specifically, it is used to call NotificationResource # sendWelcomeMessage . Thus, this is only necessary if we want to address a different service module in a new thread.
- @ApplicationScoped
+----
+If a service is not available at runtime, the CDI extension stops processing and a warning is logged. 
+More extensive error handling is possible, but not part of the `Remote-Access-Lite` Extension, as it is a prototype intended primarily to avoid the need for an additional container or service discovery solution for `IdeaForkMicro`. 
+In addition, this CDI extension again demonstrates the versatility of Apache DeltaSpike's partial beans and other mechanisms, and may serve as inspiration for further CDI extensions. 
+By the just shown partial beans `NotificationResource` and `ArchiveResource` we can already implement the connection to these modules in the `User-Service-Module` as if we already had the two other modules available. 
+Listing <<.Manually Transferred Tokens, Manually Transferred Tokens>> shows Calling `NotificationResource#sendWelcomeMessage` and Listing <<.Asynchronous Archiving, Asynchronous Archiving>> using `ArchiveResource#recordChange`. 
+In both listings, the call is made in an asynchronous observer method. 
+In the `onUserRegisteredEvent` method the current token must be set manually because tokens are automatically taken over in a thread only after being checked. 
+By contrast, asynchronous observer methods are executed by another thread, and therefore the automatism does not apply at this point. 
+The token thus set is then automatically processed again. 
+Specifically, it is used to call `NotificationResource#sendWelcomeMessage`. 
+Thus, this is only necessary if we want to address a different service module in a new thread.
+
+.Manually Transferred Tokens
+[source,java]
+----
+@ApplicationScoped
 public class RegistrationNotificationObserver {
   @Inject
   private NotificationResource notificationResource;
@@ -431,8 +740,16 @@ public class RegistrationNotificationObserver {
       this.notificationResource.sendWelcomeMessage(userRequest);
   }
 }
-Listing Asynchronous archiving shows a similar constellation. However, here the ObjectMapper from Jackson is used manually to serialize the current state of the user instance in JSON. Consequently, the checked exception JsonProcessingException must be handled explicitly. Again, it is sufficient in our simplified case that we convert the checked exception into an unchecked exception and throw it away.
- @ApplicationScoped
+----
+Listing <<.Asynchronous archiving, Asynchronous archiving>> shows a similar constellation. 
+However, here the `ObjectMapper` from Jackson is used manually to serialize the current state of the user instance in JSON. 
+Consequently, the checked exception `JsonProcessingException` must be handled explicitly. 
+Again, it is sufficient in our simplified case that we convert the checked exception into an unchecked exception and throw it away.
+
+.Asynchronous archiving
+[source,java]
+----
+@ApplicationScoped
 public class UserChangeObserver {
   @Inject
   private IdentityHolder identityHolder;
@@ -461,8 +778,19 @@ public class UserChangeObserver {
       }
   }
 }
-So that changes that are sent with the ArchiveResource partial bean are also received and processed, we create a module called History Service. In this module, we archive and manage changes to entities. Basically, this module is constructed equivalent to the user-service module. Both configuration, starter class and a JAX-RS endpoint are implemented here according to the procedure described above. Listing JAX-RS Endpoint for archiving shows that here, too, the JAX-RS resource is extremely easy to implement. With @POST annotated method #archiveEntity converts the transmitted instance of type EntityChangeRequest in a JPA entity type EntityChange and stores it using the injected EntityChangeRepository instance.
- @AuthenticationRequired
+----
+
+So changes that are sent with the ArchiveResource partial bean are also received and processed, we create a module called `History-Service`. 
+In this module, we archive and manage changes to entities. 
+Basically, this module is constructed equivalent to the user-service module. 
+Both configuration, starter class and a JAX-RS endpoint are implemented here according to the procedure described above. 
+Listing <<JAX-RS Endpoint for archiving, JAX-RS Endpoint for archiving>> shows that here, too, the JAX-RS resource is extremely easy to implement. 
+With `@POST` annotated method #archiveEntity converts the transmitted instance of type `EntityChangeRequest` in a JPA entity type `EntityChange` and stores it using the injected `EntityChangeRepository` instance.
+
+.JAX-RS Endpoint for archiving
+[source,java]
+----
+@AuthenticationRequired
 @Path("archive")
  
 @ApplicationScoped
@@ -483,9 +811,23 @@ public class EntityArchiveResource {
 
   //...
 }
-However, the modularization shows that certain code duplications are already creeping in now. Since modules are independent and can follow their own concepts, it is often recommended not to use shared code. In our case, this results in each module in which we use JPA contain a copy of the class BaseEntity . Generic libraries could be shared between modules like other dependencies. In IdeaForkMicro , however , we renounce the reusability of this one class in this case.
-8.10 Diversity per module
-In addition to the ArchiveResource partial bean, we have already included a partial bean called NotificationResource . Currently only the associated Notification module is missing . This we create in the following step. Again, we create a class for easy manual startup and call this DevNotificationServerStarter . As already mentioned, the starter classes for Meecrowave have the same structure. The only difference is the configuration of the service name and the port. Nevertheless, there is a special feature in the Notification Service module. We take over from IdeaForkLite the integration of Spring-Mail, which was implemented with the help of our CDI-Spring-Bridge. As with the user service module, we provide the functionality of the module with a JAX-RS endpoint for other parts of the application. Listing JAX-RS Endpoint for sending e-mails shows the injection and usage of MailService , which uses the Spring Bean SpringMailSender as usual .
+----
+However, the modularization shows that certain code duplications are already creeping in now. 
+Since modules are independent and can follow their own concepts, it is often recommended not to use shared code. 
+In our case, this results in each module in which we use JPA contain a copy of the class `BaseEntity`. 
+Generic libraries could be shared between modules like other dependencies. 
+In `IdeaForkMicro` , however , we renounce the reusability of this one class in this case.
+=== Diversity per module
+In addition to the ArchiveResource partial bean, we have already included a partial bean called NotificationResource . 
+Currently only the associated Notification module is missing . 
+This we create in the following step. 
+Again, we create a class for easy manual startup and call this DevNotificationServerStarter . 
+As already mentioned, the starter classes for Meecrowave have the same structure. 
+The only difference is the configuration of the service name and the port. 
+Nevertheless, there is a special feature in the Notification Service module. 
+We take over from IdeaForkLite the integration of Spring-Mail, which was implemented with the help of our CDI-Spring-Bridge. 
+As with the user service module, we provide the functionality of the module with a JAX-RS endpoint for other parts of the application. 
+Listing JAX-RS Endpoint for sending e-mails shows the injection and usage of MailService , which uses the Spring Bean SpringMailSender as usual .
  @AuthenticationRequired
 @Path("notifications")
  
@@ -503,10 +845,20 @@ public class NotificationResource {
     mailService.sendWelcomeMessage(recipientDetails.nickName);
   }
 }
-Because we use Spring-Mail or Spring only in this module, we can limit the associated build configuration and functionality to this module. Furthermore, we had to explicitly remove SpringMailSender with @Exclude for the CDI container, as Spring is supposed to manage this bean at runtime. Since CDI 1.1 we could also use @ javax.enterprise.inject.Vetoed for this. Alternatively we can use the File / META-INF beans.xml leave or the day in this file beans to the attribute bean-discovery-mode expand and use "annotated" instead of "all". In both cases, as explained at the beginning of the chapter, only classes with the so-called "bean-defining annotations" are considered. Also in the file beans.xml is another alternative available. Through the tags scan and exclude parts of the BDA can be omitted via configuration. CDI 2.0 even goes one step further and introduces the <trim /> tag as a simple marker tag. With this bean for the CDI container are excluded only if they were made after the startup process neither by an explicit (CDI) annotation nor dynamically by a CDI extension to a CDI bean.
- 
+Because we use Spring-Mail or Spring only in this module, we can limit the associated build configuration and functionality to this module. 
+Furthermore, we had to explicitly remove SpringMailSender with @Exclude for the CDI container, as Spring is supposed to manage this bean at runtime. 
+Since CDI 1.1 we could also use @ javax.enterprise.inject.Vetoed for this. 
+Alternatively we can use the File / META-INF beans.xml leave or the day in this file beans to the attribute bean-discovery-mode expand and use "annotated" instead of "all". 
+In both cases, as explained at the beginning of the chapter, only classes with the so-called "bean-defining annotations" are considered. 
+Also in the file beans.xml is another alternative available. 
+Through the tags scan and exclude parts of the BDA can be omitted via configuration. 
+CDI 2.0 even goes one step further and introduces the <trim /> tag as a simple marker tag. 
+With this bean for the CDI container are excluded only if they were made after the startup process neither by an explicit (CDI) annotation nor dynamically by a CDI extension to a CDI bean.
 
-At this point, we already have three modules, with the user-service module communicating with the other two modules. Using the IdentityHolder , we accessed the current token or, after a successful login, set the authenticated e-mail address for the current thread. This e-mail address will also be made available by the IdentityHolder for subsequent requests with JWT tokens as soon as the sent token has been successfully verified. Listing Load Current User Details shows this on the basis of the UserActionResource , which is added in the User-Service module.
+At this point, we already have three modules, with the user-service module communicating with the other two modules. 
+Using the IdentityHolder , we accessed the current token or, after a successful login, set the authenticated e-mail address for the current thread. 
+This e-mail address will also be made available by the IdentityHolder for subsequent requests with JWT tokens as soon as the sent token has been successfully verified. 
+Listing Load Current User Details shows this on the basis of the UserActionResource , which is added in the User-Service module.
  @AuthenticationRequired
 @Path("user-action")
  
@@ -534,10 +886,19 @@ public class UserActionResource {
     return new UserActionResponse(user, userActionEntryList);
   }
 }
-In the method #loadCurrentUserDetails we use the value returned by IdentityHolder # getAuthenticatedEMail to load the corresponding user and in the next step we can additionally load the user actions for this user. All of these user details are displayed at the end of the chapter in the User Profile section of IdeaForkLite . User actions contain only user logins up to this point. The Git repository of IdeaForkMicro also contains a similarly structured SimpleLogoutResource class in the User-Service module , which additionally accepts user logouts via the REST interface and internally an asynchronous UserActionEvent which eventually leads to the UserActivityObserver also storing these events. The user-service module itself is stateless, which means that an explicit logout has no further effects. In the UI part of the application, which we will come to a little later, this looks different. Here at least the JWT token must be discarded during a logout. So that we can additionally display logout events in the user profile, the previously mentioned logout request to the user module must be carried out explicitly. The delivery of this event in our case leads to an additional user-action entry, but has no further effects in the UI module.
- 
+In the method #loadCurrentUserDetails we use the value returned by IdentityHolder # getAuthenticatedEMail to load the corresponding user and in the next step we can additionally load the user actions for this user. 
+All of these user details are displayed at the end of the chapter in the User Profile section of IdeaForkLite . 
+User actions contain only user logins up to this point. 
+The Git repository of `IdeaForkMicro` also contains a similarly structured SimpleLogoutResource class in the User-Service module , which additionally accepts user logouts via the `REST` interface and internally an asynchronous UserActionEvent which eventually leads to the UserActivityObserver also storing these events. 
+The user-service module itself is stateless, which means that an explicit logout has no further effects. 
+In the UI part of the application, which we will come to a little later, this looks different. 
+Here at least the JWT token must be discarded during a logout. 
+So that we can additionally display logout events in the user profile, the previously mentioned logout request to the user module must be carried out explicitly. 
+The delivery of this event in our case leads to an additional user-action entry, but has no further effects in the UI module.
 
-If no or an expired token is transmitted to the user service module, requests are only accepted by the login and register entry point. If the behavior is to be tested explicitly with an expired token, we must adapt the TokenExpirationManager of the CDI extension. In Listing TokenExpirationManager for tests we use for this class TestTokenExpirationManager which of TokenExpirationManager is derived with @Specializes is annotated and is available only in the test classpath.
+If no or an expired token is transmitted to the user service module, requests are only accepted by the login and register entry point. 
+If the behavior is to be tested explicitly with an expired token, we must adapt the TokenExpirationManager of the CDI extension. 
+In Listing TokenExpirationManager for tests we use for this class TestTokenExpirationManager which of TokenExpirationManager is derived with @Specializes is annotated and is available only in the test classpath.
  @Specializes
 public class TestTokenExpirationManager extends TokenExpirationManager {
   @Override
@@ -554,7 +915,8 @@ public class TestTokenExpirationManager extends TokenExpirationManager {
       return oldValue;
   }
 }
-The #replaceExpirationTimeInMilliSeconds method in Listing Expire Expired Tokens artificially reduces the validity of the token so that the #forcedPause method waits only a few milliseconds instead of several minutes before it can be retested with a deliberately expired token. In this specific case, the status UNAUTHORIZED should be sent back to the client when a JAX-RS endpoint is called.
+The #replaceExpirationTimeInMilliSeconds method in Listing Expire Expired Tokens artificially reduces the validity of the token so that the #forcedPause method waits only a few milliseconds instead of several minutes before it can be retested with a deliberately expired token. 
+In this specific case, the status UNAUTHORIZED should be sent back to the client when a JAX-RS endpoint is called.
  @Test
 public void updateUserDetailsAfterTokenExpiration() {
   int previousExpirationTime = TestTokenExpirationManager
@@ -578,7 +940,9 @@ public void updateUserDetailsAfterTokenExpiration() {
       .replaceExpirationTimeInMilliSeconds(previousExpirationTime);
   }
 }
-Should additionally the autom. To test the token renewal, we need to increase the validity period slightly and, as in Listing Token Renew, wait a little shorter than the validity period after the first request before issuing the second request. From this we get a new token with which a third request is issued. If we wait between the second and third request again until shortly before the expiration of the token, then we are clear about the period of validity of the first token, but the newly issued token is still valid and therefore this third request must also be successful.
+Should additionally the autom. To test the token renewal, we need to increase the validity period slightly and, as in Listing Token Renew, wait a little shorter than the validity period after the first request before issuing the second request. 
+From this we get a new token with which a third request is issued. 
+If we wait between the second and third request again until shortly before the expiration of the token, then we are clear about the period of validity of the first token, but the newly issued token is still valid and therefore this third request must also be successful.
  @Test
 public void renewToken() {
   int expirationTime = 3000;
@@ -602,8 +966,18 @@ public void renewToken() {
       .replaceExpirationTimeInMilliSeconds(previousExpirationTime);
   }
 }
-8.11 Everything in its time
-Next is the config service module's turn. Again, there is little difference. The previous functionality is taken over from IdeaForkLite and made available to other parts of the application with a JAX-RS resource. However, initialization is slightly different when starting the service. For one thing , we 've already dynamically added a custom config source in IdeaForkLite to use the database as an additional configuration source, and in the case of Project Stage Development manually create a configuration entry. So far we have used a JSF add-on for this purpose. However, our service modules can not use this trick anymore. Fortunately, here CDI since version 1.1 itself remedy. Listing CDI 1.1 Container Startup Event shows how the IdeaForkConfigServiceStartupObserver class can be used to monitor an observer method with the predefined qualifier @Initialized the start of the application scope. As usual with observer methods, additional parameters are optional injection points. In our case, we have DataBaseAwareConfigSource injected and register as before this additional config source via ConfigResolver # addConfigSources .
+=== Everything in its time
+Next is the config service module's turn. 
+Again, there is little difference. 
+The previous functionality is taken over from IdeaForkLite and made available to other parts of the application with a JAX-RS resource. 
+However, initialization is slightly different when starting the service. 
+For one thing , we 've already dynamically added a custom config source in IdeaForkLite to use the database as an additional configuration source, and in the case of Project Stage Development manually create a configuration entry. 
+So far we have used a JSF add-on for this purpose. 
+However, our service modules can not use this trick anymore. 
+Fortunately, here CDI since version 1.1 itself remedy. 
+Listing CDI 1.1 Container Startup Event shows how the IdeaForkConfigServiceStartupObserver class can be used to monitor an observer method with the predefined qualifier @Initialized the start of the application scope. 
+As usual with observer methods, additional parameters are optional injection points. 
+In our case, we have DataBaseAwareConfigSource injected and register as before this additional config source via ConfigResolver # addConfigSources .
  @ApplicationScoped
 public class IdeaForkConfigServiceStartupObserver {
   protected void onStartup(@Observes @Initialized(ApplicationScoped.class)
@@ -614,7 +988,11 @@ public class IdeaForkConfigServiceStartupObserver {
       .addConfigSources(Arrays.<ConfigSource>asList(configSource));
   }
 }
-Of course there may be several Observer methods for this event. So we add another observer in Listing Mismatched Container Startup Event to dynamically set a configuration value depending on the project stage. There are various possibilities. We use the already presented @Exclude and additionally let us inject ConfigRepository as parameter of the Observer method. Consequently, in the Observer method itself, we only save the configuration entry using ConfigRepository in the database.
+Of course there may be several Observer methods for this event. 
+So we add another observer in Listing Mismatched Container Startup Event to dynamically set a configuration value depending on the project stage. 
+There are various possibilities. 
+We use the already presented @Exclude and additionally let us inject ConfigRepository as parameter of the Observer method. 
+Consequently, in the Observer method itself, we only save the configuration entry using ConfigRepository in the database.
  @Exclude(exceptIfProjectStage = ProjectStage.Development.class)
 @ApplicationScoped
 public class DevIdeaForkConfigServiceStartupObserver {
@@ -626,7 +1004,10 @@ public class DevIdeaForkConfigServiceStartupObserver {
       new ConfigEntry("maxNumberOfHighestRatedCategories", "10"));
   }
 }
-If we have several observers for the same event, as is the case with the ones just shown, then it may be that the order is important. If we want to make sure that the new config source is added before the configuration value is stored in our example, we can use a new functionality from CDI 2.0. The additional use of @ javax.annotation.Priority controls the calling order of observer methods. Listing Ordered container startup events shows this for our two Observer methods.
+If we have several observers for the same event, as is the case with the ones just shown, then it may be that the order is important. 
+If we want to make sure that the new config source is added before the configuration value is stored in our example, we can use a new functionality from CDI 2.0. 
+The additional use of @ javax.annotation.Priority controls the calling order of observer methods. 
+Listing Ordered container startup events shows this for our two Observer methods.
  protected void onStartup(
   @Observes @Initialized(ApplicationScoped.class) @Priority(1)
   Object ideaForkStartedEvent,
@@ -640,7 +1021,8 @@ protected void onStartup(
   ConfigRepository configRepository) {
     //...
 }
-Before we can use the config service, we adopt the partial bean approach from IdeaForkLite , with which we can implement type-safe configurations via @TypedConfig . In addition, in the Listing extension of the TypedConfig annotation , we extend the annotation annotation attribute remotely to differentiate between local and central configuration.
+Before we can use the config service, we adopt the partial bean approach from IdeaForkLite , with which we can implement type-safe configurations via @TypedConfig . 
+In addition, in the Listing extension of the TypedConfig annotation , we extend the annotation annotation attribute remotely to differentiate between local and central configuration.
  @PartialBeanBinding
 @Retention(RUNTIME)
 @Target(TYPE)
@@ -654,7 +1036,11 @@ public interface ConfigService {
   @Path("/{key}")
   String loadForKey(@PathParam("key") String key);
 }
-As the excerpt from Listing Typified Config Handler with Remote Support shows , the ConfigService -Bean is injected directly. Loaded values ​​are still cached for a limited time. The corresponding functionality has also been taken over from IdeaForkLite . As this module rarely or never would change, we could also keep it outside of IdeaForkLite and in IdeaForkLite just add as a conventional dependency. In order to be able to store this functionality in the same Git repository without an additional build step, we exceptionally import the entire type-safe configuration mechanism into our own Maven module, which may be used by all other modules.
+As the excerpt from Listing Typified Config Handler with Remote Support shows, the ConfigService -Bean is injected directly. 
+Loaded values ​​are still cached for a limited time. 
+The corresponding functionality has also been taken over from IdeaForkLite . 
+As this module rarely or never would change, we could also keep it outside of IdeaForkLite and in IdeaForkLite just add as a conventional dependency. 
+In order to be able to store this functionality in the same Git repository without an additional build step, we exceptionally import the entire type-safe configuration mechanism into our own Maven module, which may be used by all other modules.
  @TypedConfig
 @ConfigScoped
 @SuppressWarnings("unused")
@@ -695,12 +1081,19 @@ public class TypedConfigHandler implements InvocationHandler {
  
   //...
 }
-The last backend module to create is the Idea module. As usual, we import the functionality of IdeaForkLite and can take over large parts unchanged. In the type-safe configuration, there is the first adjustment. We add the type-safe configuration called IdeaConfig from the Listing Type Safe configuration as a partial bean and set the remote attribute to true .
+The last backend module to create is the Idea module. 
+As usual, we import the functionality of IdeaForkLite and can take over large parts unchanged. 
+In the type-safe configuration, there is the first adjustment. 
+We add the type-safe configuration called IdeaConfig from the Listing Type Safe configuration as a partial bean and set the remote attribute to true .
  @TypedConfig(remote = true)
 public interface IdeaConfig {
   Integer maxNumberOfHighestRatedCategories();
 }
-Listing Using the typed configuration shows that there is no difference in usage. IdeaConfig is injected and the configuration value for the key maxNumberOfHighestRatedCategories is loaded by calling IdeaConfig # maxNumberOfHighestRatedCategories . As already described, the JAX-RS endpoint of the Config-Service module is first queried in the background in the background, and only when it does not provide any value are the other Config sources queried. We could use the partial bean ConfigService also integrate directly via Config-Source. However, every config lookup would trigger a remote query. For this reason we stick to TypedConfigHandler in the two-step procedure described above .
+Listing Using the typed configuration shows that there is no difference in usage. 
+IdeaConfig is injected and the configuration value for the key maxNumberOfHighestRatedCategories is loaded by calling IdeaConfig # maxNumberOfHighestRatedCategories . 
+As already described, the JAX-RS endpoint of the Config-Service module is first queried in the background in the background, and only when it does not provide any value are the other Config sources queried. 
+We could use the partial bean ConfigService also integrate directly via Config-Source. 
+However, every config lookup would trigger a remote query. For this reason we stick to TypedConfigHandler in the two-step procedure described above .
  @AuthenticationRequired
 @Path("categories")
  
@@ -720,7 +1113,7 @@ public class CategoryResource {
     return result;
   }
 }
-Listing Customized IdeaRepository shows the associated customizations and simplifications in the IdeaRepository class . It also shows why IdeaForkMicro does not load the configured value into IdeaRepository itself.
+Listing Customized IdeaRepository shows the associated customizations and simplifications in the IdeaRepository class . It also shows why `IdeaForkMicro` does not load the configured value into IdeaRepository itself.
  @Transactional(qualifier = Default.class)
 @Repository
 public interface IdeaRepository extends EntityRepository<Idea, String> {
@@ -737,15 +1130,20 @@ public interface IdeaRepository extends EntityRepository<Idea, String> {
     i.category like CONCAT('', ?1, '')")
   List<Idea> search(String searchText);
 }
-8.12 reunion
-Only a few changes are required in the IdeaForkMicro UI module . At this point, all REST endpoints are implemented in the Git repository. This includes CategoryResource . The implementation details are not relevant here. As soon as we know that we can query categories via the path "/ categories / v1 / top", the connection of this remote service, as shown in Listing REST-Resource Client as a partial bean in the UI , is equivalent to the previous implementations. The conversion to the typed collection is performed automatically in the background, which eliminates the need for additional annotations in addition to @ResourceClient and JAX-RS standard annotations.
+=== reunion
+Only a few changes are required in the `IdeaForkMicro` UI module. 
+At this point, all `REST` endpoints are implemented in the Git repository. 
+This includes CategoryResource . The implementation details are not relevant here. 
+As soon as we know that we can query categories via the path "/ categories / v1 / top", the connection of this remote service, as shown in Listing `REST`-Resource Client as a partial bean in the UI , is equivalent to the previous implementations. 
+The conversion to the typed collection is performed automatically in the background, which eliminates the need for additional annotations in addition to @ResourceClient and JAX-RS standard annotations.
  @ResourceClient(name = "categories", version = "v1")
 public interface CategoryService {
   @GET
   @Path("/top")
   List<Category> getHighestRatedCategories();
 }
-Listing Connection of CategoryService illustrates the use of CategoryService in IndexViewCtrl . Also new in Listing Connection of CategoryService is the use of JsfIdentityHolder , which replaces the previous ActiveUserHolder . This is a specialized variant of IdentityHolder , which is stored in the session scope and is also available for EL expressions through @Named .
+Listing Connection of CategoryService illustrates the use of CategoryService in IndexViewCtrl. 
+Also new in Listing Connection of CategoryService is the use of JsfIdentityHolder, which replaces the previous ActiveUserHolder . This is a specialized variant of IdentityHolder , which is stored in the session scope and is also available for EL expressions through @Named .
  @ViewController
 public class IndexViewCtrl implements Serializable {
   @Inject
@@ -780,7 +1178,8 @@ public class IndexViewCtrl implements Serializable {
  
   //...
 }
-In addition to implementing JsfIdentityHolder , listing UI-specific IdentityHolder also illustrates the signaling of a user logout that is triggered automatically by a session timeout or manually. A manual logout will reset the token. In IdeaForkMicro , JsfIdentityHolder is the only session-scoped instance that persists with a manual logout until the session timeout, but is completely empty and thus takes up very little memory.
+In addition to implementing JsfIdentityHolder, listing UI-specific IdentityHolder also illustrates the signaling of a user logout that is triggered automatically by a session timeout or manually. 
+A manual logout will reset the token. In `IdeaForkMicro` , JsfIdentityHolder is the only session-scoped instance that persists with a manual logout until the session timeout, but is completely empty and thus takes up very little memory.
  @Named("identityHolder")
 @Specializes
 @SessionScoped
@@ -845,7 +1244,10 @@ In Listing Nested Partial-Bean it can be seen that UserActionService.LogoutServi
     ProfileActivity loadLatestActivities();
   }
 }
-A manual logout is triggered in IdeaForkMicro by the MenuController . Listing Manual Logout UI Controller illustrates the corresponding section. After the user logout has been signaled to the backend, all server-side windows in that session are closed. With a session timeout this happens automatically and therefore does not have to be taken into account explicitly.
+A manual logout is triggered in `IdeaForkMicro` by the MenuController. 
+Listing Manual Logout UI Controller illustrates the corresponding section. 
+After the user logout has been signaled to the backend, all server-side windows in that session are closed. 
+With a session timeout this happens automatically and therefore does not have to be taken into account explicitly.
  @Named("menuBean")
 @Model
 public class MenuController {
@@ -872,9 +1274,14 @@ public class MenuController {
 
   //...
 }
-The remaining changes in the UI module are summarized in a commit in the IditoforkMicro Git repository and are largely equivalent to the backend module integration just introduced. All changes are designed so that the XHTML pages have almost not changed and the view controllers are also almost identical. In some cases, properties have changed in some cases if properties are named differently in the JSON response. In addition, as already mentioned, activeUserHolder was switched to the new identityHolder .
-8.13 No advantage without disadvantage
-Due to the division into independent modules, however, a small disadvantage has crept in. Using bean validation constraints across layer boundaries is no longer possible without shared code. For example , if we want to validate a new instance of Idea , we need to translate that into the UI module. Listing UI Validation with Bean Validation Constraints shows a representative part of the Idea class of the UI module.
+The remaining changes in the UI module are summarized in a commit in the IditoforkMicro Git repository and are largely equivalent to the backend module integration just introduced. 
+All changes are designed so that the XHTML pages have almost not changed and the view controllers are also almost identical. In some cases, properties have changed in some cases if properties are named differently in the JSON response. 
+In addition, as already mentioned, activeUserHolder was switched to the new identityHolder .
+=== No advantage without disadvantage
+Due to the division into independent modules, however, a small disadvantage has crept in. 
+Using bean validation constraints across layer boundaries is no longer possible without shared code. 
+For example , if we want to validate a new instance of Idea , we need to translate that into the UI module. 
+Listing UI Validation with Bean Validation Constraints shows a representative part of the Idea class of the UI module.
  public class Idea {
   private String id;
  
@@ -891,9 +1298,23 @@ Due to the division into independent modules, however, a small disadvantage has 
 
   //...
 }
-Instances of Idea will automate as usual by JSF autom. validated. In the Idea service module we should at least repeat a minimal validation. Instead of using the manual IdeaValidator, we also want to use bean-validation constraints. Therefore, we extend the JPA entity Idea , not to be confused with the class of the same name in the UI module, to the corresponding constraints. Also, in the persistence.xml file of the service module , we need to use the validation-mode called CALLBACK activate. This ensures that the JPA provider validates entities before persistence by the bean validation provider and stores them only when no constraint violations are found. This is, for example, additionally ensured that in our case, imported Idea instances are subjected to a rudimentary review.
- 
+Instances of Idea will automate as usual by JSF autom. validated. 
+In the Idea service module we should at least repeat a minimal validation. 
+Instead of using the manual IdeaValidator, we also want to use bean-validation constraints. 
+Therefore, we extend the JPA entity Idea , not to be confused with the class of the same name in the UI module, to the corresponding constraints. 
+Also, in the persistence.xml file of the service module , we need to use the validation-mode called CALLBACK activate. 
+This ensures that the JPA provider validates entities before persistence by the bean validation provider and stores them only when no constraint violations are found. 
+This is, for example, additionally ensured that in our case, imported Idea instances are subjected to a rudimentary review.
 
-Another disadvantage is the @UniqueUser -Constraint. The previously used constraint validator performs a database query for UI validation. In IdeaForkMicro , this would mean that we would need a remote call to the user-service module for UI validation. For this reason, we omit this constraint in IdeaForkMicro . In the current version in the Git repository of IdeaForkMicroIn such a case, the REST resource returns the status code HTTP 409 ("Conflict") to the UI module. In addition, we limit ourselves to the output of a simple error message, which is also displayed with other registration errors. If, on the other hand, a detailed error message is to be output, then we would have to use different error codes or the idea service module would have to return the error description as a valid response. Again, the complexity of IdeaForkMicro has increased slightly compared to IdeaForkLite .
-8.14 The way is the goal
-In this chapter, we have seen how easy it is to split CDI-based applications into independent services. Even topics such as "Service Discovery", which are currently neither part of CDI nor Java EE, can easily be retrofitted with the help of a CDI extension. The additional complexity that we have seen throughout the chapter, as well as other topics such as the use of container solutions (such as Docker), the implementation of other infrastructure components (such as build pipelines), special monitoring (eg in conjunction with a circuit-breaker mechanism) and some other topics are independent of CDI and are currently mainly provided by proprietary projects. The path to an application that covers all these aspects,
+Another disadvantage is the @UniqueUser -Constraint. The previously used constraint validator performs a database query for UI validation. 
+In `IdeaForkMicro` , this would mean that we would need a remote call to the user-service module for UI validation. 
+For this reason, we omit this constraint in `IdeaForkMicro` . 
+In the current version in the Git repository of `IdeaForkMicro`In such a case, the `REST` resource returns the status code HTTP 409 ("Conflict") to the UI module. 
+In addition, we limit ourselves to the output of a simple error message, which is also displayed with other registration errors. 
+If, on the other hand, a detailed error message is to be output, then we would have to use different error codes or the idea service module would have to return the error description as a valid response. 
+Again, the complexity of `IdeaForkMicro` has increased slightly compared to IdeaForkLite .
+=== The way is the goal
+In this chapter, we have seen how easy it is to split CDI-based applications into independent services. 
+Even topics such as "Service Discovery", which are currently neither part of CDI nor Java EE, can easily be retrofitted with the help of a CDI extension. 
+The additional complexity that we have seen throughout the chapter, as well as other topics such as the use of container solutions (such as Docker), the implementation of other infrastructure components (such as build pipelines), special monitoring (eg in conjunction with a circuit-breaker mechanism) and some other topics are independent of CDI and are currently mainly provided by proprietary projects. 
+The path to an application that covers all these aspects,
