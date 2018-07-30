@@ -816,16 +816,16 @@ However, the modularization shows that certain code duplications are already cre
 Since modules are independent and can follow their own concepts, it is often recommended not to use shared code. 
 In our case, this results in each module in which we use JPA contain a copy of the class `BaseEntity`. 
 Generic libraries could be shared between modules like other dependencies. 
-In `IdeaForkMicro` , however , we renounce the reusability of this one class in this case.
+In `IdeaForkMicro`, however, we renounce the reusability of this one class in this case.
 === Diversity per module
-In addition to the ArchiveResource partial bean, we have already included a partial bean called NotificationResource . 
-Currently only the associated Notification module is missing . 
+In addition to the ArchiveResource partial bean, we have already included a partial bean called NotificationResource. 
+Currently only the associated Notification module is missing. 
 This we create in the following step. 
-Again, we create a class for easy manual startup and call this DevNotificationServerStarter . 
+Again, we create a class for easy manual startup and call this DevNotificationServerStarter. 
 As already mentioned, the starter classes for Meecrowave have the same structure. 
 The only difference is the configuration of the service name and the port. 
-Nevertheless, there is a special feature in the Notification Service module. 
-We take over from IdeaForkLite the integration of Spring-Mail, which was implemented with the help of our CDI-Spring-Bridge. 
+Nevertheless, there is a special feature in the Notification-Service module. 
+We take over from `IdeaForkLite` the integration of Spring-Mail, which was implemented with the help of our CDI-Spring-Bridge. 
 As with the user service module, we provide the functionality of the module with a JAX-RS endpoint for other parts of the application. 
 Listing JAX-RS Endpoint for sending e-mails shows the injection and usage of MailService , which uses the Spring Bean SpringMailSender as usual .
  @AuthenticationRequired
