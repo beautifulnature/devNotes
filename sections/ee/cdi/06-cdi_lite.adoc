@@ -1,8 +1,23 @@
 == CDI Lite
-In the previous chapters, some may have felt that CDI is very extensive. Although the specification was written from scratch and does not suffer from legacy issues, in the end concepts have been specified that may seem exotic. In practice, however, it is not necessary or seldom appropriate to use all CDI concepts in one application. So in this chapter, we'll take a look at the bottom line and simplify implementing IdeaFork , keeping only IdeaFork's meaningful concepts.
+In the previous chapters, some may have felt that CDI is very extensive. 
+Although the specification was written from scratch and does not suffer from legacy issues, in the end concepts have been specified that may seem exotic. 
+In practice, however, it is not necessary or seldom appropriate to use all CDI concepts in one application. 
+So in this chapter, we'll take a look at the bottom line and simplify implementing `IdeaFork`, keeping only IdeaFork's meaningful concepts.
 === Less alternatives
-In IdeaFork , we used the concept of alternative implementations to easily switch between frameworks such as GSon and Jackson at development time. Since we in IdeaFork quite early on @ com.fasterxml.jackson.annotation.JsonView have resorted our implementations of Object Converter not completely portable interface. Consequently, using Gson in IdeaFork would currently lead to a different result. By activating @JacksonConverter in the beans.xml file we have not actively observed this effect. Unless we supplement our Gson-based implementation, we will no longer have any use for it. Although the described mechanisms for dynamically determining the current export format can be used in many different ways , we can still restrict ourselves to JSON as an export format in IdeaFork . In addition to @JacksonConverter , the combination of both simplifications also enables the qualifier @ExternalFormat , the ObjectConverter interface, all JAXB annotations such as @XmlRootElement and the CurrentObjectConverterProducer-Bean to remove. What remains is a simple CDI bean, which is delegated directly to Jackson and can be seen in Listing Object Converter without abstractions . Thus, in this area, we will get rid of all the abstractions that we have introduced in IdeaFork , primarily to illustrate various CDI mechanisms .
- public class ObjectConverter {
+In `IdeaFork`, we used the concept of alternative implementations to easily switch between frameworks such as `GSon` and `Jackson` at development time. 
+Since we used the `@com.fasterxml.jackson.annotation.JsonView` early in `IdeaFork`, our implementations of the `ObjectConverter` interface are not fully portable. 
+Consequently, using `Gson` in `IdeaFork` would currently lead to a different result. 
+By activating `@JacksonConverter` in the `beans.xml` file we have not actively observed this effect. 
+Unless we supplement our Gson-based implementation, we will no longer have any use for it. 
+Although the described mechanisms for dynamically determining the current export format can be used in many different ways, we can still restrict ourselves to `JSON` as an export format in `IdeaFork`. 
+The combination of both simplifications makes it possible to use the qualifier `@ExternalFormat` in addition to `@JacksonConverter`, the `ObjectConverter` interface, remove all JAXB annotations such as `@XmlRootElement` and the `CurrentObjectConverterProducer` bean.
+What remains is a simple CDI bean, which is delegated directly to Jackson and can be seen in Listing <<.Object Converter without abstractions, Object Converter without abstractions>>. 
+Thus, in this area, we will get rid of all the abstractions that we have introduced in `IdeaFork`, primarily to illustrate various CDI mechanisms.
+
+.Object Converter without abstractions
+[source,java]
+----
+public class ObjectConverter {
   //...
 
   public String toString(Object entity, Class typeSafeDataView) {
@@ -20,15 +35,32 @@ In IdeaFork , we used the concept of alternative implementations to easily switc
     }
   }
 }
+----
+
 === From decorators to interceptors
-CDI decorators are among the concepts that are rather rare in the free (application) wilderness. In many cases, a simple interceptor is sufficient. In IdeaFork , we have implemented additional logic for UserRepository and IdeaRepository with Decorators . The primary advantage here is the type safety of decorators. For example, if we were to rename the GenericRepository # save method, we ensure that this change is reflected in all implementations. This includes GenericRepositoryDecorator, On the other hand, if we had an interceptor, we would have to work with strings manually, which would eliminate the type-safety. The additional expense for decorators can therefore be justified. In some cases, it may also make sense to dispense with the advantages of decorators. So we can eg. GenericRepository , GenericJpaRepository , as well as our own @RepositoryDispose of the notation by using DeltaSpike-Data. However, we are not just relying on the logic generated by DeltaSpike-Data. If we want to combine these with our own implementations, then we have to use abstract classes instead of interfaces. While implemented methods are invoked without any changes, DeltaSpike-Data transforms abstract methods into corresponding JPA queries. This mechanism makes it easy to mix your own logic with generated logic, making it easy to significantly simplify all repository beans.
- 
+CDI decorators are among the concepts that are rather rare in the free (application) wilderness. 
+In many cases, a simple interceptor is sufficient. 
+In `IdeaFork`, we have implemented additional logic for `UserRepository` and `IdeaRepository` with Decorators. 
+The primary advantage here is the type safety of decorators. 
+For example, if we were to rename the GenericRepository#save method, we ensure that this change is reflected in all implementations. 
+This includes `GenericRepositoryDecorator`, On the other hand, if we had an interceptor, we would have to work with strings manually, which would eliminate the type-safety. 
+The additional expense for decorators can therefore be justified. 
+In some cases, it may also make sense to dispense with the advantages of decorators. 
+For example, we can dispose of `GenericRepository`, `GenericJpaRepository`, as well as our own `@Repository` annotation through the use of DeltaSpike-Data. 
+However, we are not just relying on the logic generated by DeltaSpike-Data. 
+If we want to combine these with our own implementations, then we have to use abstract classes instead of interfaces. 
+While implemented methods are invoked without any changes, DeltaSpike-Data transforms abstract methods into corresponding JPA queries. This mechanism makes it easy to mix your own logic with generated logic, making it easy to significantly simplify all repository beans.
 
-In a second step, we can revise our decorator mechanism for repositories. Since the org.apache.deltaspike.data.api.EntityRepository interface contains and does not change any of the methods we've "expanded" in our decorators, we can safely replace the type-safe decorators with a generic interceptor. 
-Listing DeltaSpike-Data Repository with Interceptors shows a possible conversion of UserRepository based on DeltaSpike-Data. After we have also changed all other repositories in IdeaFork , we can use the aforementioned artifacts, such as GenericJpaRepository and UserRepositoryDecorator , delete.
- @Monitored
+In a second step, we can revise our decorator mechanism for repositories. 
+Since the `org.apache.deltaspike.data.api.EntityRepository` interface contains and does not change any of the methods we've "expanded" in our decorators, we can safely replace the type-safe decorators with a generic interceptor. 
+Listing <<.DeltaSpike-Data Repository with Interceptors, DeltaSpike-Data Repository with Interceptors>> shows a possible conversion of UserRepository based on DeltaSpike-Data. 
+After we have also changed all other repositories in IdeaFork, we can delete the aforementioned artifacts, such as GenericJpaRepository and UserRepositoryDecorator.
+
+.DeltaSpike-Data Repository with Interceptors
+[source,java]
+----
+@Monitored
 @EntityProcessor
-
 @Transactional
 @Repository
 public abstract class UserRepository
@@ -45,8 +77,15 @@ public abstract class UserRepository
     //...
   }
 }
-Instead of the removed decorators, we can introduce an interceptor called EntityProcessorInterceptor . As Listing EntityProcessor Interceptor illustrates, we need to use strings in EntityProcessorInterceptor , which makes the implementation not type-safe. In our case, however, we use the advantage that the methods that are of interest to us are predefined by DeltaSpike-Data and thus do not change.
- @Interceptor
+----
+Instead of the removed decorators, we can introduce an interceptor called `EntityProcessorInterceptor`. 
+As Listing <<.EntityProcessor Interceptor, EntityProcessor Interceptor>> illustrates, we need to use strings in `EntityProcessorInterceptor`, which makes the implementation not type-safe. 
+In our case, however, we use the advantage that the methods that are of interest to us are predefined by DeltaSpike-Data and thus do not change.
+
+.EntityProcessor Interceptor
+[source,java]
+----
+@Interceptor
 @EntityProcessor
 public class EntityProcessorInterceptor implements Serializable {
 
@@ -121,15 +160,31 @@ public class EntityProcessorInterceptor implements Serializable {
         this.ideaChangedEvent.fire(ideaChangedEvent);
   }
 }
-By migrating to an Interceptor and DeltaSpike-Data, the Reflection-based part of GenericJpaRepository # detectConcreteEntityType has moved to EntityProcessorInterceptor # resolveParameterType . Thus, although we have simplified some parts considerably, but a small part with Reflection has remained. We could only avoid this with specialized interceptors, which would be a bit more involved.
-=== Less is more
-In fact, in IdeaFork , we can also do without interceptor strategies, because in one of the following steps we will dissolve the ideafork-core module and lose the adaptability of the preconfigured MonitoredInterceptor class. As a result, we can remove the MonitoredInterceptorStrategy interface and move its implementation to MonitoredInterceptor .
- 
+----
+By migrating to an Interceptor and DeltaSpike-Data, the Reflection-based part of GenericJpaRepository#detectConcreteEntityType has moved to EntityProcessorInterceptor#resolveParameterType. 
+Thus, although we have simplified some parts considerably, but a small part with Reflection has remained. 
+We could only avoid this with specialized interceptors, which would be a bit more involved.
 
-In other cases, as with the project stages of DeltaSpike, it is often sufficient to use existing mechanisms unchanged. So in IdeaFork we can use the default project stages of DeltaSpike without the CustomProjectStage extension. Especially in large projects it may be necessary to define additional stages. DeltaSpike is extensible in such cases, and thus well-equipped for the needs of real-world applications. In IdeaFork, however , the distinction between Project-Stage Development , UnitTest and Production is sufficient.
+=== Less is more
+In fact, in `IdeaFork`, we can also do without interceptor strategies, because in one of the following steps we will dissolve the `IdeaFork`-core module and lose the adaptability of the preconfigured `MonitoredInterceptor` class. 
+As a result, we can remove the `MonitoredInterceptorStrategy` interface and move its implementation to `MonitoredInterceptor`.
+
+In other cases, as with the project stages of DeltaSpike, it is often sufficient to use existing mechanisms unchanged. 
+So in `IdeaFork` we can use the default project stages of DeltaSpike without the CustomProjectStage extension. 
+Especially in large projects it may be necessary to define additional stages. 
+DeltaSpike is extensible in such cases, and thus well-equipped for the needs of real-world applications. 
+In `IdeaFork`, however , the distinction between Project-Stage Development, UnitTest and Production is sufficient.
 === Comply with conventions
-DeltaSpike is very flexible and customizable. An adaptation possibility we have got to know in the type-safe View-Config. In a few steps, we have been able to change the path convention of a subarea. However, keeping to the predefined conventions, the resulting view config is simpler and more transparent. Listing Simplified View Config shows the simplified section for IdeaFork .
- @ViewConfigRoot(
+DeltaSpike is very flexible and customizable. 
+An adaptation possibility we have got to know in the type-safe View-Config. 
+In a few steps, we have been able to change the path convention of a subarea. 
+However, keeping to the predefined conventions, the resulting view config is simpler and more transparent. 
+Listing <<.Simplified View Config, Simplified View Config>> shows the simplified section for `IdeaFork`.
+
+.Simplified View Config
+[source,java]
+----
+@ViewConfigRoot(
   configDescriptorValidators = IdeaForkViewMetaDataValidator.class)
 @View(navigation = REDIRECT)
 public interface Pages extends ViewConfig {
@@ -176,12 +231,25 @@ public interface Pages extends ViewConfig {
     }
   }
 }
-Of course, the JSF pages must also be moved to match the new view config, so that the application continues to function as desired. This conversion also reveals one of the strengths of View-Configs. While the existence of the configured pages is checked at the start of the application, the compiler already ensures during the build process of the application that all affected page navigations have been updated.
-Save 
-=== levels
-In the final step, we also simplify the structure by resolving the independent ideafork-core module, removing superfluous layers. Originally, we demarcated the ideafork-core module from the rest of the Java EE application to make it clear that CDI can be used independently of Java EE. To keep the name separation of the two parts, we move the package at.irian.cdiatwork.ideafork.core into the existing ideafork-ee6 module. This change is also reflected in the Maven build. In the configuration for ideafork-ee6 will remove the references to ideafork-core and instead add all dependencies that were previously defined in ideafork-core . This simplification also allows us to greatly simplify some build configurations for the different EE servers.
-TIP: Because of the strong restructuring all changes in a separate Git repository are IdeaFork called IdeaForkLite summarized. This repository has its own commit for each transition in this chapter. Consequently, all changes can be easily understood.
-The reorganization also makes it possible to save the manager level because we no longer need this encapsulation in IdeaFork core. Instead, we move the implemented logic to the appropriate service classes, which ultimately access the new and simplistic repository beans directly.
- 
+----
+Of course, the JSF pages must also be moved to match the new view config, so that the application continues to function as desired. 
+This conversion also reveals one of the strengths of View-Configs. 
+While the existence of the configured pages is checked at the start of the application, the compiler already ensures during the build process of the application that all affected page navigations have been updated.
+=== Save levels
+In the final step, we also simplify the structure by resolving the independent `IdeaFork`-core module, removing superfluous layers. 
+Originally, we demarcated the `IdeaFork`-core module from the rest of the Java EE application to make it clear that CDI can be used independently of Java EE. 
+To keep the name separation of the two parts, we move the package `at.irian.cdiatwork.ideafork.core` into the existing `IdeaFork-ee6` module. 
+This change is also reflected in the Maven build. 
+In the configuration for `IdeaFork-ee6` will remove the references to `IdeaFork`-core and instead add all dependencies that were previously defined in `IdeaFork`-core. 
+This simplification also allows us to greatly simplify some build configurations for the different EE servers.
+TIP: Because of the strong restructuring all changes are summarized in a separate Git repository `IdeaFork` called IdeaForkLite. 
+This repository has its own commit for each transition in this chapter. 
+Consequently, all changes can be easily understood.
 
-With the simplifications shown, we are well prepared for the following chapters, because in the next chapter, for example, we are adding complexity by integrating other frameworks. In real applications, it is not uncommon for multiple frameworks to be combined. The less we keep the complexity of the basic structure, the more maintainable the entire application becomes. Both CDI and DeltaSpike not only enable innovative and flexible approaches, but also reduce complexity in areas where it is not required.
+The reorganization also makes it possible to save the manager level because we no longer need this encapsulation in `IdeaFork` core. 
+Instead, we move the implemented logic to the appropriate service classes, which ultimately access the new and simplistic repository beans directly.
+
+With the simplifications shown, we are well prepared for the following chapters, because in the next chapter, for example, we are adding complexity by integrating other frameworks. 
+In real applications, it is not uncommon for multiple frameworks to be combined. 
+The less we keep the complexity of the basic structure, the more maintainable the entire application becomes. 
+Both CDI and DeltaSpike not only enable innovative and flexible approaches, but also reduce complexity in areas where it is not required.
