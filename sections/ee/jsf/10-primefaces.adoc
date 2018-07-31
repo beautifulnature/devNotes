@@ -43,7 +43,7 @@ Details can be found in the source code for MyGourmet 18.
 Otherwise, no further configuration is necessary - neither in the `web.xml` nor in the `faces-config.xml`. 
 This clearly shows the focus on the lightweight in all respects.
 
-==== Components
+=== Components
 PrimeFaces version 3.5 offers about 100 components for a wide variety of use cases, available under the namespace http://primefaces.org/ui. 
 The presentation of all components would go beyond the scope of the book, which is why we only show a representative selection here. 
 An overview of all available components can be found at http://www.primefaces.org/showcase.
@@ -81,7 +81,7 @@ In an application and even within a page, you can combine components and tags fr
 In most cases, you 'll even have to do that, as there are no alternatives for tags like `h:form`, `h:outputText`, `h:head`, or `h:body`. 
 Problems are not to be expected as PrimeFaces adheres strictly to the JSF standard. 
 For other standard components, however, there are certainly alternatives, as the next section shows.
-===== Extended standard components
+==== Extended standard components
 PrimeFaces offers extended versions for a whole range of components from the JSF standard. 
 Components such as `p:inputText`, `p:selectOneRadio`, `p:messages` or `p:outputLabel` have the same basic functionality as the standard components of the same name. 
 In most cases, the extended component classes are even derived from the JSF classes. 
@@ -124,10 +124,10 @@ The two components with incorrect user input are displayed in red, including the
 If you look very closely, you'll discover something else: The error message for the missing gender selection automatically includes the value of the associated label component. 
 In standard JSF, this would be the client ID of the component - unless the attribute label is explicitly set. 
 Such details in particular often make day-to-day development work much easier.
-===== Selection of some PrimeFaces components
+==== Selection of some PrimeFaces components
 PrimeFaces provides a large number of components whose functionality far exceeds the JSF standard. 
 In the course of this section we present an admittedly very small selection of these components.
-====== AccordionPanel - `p:accordionPanel`
+===== AccordionPanel - `p:accordionPanel`
 The AccordionPanel component with the tag `p:accordionPanel` represents several tabs that can be opened and closed. 
 A tab groups together any content and is defined with the tag `p:tab`. 
 The individual tabs can be opened and closed by clicking on their title bar. 
@@ -146,7 +146,7 @@ The third tab is completely disabled by setting the attribute `disabled` to `tru
 If you want to disable a tab dynamically, you can of course also use a value expression here.
 
 .`p:accordionPanel`
-[source,xml]
+[source,xhtml]
 ----
 <p:accordionPanel>
   <p:tab title="Tab 1">
@@ -169,7 +169,7 @@ Initially inactive tabs will then be reloaded on first activation.
 In order to reload a tab every time it is activated - for example because of dynamic content -, the `cache` attribute must also be set to `false`. 
 `p:accordionPanel` allows you to expand multiple tabs if the `multiple` attribute is set to `true`.
 
-====== Calendar - `p:calendar`
+===== Calendar - `p:calendar`
 Of course, a component for the comfortable selection of a date may not be missing in any component library. 
 PrimeFaces is no exception and offers the Calendar component with the tag `p:calendar` for this purpose. 
 `p:calendar` has two different display modes, which are set via the attribute `mode`. 
@@ -206,7 +206,7 @@ If the component does not find an explicit converter, the value is internally co
 By default, PrimeFaces only provides localization for English. 
 If you want the calendar as shown in Figure <<,`p:calendar` in the browser, `p:calendar` in the browser>> with German texts (and Monday as the first day), you still need to include a short piece of JavaScript in your page. 
 The corresponding code for a whole range of languages ​​can be found in PrimeFaces-Wiki http://code.google.com/p/primefaces/wiki/PrimeFacesLocales.
-====== DataTable - `p:dataTable`
+===== DataTable - `p:dataTable`
 Another classic for component libraries in the JSF environment is a powerful component for the tabular presentation of dynamic data. 
 After the DataTable component from the JSF standard Pagination is only half-heartedly supported and features such as sorting or filtering are completely lacking, there is enormous potential for improvement in this area. 
 In PrimeFaces there is the DataTable component with the tag `p:dataTable`, which brings all these features (and much more).
@@ -226,7 +226,7 @@ When using `p:dataTable`, the columns of the table are defined with the tag `p:c
 Listing <<.`p:dataTable` with pagination and sorting, `p:dataTable` with pagination and sorting>> shows the XHTML fragment for the table from Figure <<.`p:dataTable` in the browser, `p:dataTable` in the browser>>.
 
 .`p:dataTable` with pagination and sorting
-[source,xml]
+[source,xhtml]
 ----
 <p:dataTable var="person" value="#{bean.persons}"
     paginator="true" rows="5">
@@ -255,7 +255,7 @@ Sorting the data by clicking on the icon is also done by Ajax.
 
 `p:dataTable` offers a lot of additional features like filtering the data, selecting rows, moving columns or changing the column width. 
 For reasons of space, however, we have to refer to the documentation of PrimeFaces for further details.
-====== Menu - `p:menu`
+===== Menu - `p:menu`
 PrimeFaces provides a whole range of components for a wide variety of menus. 
 We explain the Menu component with the tag `p:menu` - the remaining menu components work very similar. 
 Figure <<.`p:menu` in the browser, `p:menu` in the browser>> shows the rendered output of a menu defined with `p:menu` with various menu entries.
@@ -278,7 +278,7 @@ With the tag `p:submenu` several entries can additionally be grouped.
 Listing <<.`p:menu` with various menu entries, `p:menu` with various menu entries>> shows the XHTML fragment for the menu from Figure <<`p:menu` in the browser, `p:menu` in the browser>> with four different types of entries.
 
 .`p:menu` with various menu entries
-[source,xml]
+[source,xhtml]
 ----
 <p:menu>
   <p:menuitem value="Anbieter" outcome="providerList"/>
@@ -293,13 +293,29 @@ Listing <<.`p:menu` with various menu entries, `p:menu` with various menu entrie
 </p:menu>
 ----
 Building a menu with the two tags `p:menuitem` and `p:submenu` works exactly the same for other menu components like `p:menubar`, `p:menuButton` or `p:tabMenu`.
-====== PanelGrid - `p:panelGrid`
-The PanelGrid component with the p: panelGrid tag provides an easy way to arrange other components in the form of a table. p: panelGrid can be used in the same way as h: panelGrid from the JSF standard (see section Section: Panel Components for details ). However, the PrimeFaces alternative automatically uses the settings of the current theme for the presentation. 
-The biggest plus of p: panelGrid is the support for table cells that span multiple rows or columns. To do this, however, the rows must have the tag p: row and the columns with p: column are defined. Figure p: panelGrid in the browser shows the rendered output of a table defined with p: panelGrid .
- 
-Figure: p: panelGrid in the browser
-In Listing p: panelGrid, find the XHTML fragment for the table from Figure p: panelGrid in the browser . The rows and columns of the table are explicitly defined with the tags p: row and p: column - also in the header facet of p: panelGrid . For a cell to span more than one column within a row, the colspan attribute must be set in the p: column tag . The number of columns should of course be the same in every row. Similarly, a cell spans multiple rows when the rowspan attribute is set accordingly.
- <p:panelGrid>
+===== PanelGrid - `p:panelGrid`
+The PanelGrid component with the `p:panelGrid` tag provides an easy way to arrange other components in the form of a table. 
+`p:panelGrid` can be used in the same way as `h:panelGrid` from the JSF standard (see section Section: Panel Components for details). 
+However, the PrimeFaces alternative automatically uses the settings of the current theme for the presentation.
+
+The biggest plus of `p:panelGrid` is the support for table cells that span multiple rows or columns. 
+To do this, however, the rows must have the tag `p:row` and the columns with `p:column` are defined. 
+Figure <<.`p:panelGrid` in the browser, `p:panelGrid` in the browser>> shows the rendered output of a table defined with `p:panelGrid`.
+
+====
+.`p:panelGrid` in the browser
+image::images/primefaces-panelgrid.jpg[]
+====
+In Listing <<.`p:panelGrid`, `p:panelGrid`>>, find the XHTML fragment for the table from Figure <<.`p:panelGrid` in the browser, `p:panelGrid` in the browser>>. 
+The rows and columns of the table are explicitly defined with the tags `p:row` and `p:column` - also in the header facet of `p:panelGrid`. 
+For a cell to span more than one column within a row, the `colspan` attribute must be set in the `p:column` tag. 
+The number of columns should of course be the same in every row. 
+Similarly, a cell spans multiple rows then the `rowspan` attribute is set accordingly.
+
+.`p:panelGrid`
+[source,xhtml]
+----
+<p:panelGrid>
   <f:facet name="header">
     <p:row>
       <p:column>Überschrift 1</p:column>
@@ -315,95 +331,245 @@ In Listing p: panelGrid, find the XHTML fragment for the table from Figure p: pa
     <p:column>Zelle 4</p:column>
   </p:row>
 </p:panelGrid>
-====== Rating - `p:rating`
-With p: rating , ratings can be given in the form of clickable stars. The value of the rating component corresponds to the number of selected stars. The component can be used for input as well as for the output of a rating. Figure p: rating in the browser shows the rendered output of two rating components: once without and once with Icon to reset the value to 0.
+----
+===== Rating - `p:rating`
+With `p:rating`, ratings can be given in the form of clickable stars. 
+The value of the rating component corresponds to the number of selected stars. 
+The component can be used for input as well as for the output of a rating. 
+Figure <<.`p:rating` in the browser, `p:rating` in the browser>> shows the rendered output of two rating components: once without and once with Icon to reset the value to 0.
+
+.`p:rating` in the browser
+====
+.`p:panelGrid` in the browser
+image::images/primefaces-rating.jpg[]
+====
  
-Figure: p: rating in the browser
-Listing examples for p: rating shows some examples of the p: rating tag . The number of selectable stars is specified in the stars attribute (the default is 5). The reset value icon is rendered by default unless the cancel attribute is explicitly set to false . By setting the attribute readonly to true , the component can be converted to a pure output component.
- <p:rating value="#{bean.value}" cancel="false" stars="5"/>
+Listing <<.examples for `p:rating`, examples for `p:rating`>> shows some examples of the `p:rating` tag. 
+The number of selectable stars is specified in the `stars` attribute (the default is 5). 
+The reset value icon is rendered by default unless the `cancel` attribute is explicitly set to `false`. 
+By setting the attribute `readonly` to `true`, the component can be converted to a pure output component.
+
+.examples for `p:rating`
+[source,xhtml]
+----
+<p:rating value="#{bean.value}" cancel="false" stars="5"/>
 <p:rating value="#{bean.value}" stars="5"/>
 <p:rating value="#{bean.value}" readonly="true" stars="5"/>
-====== Slider - `p:slider`
-The slider component with the p: slider tag provides a numeric slider, but is not itself an input component. p: slider must therefore always be connected to an input component such as p: inputText or h: inputHidden . Figure p: slider in the browser shows two possible usage scenarios: once in combination with an input field and once in combination with a pure text output of the current value.
+----
+===== Slider - `p:slider`
+The slider component with the `p:slider` tag provides a numeric slider, but is not itself an input component. 
+`p:slider` must therefore always be connected to an input component such as `p:inputText` or `h:inputHidden`. 
+Figure <<.`p:slider` in the browser, `p:slider` in the browser>> shows two possible usage scenarios: once in combination with an input field and once in combination with a pure text output of the current value.
+
+====
+.`p:slider` in the browser
+image::images/primefaces-slider.jpg[]
+====
  
-Figure: p: slider in the browser
-The ID of the associated input component attribute for by p: slider entered. Each operation of the slider then updates the value of the input field in the browser. The reverse works, of course: the slider is adjusted each time the user changes the value in the input field. 
-Listing p: slider with input field shows an example of the combination of p: slider and p: inputText . In the tag p: slider define the attributes min-Value and max-Value the minimum and maximum value of the slider. The slider can be moved between these two values ​​in steps determined by the step attribute . In our example, this gives the possible values ​​-5, -4, ..., 5.
- <p:inputText id="value" value="#{bean.value}"/>
+The `id` of the connected input component is entered in the `for` attribute of p: slider. 
+Each operation of the slider then updates the value of the input field in the browser. 
+The reverse works, of course: the slider is adjusted each time the user changes the value in the input field.
+
+Listing <<.`p:slider` with input field, `p:slider` with input field>> shows an example of the combination of `p:slider` and `p:inputText`. 
+In the tag `p:slider` define the attributes `minValue` and `maxValue` the minimum and maximum value of the slider. 
+The slider can be moved between these two values ​​in steps determined by the `step` attribute. 
+In our example, this gives the possible values ​​-5, -4, ..., 5.
+
+.`p:slider` with input field
+[source,xhtml]
+----
+<p:inputText id="value" value="#{bean.value}"/>
 <p:slider for="value" minValue="-5" maxValue="5" step="1"/>
-If you want to prevent the user from entering the value directly, you can connect p: slider to h: inputHidden . In this case, the current value of the slider can be output as text. All you have to do is enter the ID of an output component, such as h: outputText, in the display attribute . Listing p: slider with text output shows a corresponding example.
- <h:inputHidden id="value" value="#{bean.value}"/>
+----
+
+If you want to prevent the user from entering the value directly, you can connect `p:slider` to `h:inputHidden`. 
+In this case, the current value of the slider can be output as text. 
+All you have to do is enter the `id` of an output component, such as `h:outputText`, in the `display` attribute. 
+Listing <<.`p:slider` with text output, `p:slider` with text output>> shows a corresponding example.
+
+.`p:slider` with text output
+[source,xhtml]
+----
+<h:inputHidden id="value" value="#{bean.value}"/>
 <h:outputText value="Wert: "/>
 <h:outputText id="out" value="#{bean.value}"/>
 <p:slider for="value" display="out"
     minValue="0" maxValue="100"/>
-====== Spinner - `p:spinner`
-The spinner component with the p: spinner tag is an input component for numbers with two buttons to increase and decrease the numeric value. Figure p: spinner in the browser shows the rendered output of an example.
- 
-Figure: p: spinner in the browser
-See Listing p: spinner for an example of the p: spinner tag . The stepFactor attribute defines the amount to be added or subtracted. The min and max attributes define a lower and upper bound on the numeric value.
- <p:spinner value="#{bean.value}"
+----
+===== Spinner - `p:spinner`
+The spinner component with the `p:spinner` tag is an input component for numbers with two buttons to increase and decrease the numeric value. 
+Figure <<.`p:spinner` in the browser, `p:spinner` in the browser>> shows the rendered output of an example.
+
+====
+.`p:spinner` in the browser
+image::images/primefaces-spinner.jpg[]
+====
+
+See Listing <<.`p:spinner`, `p:spinner`>> for an example of the `p:spinner` tag. 
+The `stepFactor` attribute defines the amount to be added or subtracted. 
+The `min` and `max` attributes define a lower and upper bound on the numeric value.
+
+.`p:spinner`
+[source,xhtml]
+----
+<p:spinner value="#{bean.value}"
     stepFactor="2" min="1" max="20"/>
-10.3 Themes
-The visual appearance of a PrimeFaces application can be changed very easily with so-called themes. A theme defines the look of an application and determines, among other things, the color scheme or fonts used. In the current version, PrimeFaces offers more than 30 different themes with numerous color combinations for the most diverse tastes. An overview of all available themes can be found at http://www.primefaces.org/themes.html . Illustration Selected PrimeFaces themes shows a little taste.
- 
-Figure: Selected PrimeFaces themes
-By default, PrimeFaces uses the theme named Aristo . All other themes are not included in the standard scope and must be integrated into the application as a jar file. The individual themes are available for download on the PrimeFaces page and as a Maven dependency in the PrimeFaces repository. Listing Maven dependency for PrimeFaces theme shows, for example, the dependency for the Afterdark theme .
- <dependency>
+----
+=== Themes
+The visual appearance of a PrimeFaces application can be changed very easily with so-called themes. 
+A theme defines the look of an application and determines, among other things, the color scheme or fonts used. 
+In the current version, PrimeFaces offers more than 30 different themes with numerous color combinations for the most diverse tastes. 
+An overview of all available themes can be found at http://www.primefaces.org/themes.html. 
+Illustration <<.Selected PrimeFaces themes, Selected PrimeFaces themes>> shows a little taste.
+
+====
+.Selected PrimeFaces themes
+image::images/primefaces-themes.jpg[]
+====
+By default, PrimeFaces uses the theme named `Aristo`. 
+All other themes are not included in the standard scope and must be integrated into the application as a jar file. 
+The individual themes are available for download on the PrimeFaces page and as a Maven dependency in the PrimeFaces repository. 
+Listing <<.Maven dependency for PrimeFaces theme, Maven dependency for PrimeFaces theme>> shows, for example, the dependency for the Afterdark theme.
+
+.Maven dependency for PrimeFaces theme
+[source,xml]
+----
+<dependency>
   <groupId>org.primefaces.themes</groupId>
   <artifactId>afterdark</artifactId>
   <version>1.0.9</version>
 </dependency>
-The theme currently used by PrimeFaces is defined via the context parameter primefaces.THEME in the web.xml . The value of the parameter is the lowercase theme name. For example, the context parameter in Listing Context Parameters for PrimeFaces Theme activates the Afterdark theme .
- <context-param>
+----
+The theme currently used by PrimeFaces is defined via the context parameter `primefaces.THEME` in the `web.xml`. 
+The value of the parameter is the lowercase theme name. 
+For example, the context parameter in Listing <<.Context Parameters for PrimeFaces Theme, Context Parameters for PrimeFaces Theme>> activates the Afterdark theme.
+
+.Context Parameters for PrimeFaces Theme
+[source,xml]
+----
+<context-param>
   <param-name>primefaces.THEME</param-name>
   <param-value>afterdark</param-value>
 </context-param>
-PrimeFaces also supports dynamic switching between themes at runtime. All you have to do is specify a value expression in the context parameter primefaces.THEME, which returns the theme name as a string. Listing Dynamic Context Parameters for PrimeFaces Theme shows an example that references the theme property of the bean preferences . See Listing CDI Bean for PrimeFaces Theme for the matching CDI bean.
- <context-param>
+----
+PrimeFaces also supports dynamic switching between themes at runtime. 
+All you have to do is specify a value expression in the context parameter `primefaces.THEME`, which returns the theme name as a string. 
+Listing <<.Dynamic Context Parameters for PrimeFaces Theme, Dynamic Context Parameters for PrimeFaces Theme>> shows an example that references the theme property of the bean preferences. 
+See Listing <<.CDI Bean for PrimeFaces Theme, CDI Bean for PrimeFaces Theme>> for the matching CDI bean.
+[source,xml]
+----
+<context-param>
   <param-name>primefaces.THEME</param-name>
   <param-value>#{preferences.theme}</param-value>
 </context-param>
- @Named @SessionScoped
+----
+
+.CDI Bean for PrimeFaces Theme
+[source,java]
+----
+@Named @SessionScoped
 public class Preferences implements Serializable {
   public String getTheme() {
     return "afterdark";
   }
 }
+----
 If you can not find a suitable theme for your application despite the large selection, you can create your own with relatively little effort.
-===== Creating custom themes
-Creating your own theme is relatively easy with PrimeFaces . You can do this using the online jQuery ThemeRoller ThemeRoller tool available at http://jqueryui.com/themeroller/ . ThemeRoller is an easy-to-use editor with built-in preview for jQuery UI themes that are also suitable for use in. Figure JQuery ThemeRoller shows the ThemeRoller in action.
- 
-Picture: JQuery ThemeRoller
-ThemeRoller provides a whole range of ready- made themes in Tab Gallery as a basis for their own designs. Some of the themes listed there can also be found in PrimeFaces . After you have designed the theme according to your wishes, you must download it by clicking on the button as a zip file. In the download page that appears , you can deselect the Toggle all check box and specify the name of the theme directory in the Zip file in the Theme Folder Name input box . 
-In the zip file generated by ThemeRoller you can find it in the directory css the directory with the name given on the download page. On the one hand there is the relevant CSS file in a readable version with the extension custom.css and in an optimized version with the extension custom.min.css and on the other hand the directory images with pictures and icons. From this data, we now create the theme called mygourmet . 
-PrimeFaces loads the data for a theme as JSF resources (for details on resource management, refer to Chapter Chapter: Resource Management ). By convention, each theme is in its own library whose name is prefixed by primefaces- and the theme name is put together - for our example, this is primefaces-mygourmet . 
-In the first step we create the directory of the library primefaces-mygourmet under / resources in the root directory of the web application or under / META-INF / resources in a jar file. In the next step we copy the CSS file with the extension custom.css and the directory images from the Zip file created by ThemeRoller . It is important to rename the CSS file to theme.css so that PrimeFaces can resolve the resource.
-In the last step, all URL references for images in the CSS file theme.css still need to be converted to value expressions. This will ensure that images are loaded by JSF as resources. For example, the url reference (images / icons.png) must be changed as follows:
+==== Creating custom themes
+Creating your own theme is relatively easy with PrimeFaces. 
+You can do this using the online jQuery ThemeRoller ThemeRoller tool available at `http://jqueryui.com/themeroller/`. 
+ThemeRoller is an easy-to-use editor with built-in preview for jQuery UI themes that are also suitable for use in. 
+Figure <<.JQuery ThemeRoller, JQuery ThemeRoller>> shows the ThemeRoller in action.
+
+====
+.JQuery ThemeRoller
+image::images/primefaces-themeroller.jpg[]
+====
+
+ThemeRoller provides a whole range of ready-made themes in Gallery as a basis for their own designs. 
+Some of the themes listed there can also be found in PrimeFaces. 
+After you have designed the theme according to your wishes, you must download it by clicking on the button as a zip file. .
+In the download page that appears, you can `deselect` the Toggle all check box and specify the name of the theme directory in the Zip file in the Theme Folder Name input box. 
+
+In the zip file generated by ThemeRoller you can find it in the directory css the directory with the name given on the download page. 
+On the one hand there is the relevant CSS file in a readable version with the extension `custom.css` and in an optimized version with the extension `custom.min.css` and on the other hand the directory images with pictures and icons. 
+From this data, we now create the theme called mygourmet.
+
+PrimeFaces loads the data for a theme as JSF resources (for details on resource management, refer to Chapter Chapter: Resource Management). 
+By convention, each theme is in its own library whose name is prefixed by primefaces- and the theme name is put together - for our example, this is primefaces-mygourmet.
+
+In the first step we create the directory of the library `primefaces-mygourmet` under `/resources` in the root directory of the web application or under `/META-INF/resources` in a jar file. 
+In the next step we copy the CSS file with the extension `custom.css` and the directory images from the Zip file created by ThemeRoller. 
+It is important to rename the CSS file to `theme.css` so that PrimeFaces can resolve the resource.
+
+In the last step, all URL references for images in the CSS file `theme.css` still need to be converted to value expressions. 
+This will ensure that images are loaded by JSF as resources. 
+For example, the url reference (`images/icons.png`) must be changed as follows:
+
+----
 url("#{resource['primefaces-mygourmet:images/icons.png']}")
-As you can see, it's easy to use value expressions in a CSS file loaded by JSF as a resource. In the example above, the resource images / icons.png from the library primefaces-mygourmet is referenced. We have already presented this type of referencing in the Section: Resources in Use section . 
-The theme is ready and ready. You only have to set the context parameter primefaces.THEME to mygourmet .
-==== PrimeFaces and Ajax
-PrimeFaces has a very powerful integration of Ajax based on the standardized Ajax integration of JSF 2. The basic principles presented in chapters Ajax and JSF thus also apply to the use of PrimeFaces . As you might expect, PrimeFaces also offers some features beyond the JSF standard in the Ajax range. Details can be found in section [Section: Extensions compared to standard JSF] . 
-Numerous PrimeFaces components already have the Ajax behavior built in. These include components such as p: dataTable and p: accordionPanel also components with specific Ajax functionality like p: ajaxStatus and p: poll . See section [Ajax components section] for some of these Ajax components. A number of components also have special attributes to directly trigger Ajax requests to refresh the page or to respond to Ajax requests. Section [Section: Components with Ajax support] gives a brief overview.
-10.4.1 Extensions compared to standard JSF
-The counterpart to f: ajax in PrimeFaces is p: ajax . The handling of f: ajax and p: ajax are identical except for a few small deviations. The biggest difference between the two tags is the naming of the attributes: execute and render of f: ajax become process and update in p: ajax . 
-The example in Listing f: ajax versus p: ajax demonstrates the common use of f: ajax and p: ajax using two input components with Ajax behavior. For both components, the onChange event raises an Ajax request to re-render the text field with the ID out . In the first case, however, the Ajax behavior was added to the component with f: ajax and in the second case with p: ajax - the result remains the same.
- <p:inputText value="#{bean.first}">
+----
+
+As you can see, it's easy to use value expressions in a CSS file loaded by JSF as a resource. 
+In the example above, the resource `images/icons.png` from the library `primefaces-mygourmet` is referenced. 
+We have already presented this type of referencing in the [Section: Resources in Use] section.
+
+The theme is ready. 
+You only have to set the context parameter `primefaces.THEME` to `mygourmet`.
+=== PrimeFaces and Ajax
+PrimeFaces has a very powerful integration of Ajax based on the standardized Ajax integration of JSF 2. 
+The basic principles presented in chapters Ajax and JSF thus also apply to the use of PrimeFaces. 
+As you might expect, PrimeFaces also offers some features beyond the JSF standard in the Ajax range. 
+Details can be found in section [Section: Extensions compared to standard JSF].
+
+Numerous PrimeFaces components already have the Ajax behavior built in. 
+These include components such as `p:dataTable` and `p:accordionPanel` also components with specific Ajax functionality like `p:ajaxStatus` and `p:poll`. 
+See section [Ajax components section] for some of these Ajax components. 
+A number of components also have special attributes to directly trigger Ajax requests to refresh the page or to respond to Ajax requests. 
+Section [Section: Components with Ajax support] gives a brief overview.
+==== Extensions compared to standard JSF
+The counterpart to `f:ajax` in PrimeFaces is `p:ajax`. 
+The handling of `f:ajax` and `p:ajax` are identical except for a few small deviations. 
+The biggest difference between the two tags is the naming of the attributes: `execute` and `render` of `f:ajax` become `process` and `update` in `p:ajax`.
+
+The example in Listing <<.`f:ajax` versus `p:ajax`, `f:ajax` versus `p:ajax`>> demonstrates the common use of `f:ajax` and `p:ajax` using two input components with Ajax behavior. 
+For both components, the `onChange` event raises an Ajax request to re-render the text field with the `id` `out`. 
+In the first case, however, the Ajax behavior was added to the component with `f:ajax` and in the second case with `p:ajax` - the result remains the same.
+
+.`f:ajax` versus `p:ajax`
+[source,xhtml]
+----
+<p:inputText value="#{bean.first}">
   <f:ajax event="change" execute="@this" render="out"/>
 </p:inputText>
 <p:inputText value="#{bean.last}">
   <p:ajax event="change" process="@this" update="out"/>
 </p:inputText>
 <h:outputText id="out" value="#{bean.first} #{bean.last}"/>
-For Ajax requests, PrimeFaces notifies default any existing Ajax status components with the tag p: ajaxStatus . Is not desired, must p: ajax attribute only globally to the value false be set. Details on p: ajaxStatus can be found in Section [Section: Ajax Components] . 
-By definition, in JSF, the data of the entire form is sent to the server for each Ajax request. This also applies, for example, if of 100 input components only one is executed in the partial life cycle. By default, PrimeFaces shows same behavior, but offers the opportunity to intervene here. If the attribute partialSubmit is set to true in p: ajax , only the data of the components relevant for the Ajax request are sent to the server. This behavior can also be activated globally by setting the context parameter primefaces.SUBMIT to the value partial in the web.xml .
-10.4.2 Ajax components
-In this section, we introduce the Ajax components p: ajaxStatus and p: poll .
-10.4.2.1 AjaxStatus - p: ajaxStatus
-The AjaxStatus component with the p: ajaxStatus tag enables the display of status messages (or more complex components) for various events during an Ajax request in PrimeFaces . The component supports a facet for each event (for a complete list, see the PrimeFaces documentation ). If the corresponding event occurs, the content of the facet with the same name is displayed. 
-In the example in Listing p: ajaxStatus , the text Loading is displayed when an Ajax request (event start ) is started . After completing the Ajax request (event complete ), an empty text is displayed.
- <p:ajaxStatus>
+----
+For Ajax requests, PrimeFaces notifies default any existing Ajax status component with the tag `p:ajaxStatus`. 
+Is not that desired, in `p:ajax`, only the global attribute must be set to the value `false`. 
+Details on `p:ajaxStatus` can be found in Section [Section: Ajax Components].
+
+By definition, in JSF, the data of the entire form is sent to the server for each Ajax request. 
+This also applies, for example, if 100 of 100 input components only one is executed in the partial life cycle. 
+By default, PrimeFaces shows same behavior, but offers the opportunity to intervene here. 
+If the attribute `partialSubmit` is set to `true` in `p:ajax`, only the data of the components relevant for the Ajax request are sent to the server. 
+This behavior can also be activated globally by setting the context parameter `primefaces.SUBMIT` to the value `partial` in the `web.xml`.
+==== Ajax components
+In this section, we introduce the Ajax components `p:ajaxStatus` and `p:poll`.
+===== AjaxStatus - `p:ajaxStatus`
+The AjaxStatus component with the `p:ajaxStatus` tag enables the display of status messages (or more complex components) for various events during an Ajax request in PrimeFaces. 
+The component supports a `facet` for each event (for a complete list, see the PrimeFaces documentation). 
+If the corresponding event occurs, the content of the `facet` with the same name is displayed.
+
+In the example in Listing <<.`p:ajaxStatus`, `p:ajaxStatus`>>, the text loading is displayed when an Ajax request (event start) is started. 
+After completing the Ajax request (event complete), an empty text is displayed.
+
+.`p:ajaxStatus`
+[source,xhtml]
+----
+<p:ajaxStatus>
   <f:facet name="start">
     <h:outputText value="Loading"/>
   </f:facet>
@@ -411,39 +577,90 @@ In the example in Listing p: ajaxStatus , the text Loading is displayed when an 
     <h:outputText value=""/>
   </f:facet>
 </p:ajaxStatus>
-10.4.2.2 Poll - p: poll
-The poll component with the tag p: poll allows periodic sending of Ajax requests. The interval between two requests is specified as the second value in the attribute interval . The remaining attributes for controlling the Ajax request, such as process , update, or global, are identical to p: ajax . 
-Listing p: poll shows an example of p: poll , in which an Ajax request is sent every five seconds.
- <p:poll interval="5" process="@none" update="time"
+----
+===== Poll - `p:poll`
+The poll component with the tag `p:poll` allows periodic sending of Ajax requests. 
+The interval between two requests is specified as the second value in the attribute `interval`. 
+The remaining attributes for controlling the Ajax request, such as `process`, `update`, or `global`, are identical to `p:ajax`. 
+
+Listing <<.`p:poll`, `p:poll`>> shows an example of `p:poll`, in which an Ajax request is sent every five seconds.
+
+.`p:poll`
+[source,xhtml]
+----
+<p:poll interval="5" process="@none" update="time"
     listener="#{bean.touch}" global="false"/>
 <h:outputText id="time" value="#{bean.timeStamp}"/>
-During the processing of this request on the server, the listener method referenced in the attribute listener is called first. Listing listener method for p: poll shows the details of the method. Then, JSF re- renders the component with the ID time and updates the output on the client. After globally set to false , notification of any existing Ajax status component will be lost.
- private Date timestamp = new Date();
+----
+During the processing of this request on the server, the listener method referenced in the attribute `listener` is called first. 
+Listing <<.listener method for `p:poll`, listener method for `p:poll`>> shows the details of the method. 
+Then, JSF re-renders the component with the id `time` and updates the output on the client. 
+After globally set to `false`, notification of any existing Ajax status component will be lost.
+
+.listener method for `p:poll`
+[source,java]
+----
+private Date timestamp = new Date();
 
 public void touch() {
   timestamp = new Date();
 }
-10.4.3 Components with Ajax support
-For some components, such as p: commandButton or p: commandLink , the attributes of p: ajax are already integrated. p: commandButton and p: commandLink even send Ajax requests by default unless the ajax attribute is explicitly set to false . 
-Listing Ajax request with p: commandLink shows an example with p: commandLink . Clicking on this link automatically triggers an Ajax request without special precautions. By the information in the attributes process and update On the server side, the components with the IDs first and last are executed and the component with the ID out is re-rendered.
- <p:inputText id="first" value="#{bean.first}"/>
+----
+==== Components with Ajax support
+For some components, such as `p:commandButton` or `p:commandLink`, the attributes of `p:ajax` are already integrated. 
+`p:commandButton` and `p:commandLink` even send Ajax requests by default unless the ajax attribute is explicitly set to `false`.
+
+Listing <<.Ajax request with `p:commandLink`, Ajax request with `p:commandLink`>> shows an example with `p:commandLink`. 
+Clicking on this link automatically triggers an Ajax request without special precautions. 
+By the information in the attributes `process` and `update`, the components with the IDs `first` and `last` are executed and the component with the ID `out` is re-rendered.
+
+.Ajax request with `p:commandLink`
+[source,xhtml]
+----
+<p:inputText id="first" value="#{bean.first}"/>
 <p:inputText id="last" value="#{bean.last}"/>
 <p:commandLink value="Aktualisieren"
     process="first last" update="out"/>
 <h:outputText id="out" value="#{bean.first} #{bean.last}"/>
-For content that needs to be updated on every Ajax request, the OutputPanel component can be used with the tag p: outputPanel . The component, including all child components, is automatically re-rendered on every Ajax request if the autoUpdate attribute is set to true .
-10.5 MyGourmet 18: PrimeFaces
-The example MyGourmet 18 is based on the previous example MyGourmet 17 and also offers the same functionality. However, in MyGourmet 18 we have switched the complete application to PrimeFaces . The goal of the migration was an application that is very similar in functionality and appearance to MyGourmet 17 , but has the full potential of PrimeFaces at its disposal. 
-The transition from MyGourmet 17 to PrimeFaces takes place in several steps, which are explained in more detail in the following sections. First, section [Section: Integration of PrimeFaces] the integration of PrimeFaces . Subsequently section [Section: Conversion to PrimeFaces Components] gives a general outline of the conversion of the individual pages. Last but not least, you 'll find notes on MyGourmet's custom theme in the [ Custom Theme ] section .
-10.5.1 Integration of PrimeFaces
-The integration of PrimeFaces in MyGourmet is extremely easy and involves entering the corresponding dependency and the necessary repositories in the pom.xml . Details can be found in section [Section: PrimeFaces - an overview] and in the code of the example. 
-As mentioned in section [Section: Selection of some PrimeFaces components] on the day p: calendar , by default PrimeFaces only provides a localization for English. However, adding more languages ​​is not a problem - a short piece of JavaScript from PrimeFaces-Wiki http://code.google.com/p/primefaces/wiki/PrimeFacesLocales : That's enough. 
-Since MyGourmet should also work in German, we have stored the necessary code in the resource primeFacesLoc.js in the library scripts and integrated it in the template template.xhtml with the tag h: outputScript . Thus, the code is available in all pages and the conversion of the individual pages on PrimeFaces components is no longer in the way.
-10.5.2 Migration to PrimeFaces components
-The conversion of the individual pages of the application is relatively unspectacular. In the first step, as described in section [Section: Extended Standard Components] , we have replaced all standard components - if available - with extended alternatives from PrimeFaces . For many components, such as outputLabel or inputText , it is sufficient to change the prefix from h to p - assuming p is correctly linked to the namespace http://primefaces.org/ui . 
-Some components require additional adjustments. p: commandButton and For example, p: commandLink will send Ajax requests by default. If this behavior is not desired, the attribute ajax must be explicitly set to false . In the Ajax case you can do without f: ajax or p: ajax because the tags already have the corresponding attributes (see section [Section: Components with Ajax support] ). 
-The conversion from h: dataTable or mc: dataTable to p: dataTable requires slightly more effort. But p: dataTable also offers some additional features, such as listing MyGourmet 18: p: shows dataTable in customerList.xhtml using a snippet from the customerList.xhtml page . Details on p: dataTable can be found in section [Section: Selection of some PrimeFaces components] .
- <p:dataTable value="#{customerListBean.customerList}" var="cust"
+----
+For content that needs to be updated on every Ajax request, the `OutputPanel` component can be used with the tag `p:outputPanel`. .
+The component, including all child components, is automatically re-rendered on every Ajax request if the `autoUpdate` attribute is set to `true`.
+=== MyGourmet 18: PrimeFaces
+The example MyGourmet 18 is based on the previous example MyGourmet 17 and also offers the same functionality. 
+However, in MyGourmet 18 we have switched the complete application to PrimeFaces. 
+The goal of the migration was an application that is very similar in functionality and appearance to MyGourmet 17, but has the full potential of PrimeFaces at its disposal.
+
+The transition from MyGourmet 17 to PrimeFaces takes place in several steps, which are explained in more detail in the following sections. 
+First, section [Section: Integration of PrimeFaces] the integration of PrimeFaces. 
+Subsequently section [Section: Conversion to PrimeFaces Components] gives a general outline of the conversion of the individual pages. 
+Last but not least, you'll find notes on MyGourmet's custom theme in the [Custom Theme] section.
+==== Integration of PrimeFaces
+The integration of PrimeFaces in MyGourmet is extremely easy and involves entering the corresponding dependency and the necessary repositories in the `pom.xml`. 
+Details can be found in section [Section: PrimeFaces - an overview] and in the code of the example.
+
+As mentioned in section [Section: Selection of some PrimeFaces components] on the tag `p:calendar`, by default PrimeFaces only provides a localization for English. 
+However, adding more languages ​​is not a problem - a short piece of JavaScript from PrimeFaces-Wiki http://code.google.com/p/primefaces/wiki/PrimeFacesLocales: That's enough.
+
+Since MyGourmet should also work in German, we have stored the necessary code in the resource `primeFacesLoc.js` in the library scripts and integrated it in the template `template.xhtml` with the tag `h:outputScript`. 
+Thus, the code is available in all pages and the conversion of the individual pages on PrimeFaces components is no longer in the way.
+==== Migration to PrimeFaces components
+The conversion of the individual pages of the application is relatively unspectacular. 
+In the first step, as described in section [Section: Extended Standard Components], we have replaced all standard components - if available - with extended alternatives from PrimeFaces. 
+For many components, such as `outputLabel` or `inputText`, it is sufficient to change the prefix from `h` to `p` - assuming `p` is correctly linked to the namespace http://primefaces.org/ui.
+
+Some components require additional adjustments. 
+for example, `p:commandButton` and  `p:commandLink` will send Ajax requests by default. 
+If this behavior is not desired, the attribute `ajax` must be explicitly set to `false`. 
+In the Ajax case you can do without `f:ajax` or `p:ajax` because the tags already have the corresponding attributes (see section [Section: Components with Ajax support]).
+
+The conversion from `h:dataTable` or `mc:dataTable` to `p:dataTable` requires slightly more effort. 
+But `p:dataTable` also offers some additional features, as shown in Listing <<.MyGourmet 18: `p:dataTable` `customerList.xhtml`, MyGourmet 18: `p:dataTable` `customerList.xhtml`>> using a snippet from the `customerList.xhtml` page. 
+Details on `p:dataTable` can be found in section [Section: Selection of some PrimeFaces components] .
+
+.MyGourmet 18: `p:dataTable` `customerList.xhtml`
+[source,xhtml]
+----
+<p:dataTable value="#{customerListBean.customerList}" var="cust"
     paginator="true" rows="10" paginatorPosition="bottom"
     emptyMessage="#{msgs.customers_empty}">
   <p:column headerText="#{msgs.name}" sortBy="#{cust.fullName}">
@@ -458,9 +675,21 @@ The conversion from h: dataTable or mc: dataTable to p: dataTable requires sligh
         action="#{customerListBean.deleteCustomer(cust)}"/>
   </p:column>
 </p:dataTable>
-Otherwise, we have replaced standard or composite components with PrimeFaces components in some places . In showProvider.xhtml see, for example, p: rating , in editProvider.xhtml p: spinner and editCustomer.xhtml p: calendar . The template customerTemplate.xhtml uses the more flexible alternative p: ajaxStatus instead of the composite component mc: ajaxStatus . There are also some changes 
-in the left sidebar leftSideBar.xhtml . Instead of the first composite component mc: panelBox with the h: link tags for navigation comes p: menu used. The individual entries of the menu are added with p: menuitem , whereby the destination of the navigation is defined in the attribute outcome . This ensures that the navigation continues to run via GET requests. The second mc: panelBox tag must yield p: panel . Listing MyGourmet 18: leftSideBar.xhtml shows the relevant contents of the sidebar (without localized labels).
- <p:menu>
+----
+Otherwise, we have replaced standard or composite components with PrimeFaces components in some places. 
+for example, in `showProvider.xhtml` `p:rating`, in `editProvider.xhtml` `p:spinner` and in `editCustomer.xhtml` `p:calendar`. 
+The template `customerTemplate.xhtml` uses the more flexible alternative `p:ajaxStatus` instead of the composite component `mc:ajaxStatus`. 
+There are also some changes in the left sidebar `leftSideBar.xhtml`. 
+Instead of the first composite component `mc:panelBox` with the `h:link` tags for navigation becomes `p:menu` used. 
+The individual entries of the menu are added with `p:menuitem`, whereby the destination of the navigation is defined in the attribute `outcome`. 
+This ensures that the navigation continues to run via `GET` requests. 
+The second `mc:panelBox` tag must yield `p:panel`. 
+Listing <<.MyGourmet 18: `leftSideBar.xhtml`, MyGourmet 18: `leftSideBar.xhtml`>> shows the relevant contents of the sidebar (without localized labels).
+
+.MyGourmet 18: `leftSideBar.xhtml`
+[source,xhtml]
+----
+<p:menu>
   <p:submenu label="Menü">
     <p:menuitem outcome="providerList" value="Anbieterliste"/>
     <p:menuitem outcome="customerList" value="Kundenliste"/>
@@ -469,11 +698,22 @@ in the left sidebar leftSideBar.xhtml . Instead of the first composite component
 <p:panel header="Neuigkeiten">
   <p>MyGourmet - jetzt mit Facelets und Templating</p>
 </p:panel>
-In order for p: menu to fit harmoniously into the sidebar, the styling has to be adjusted a bit. PrimeFaces defines a whole range of CSS selectors for each component (see the documentation for an overview of each component). The rendered output of the menu component can be adapted among other things via the CSS class .ui-menu . Listing MyGourmet 18: Styling for p: menu , for example, shows a CSS rule to customize the menu within an element with id left_sidebar (sidebar id). All necessary adjustments can be found in mygourmet.css .
- #left_sidebar .ui-menu {
+----
+In order for `p:menu` to fit harmoniously into the sidebar, the styling has to be adjusted a bit. 
+PrimeFaces defines a whole range of CSS selectors for each component (see the documentation for an overview of each component). 
+The rendered output of the menu component can be adapted among other things via the CSS class `.ui-menu`. 
+Listing <<.MyGourmet 18: Styling for `p:menu`, MyGourmet 18: Styling for `p:menu`>>, for example, shows a CSS rule to customize the menu within an element with `id` `left_sidebar` (sidebar id). 
+All necessary adjustments can be found in `mygourmet.css`.
+
+.MyGourmet 18: Styling for `p:menu`
+[source,css]
+----
+#left_sidebar .ui-menu {
   width: 134px;
   padding: 2px;
   margin-bottom: 5px;
 }
-10.5.3 Custom Theme
-As a final step, ThemeRoller has created a custom Theme for MyGourmet and integrated it into the application. Everything you need to know about this topic, including a brief guide, can be found in section [Section: Themes] .
+----
+==== Custom Theme
+As a final step, ThemeRoller has created a custom theme for MyGourmet and integrated it into the application. 
+Everything you need to know about this topic, including a brief guide, can be found in section [Section: Themes].

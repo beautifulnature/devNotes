@@ -755,86 +755,152 @@ For earlier JSF versions, you can prevent this problem by explicitly using a con
 
 === Classic components
 
-After introducing composite components, this section will show you how to use JSF to create a classic component for use with facelets. At first glance, this process may seem a bit complicated, as it involves a series of steps, especially because of the many web technologies that are used. 
+After introducing composite components, this section will show you how to use JSF to create a classic component for use with facelets. 
+At first glance, this process may seem a bit complicated, as it involves a series of steps, especially because of the many web technologies that are used. 
+
 Creating a component consists of the following steps:
-Define component family, component type and renderer type
-Write component class
-Write renderer class
-Register component class and renderer class
-Write tag definition and record in library
-Write tag handler class
-Include library in the page
-Each and every one of these points will now be reviewed with a small example. For demonstration purposes, we rebuild the composite component inputSpinner as a classic JSF component.
+* Define component family, component type and renderer type
+* Write component class
+* Write renderer class
+* Register component class and renderer class
+* Write tag definition and record in library
+* Write tag handler class
+* Include library in the page
+
+Each and every one of these points will now be reviewed with a small example. 
+For demonstration purposes, we rebuild the composite component `inputSpinner` as a classic JSF component.
 
 ==== Preliminary work: Defining the component family, component type and renderer type
 
-Before we begin writing the component, we should be clear about whether and how the component is derivable from another component or whether we need to start completely "off the green". Usually it makes sense to derive from an existing base component.
+Before we begin writing the component, we should be clear about whether and how the component is derivable from another component or whether we need to start completely "off the green". 
+Usually it makes sense to derive from an existing base component.
 
 ===== The choice of the base class
 
 Candidates for the base class are UIComponent- derived classes, that is, the following component classes by default:
-UIOutput : 
-component that represents a value (and does not allow input).
-UIInput : 
-component that allows you to enter a value.
-UISelectOne : 
-component that allows you to select exactly one value from a set of values.
-UISelectMany : 
+* `UIOutput` : +
+Component that represents a value (and does not allow input).
+* `UIInput` : +
+Component that allows you to enter a value.
+* `UISelectOne` : +
+Component that allows you to select exactly one value from a set of values.
+* `UISelectMany` : +
 Component that allows you to select multiple values ​​from a set of values.
-UICommand : 
-component that performs an action.
-UIPanel : 
+* `UICommand` : +
+Component that performs an action.
+* `UIPanel` : +
 Component that serves as a container for one or more other components.
-UIMessage : 
+* `UIMessage` : +
 Component used to display a message.
-Often, one of the three components derives from UICommand , UIInput, or UIPanel because these three classes already provide a great deal of logic for working with frequently recurring tasks. 
-When does it make sense to derive UIInput ? This is appropriate if the component is to present exactly one value from the model. Things like conversion, validation, writing and reading the value from and into the model are already done by this class. If the behavior of the component is even more special, you can possibly use the class HtmlInputTextderive - this class and the associated renderer also do the decoding of the value from the HTTP request, setting the value as a submitted value and writing the component view in the HTTP response. 
-The UIInput class is also useful if you want to store a user-initiated change to a component attribute. Thus, for example, a collapsible panel component can be realized, which stores its collapsed state in the attribute value . This can also bind the state to a bean property. 
-The UICommandClass will be used as a basis for your own component when it triggers "actions". Handling action methods, action listeners, and triggering events are already handled by this base class. 
-The choice of the base class for the input spinner is clear. After it is a "tuned" input field, UIInput urges itself .
+
+Often, derives from one of the three components `UICommand`, `UIInput`, or `UIPanel` because these three classes already provide a great deal of logic for working with frequently recurring tasks. 
+
+When does it make sense to derive UIInput? This is appropriate if the component is to present exactly one value from the model. 
+Things like conversion, validation, writing and reading the value from and into the model are already done by this class. 
+If the behavior of the component is even more special, you can possibly use the class `HtmlInputTextderive` - this class and the associated renderer also do the decoding of the value from the HTTP request, setting the value as a submitted value and writing the component view in the HTTP response.
+
+The `UIInput` class is also useful if you want to store a user-initiated change to a component attribute. 
+Thus, for example, a `collapsible` panel component can be realized, which stores its collapsed state in the attribute value. 
+This can also bind the state to a bean property.
+
+The `UICommandClass` will be used as a basis for your own component when it triggers "actions". 
+Handling action methods, action listeners, and triggering events are already handled by this base class.
+
+The choice of the base class for the input spinner is clear. 
+After it is a "tuned" input field, UIInput urges itself .
 
 ===== Component Type, Component Family, and Renderer Type
 
-Each component is uniquely identified in the system by its component type. There may not be another component with the same component type. Usually, the component type is defined as a static constant. Our input spinner component, whose component class InputSpinner we will create in the next section, has the following component type:
+Each component is uniquely identified in the system by its component type. 
+There may not be another component with the same component type. 
+Usually, the component type is defined as a static constant. 
+Our input spinner component, whose component class `InputSpinner` we will create in the next section, has the following component type:
+
+----
 public static final String COMPONENT_TYPE =
     "at.irian.InputSpinner";
-When registering the component in the system, its component type is used as the identifier. This is then used, for example, in the definition of the tag of the component in the tag library. 
-In addition, we can pass the component type if we want to create a component, instead of calling the constructor directly instead of calling the factory method createComponent () of the ap-plication class. In fact, one should always go this way so that the implementation of a component can be exchanged centrally. Here's the example:
+----
+
+When registering the component in the system, its component type is used as the identifier. 
+This is then used, for example, in the definition of the tag of the component in the tag library.
+
+In addition, we can pass the component type, if we want to create a component, instead of calling the constructor directly instead of calling the factory method `createComponent()` of the application class. 
+In fact, one should always go this way so that the implementation of a component can be exchanged centrally. 
+Here's the example:
+----
 FacesContext.getCurrentInstance().getApplication()
     .createComponent(InputSpinner.COMPONENT_TYPE);
-The next step is the definition of the component family - here either an existing family can be used or a new family can be defined. The family of a component is determined by calling UIComponent.getFamily () . If you want to create your own family for your component, you must override this method. One component family may contain multiple components. After our example component is an input field, we leave it with the javax.faces.Input family inherited from UIInput .
-The component family is used in conjunction with the renderer type to select a renderer. If the component type were used here, a renderer could always render only one type of component - the definition of the component family means that the same renderer can be used for a whole group of components. When the tag is defined, the renderer type is specified together with the component type and set when the component is created - this overwrites the "default" renderer type often set in the component constructor. 
+----
+
+The next step is the definition of the component family - here either an existing family can be used or a new family can be defined. 
+The family of a component is determined by calling `UIComponent.getFamily()`. 
+If you want to create your own family for your component, you must override this method. 
+One component family may contain multiple components. 
+Our example component is an input field, we leave it with the `javax.faces.Input` family inherited from `UIInput`.
+
+The component family is used in conjunction with the renderer type to select a renderer. 
+If the component type were used here, a renderer could always render only one type of component - the definition of the component family means that the same renderer can be used for a whole group of components. 
+When the tag is defined, the renderer type is specified together with the component type and set when the component is created - this overwrites the "default" renderer type often set in the component constructor. 
+
 Below is the component type, component family, and renderer type for selected standard components:
-javax.faces.component.html.HtmlCommandLink : 
-The component behind the tag h: commandLink . 
-Component Type : javax.faces.HtmlCommandLink
-Component Family : javax.faces.Command
-Renderer Type : javax.faces.Link
-javax.faces.component.html.HtmlCommandButton : 
-The component after the h: commandButton tag . 
-Component Type : javax.faces.HtmlCommandButton
-Component Family : javax.faces.Command
-Renderer Type : javax.faces.Button
-javax.faces.component.html.HtmlInputText : 
-The component behind the tag h: inputText . 
-Component Type : javax.faces.HtmlInputText
-Component Family : javax.faces.Input
-Renderer Type : javax.faces.Text
-Our input spinner component gets its own renderer type at.irian.InputSpinner .
+
+* `javax.faces.component.html.HtmlCommandLink`: +
+The component behind the tag `h:commandLink`. +
+Component Type: `javax.faces.HtmlCommandLink` +
+Component Family: `javax.faces.Command` +
+Renderer Type: `javax.faces.Link`
+
+* `javax.faces.component.html.HtmlCommandButton`: +
+The component behind the `h:commandButton` tag. +
+Component Type: `javax.faces.HtmlCommandButton` +
+Component Family: `javax.faces.Command` +
+Renderer Type: `javax.faces.Button`
+
+* `javax.faces.component.html.HtmlInputText`: +
+The component behind the tag `h:inputText`. +
+Component Type: `javax.faces.HtmlInputText` +
+Component Family: `javax.faces.Input` +
+Renderer Type: `javax.faces.Text`
+
+Our input spinner component gets its own renderer type `at.irian.InputSpinner`.
 
 ==== Write component class
 
-The component class is the "heart" of the component architecture of JSF - the component class instance is stored in the JSF component tree and contains all the data of a component. After the component class is actually the "driving force" in the execution of a JSF request At each stage of the lifecycle, the component tree is traversed by recursive invocations of the appropriate treatment methods: one can control all events in JSF from here.
-Two of the most important tasks are the reading out of the request parameters relevant for the component (decoding) and the rendering of the component (encoding). The component can - if so provided by the developer - take over these tasks or delegate them to a renderer. The biggest advantage of having your own renderer is the clear separation between the data contained in the component and the resulting output. The two approaches are not mutually exclusive. For example, it would be conceivable to have the rendering done by the component in a first version and later to create your own renderer. 
+The component class is the "heart" of the component architecture of JSF - the component class instance is stored in the JSF component tree and contains all the data of a component. 
+The component class is actually the "driving force" in the execution of a JSF request. 
+At each stage of the lifecycle, the component tree is traversed by recursive invocations of the appropriate treatment methods: one can control all events in JSF from here.
+
+Two of the most important tasks are the reading out of the request parameters relevant for the component (decoding) and the rendering of the component (encoding). 
+The component can - if so provided by the developer - take over these tasks or delegate them to a renderer. 
+The biggest advantage of having your own renderer is the clear separation between the data contained in the component and the resulting output. 
+The two approaches are not mutually exclusive. 
+For example, it would be conceivable to have the rendering done by the component in a first version and later to create your own renderer.
+
 We will take care of the component class in this section and only in section [Section: Write Renderer Class] take a closer look at the renderer class.
 
 ===== Component Attributes
 
-A component class usually contains a property for each attribute of its tag. However, there may also be attributes of the tag that do not explicitly exist in the component - these are then stored in a special map in the component. 
-The access methods to the properties of the component must ensure that the properties can be specified both directly and via value expressions. It is true that the direct setting of attributes "pulls" more than setting a value expression. Of course, when reading the component attribute, it must be taken into account whether it was set directly. If so, the component value is returned directly, otherwise the value expression is evaluated. Sounds complicated - but with JSF 2.
-As of JSF 2.0, component properties are no longer managed in private fields but in a map as the basis for the new partial state saving. For this purpose, each component has an instance of the StateHelper class that manages the state internally. What's up with the condition, we clarify a little further down, now we are interested in reading and writing the properties. 
-Listing The InputSpinner class displays the InputSpinner class of our example component . As you can see, the code is very manageable and basically just covers the definition of the inc property , The rest, such as state-saving or managing the other attributes, are handled by the base classes of JSF. After we have derived from UIInput , we can also use its already existing features.
- public class InputSpinner extends UIInput {
+A component class usually contains a property for each attribute of its tag. 
+However, there may also attributes of the tag that do not explicitly exist in the component - these are then stored in a special map in the component.
+
+The access methods to the properties of the component must ensure that the properties can be specified both directly and via value expressions.
+It is true that the direct setting of attributes "pulls" more than setting a value expression. 
+Of course, when reading the component attribute, it must be taken into account whether it was set directly. 
+If so, the component value is returned directly, otherwise the value expression is evaluated. 
+Sounds complicated - but with JSF 2.
+
+As of JSF 2.0, component properties are no longer managed in private fields but in a map as the basis for the new partial state saving. 
+For this purpose, each component has an instance of the `StateHelper` class that manages the state internally. 
+What's up with the condition, we clarify a little further down, now we are interested in reading and writing the properties.
+
+Listing <<.The InputSpinner class, The InputSpinner class>> shows the `InputSpinner` class of our example component. 
+As you can see, the code is very manageable and basically just covers the definition of the `inc` property, the rest, such as state-saving or managing the other attributes, are handled by the base classes of JSF. 
+After we have derived from `UIInput`, we can also use its already existing features.
+
+.The InputSpinner class
+[source,java]
+----
+public class InputSpinner extends UIInput {
 
   public static final String COMPONENT_TYPE =
       "at.irian.InputSpinner";
@@ -852,22 +918,54 @@ Listing The InputSpinner class displays the InputSpinner class of our example co
     getStateHelper().put(PropertyKeys.inc, inc);
   }
 }
-With the method put () the value of the property is set directly with the key PropertyKeys.inc . The eval () method, if present, returns the directly set value. If one does not exist, then a possibly existing value expression is evaluated. In our case, if one does not exist, the default value 1 is returned.
+----
+
+With the method `put()` the value of the property is set directly with the key `PropertyKeys.inc`. 
+The `eval()` method, if present, returns the directly set value. 
+If one does not exist, then a possibly existing value expression is evaluated. 
+In our case, if one does not exist, the default value 1 is returned.
 
 ===== State-saving
 
-In addition to the access methods to the properties of the component, the component class still has a very important task: it must be able to save its state until the next request. State-saving is relatively simple in earlier versions of JSF and follows the approach of always saving and restoring the complete state of the entire component tree. Since this approach is not optimal in terms of performance and memory consumption, JSF 2.0 has implemented a new approach with partial state saving.
-As the name already suggests, only really relevant parts of the state are stored. After setting up the component tree, JSF marks an initial state, which is defined anyway by the page declaration. The partial state then consists of all changes to the component tree after reaching this state. The prerequisite for the correct initialization is the structure of the view from the page declaration before each state is restored. 
-For state- saving, the saveState () and restoreState () methods are from the StateHolder interface responsible. Before JSF 2.0, these two methods had to be painstakingly crafted for each component class - an error-prone process that we can not cry for. As of JSF 2.0, these methods are already implemented in UIComponentBase and need only be overridden for special requirements. 
-How does this work? The basis for recording the state is formed by the StateHelper presented in the last section, which manages the state of the component internally. This has already laid the foundation for partial state saving. The "centralized" state management makes it possible to record changes after reaching the initial state.
-Any component that wants to use partial state saving must implement the StateHolder- derived interface , which is extended by Initial State Markers, to the PartialStateHolder interface. Since these methods are already implemented in the class UIComponentBase and extended in some other base classes, you do not have to worry about it either.
+In addition to the access methods to the properties of the component, the component class still has a very important task: it must be able to save its state until the next request. 
+State-saving is relatively simple in earlier versions of JSF and follows the approach of always saving and restoring the complete state of the entire component tree. 
+Since this approach is not optimal in terms of performance and memory consumption, JSF 2.0 has implemented a new approach with partial state saving.
+
+As the name already suggests, only really relevant parts of the state are stored. 
+After setting up the component tree, JSF marks an initial state, which is defined anyway by the page declaration. 
+The partial state then consists of all changes to the component tree after reaching this state. 
+The prerequisite for the correct initialization is the structure of the view from the page declaration before each state is restored. 
+
+For state-saving, the `saveState()` and `restoreState()` methods are from the `StateHolder` interface responsible. 
+Before JSF 2.0, these two methods had to be painstakingly crafted for each component class - an error-prone process that we can not cry for. 
+As of JSF 2.0, these methods are already implemented in `UIComponentBase` and need only be overridden for special requirements.
+
+How does this work? The basis for recording the state is formed by the `StateHelper` presented in the last section, which manages the state of the component internally. 
+This has already laid the foundation for partial state saving. 
+The "centralized" state management makes it possible to record changes after reaching the initial state.
+
+Any component that wants to use partial state saving must implement the `StateHolder`- derived interface, which is extended by Initial State Markers, to the PartialStateHolder interface. 
+Since these methods are already implemented in the class `UIComponentBase` and extended in some other base classes, you do not have to worry about it either.
 
 ===== Composition of classical components
 
-An interesting aspect of component development is the composition of components into a larger whole: to this end, find the appropriate place to add child components to the parent component. In essence, there are two possibilities here: The simpler option is to add transient child components when rendering the page. Transient means that the attribute transient of the component has been set to true , and the component therefore disappears in the state-saving process. Although this type of composition works, it is not optimal in all cases because some kind of component functionality is outsourced to the renderer.
-With JSF version 2.0 it is possible to child components using the System Events PostAddToViewEvent add to a composite component. This event is fired after a component has been inserted into the component tree. We'll create a listener for this event by adding the extra components. 
-Listing composition of classic components with system events shows a section of a component class that is registered as a listener for the system event PostAddToViewEvent via the @ListenerFor annotation . If the event occurs when the component is inserted into the view, the interface ComponentSystemEventListener becomes defined method called processEvent . Since this interface is already implemented by the UIComponent class , we only need to override and extend the corresponding method.
- @FacesComponent("at.irian.MyPanel")
+An interesting aspect of component development is the composition of components into a larger whole: to this end, find the appropriate place to add child components to the parent component. 
+In essence, there are two possibilities here: The simpler option is to add transient child components when rendering the page. 
+Transient means that the attribute `transient` of the component has been set to `true`, and the component therefore disappears in the state-saving process. 
+Although this type of composition works, it is not optimal in all cases because some kind of component functionality is outsourced to the renderer.
+
+With JSF 2.0 or later, it is possible to add child components to a composite component using the `PostAddToViewEvent` system event. 
+This event is fired after a component has been inserted into the component tree. 
+We'll create a listener for this event by adding the extra components.
+
+Listing <<.composition of classic components with system events, composition of classic components with system events>> shows a section of a component class that is registered as a listener for the system event `PostAddToViewEvent` via the `@ListenerFor` annotation. 
+If the event occurs when the component is inserted into the view, calls the `processEvent` method defined in the `ComponentSystemEventListener` interface. 
+Since this interface is already implemented by the `UIComponent` class, we only need to override and extend the corresponding method.
+
+.composition of classic components with system events
+[source,java]
+----
+@FacesComponent("at.irian.MyPanel")
 @ListenerFor(systemEventClass = PostAddToViewEvent.class)
 public class MyPanel extends HtmlPanelGroup {
 
@@ -880,33 +978,57 @@ public class MyPanel extends HtmlPanelGroup {
   }
   ...
 }
-
+----
 ==== Write renderer class
 
-The term renderer in JSF stands for a class that maps to a component (or component family) and creates the view for that component, but also retrieves the value of a component from the HTTP request and transmits it to the component instance. Each renderer class must be derived from the abstract class javax.faces.render.Renderer and override the methods that should not have the default functionality.
-The renderer is ultimately the class whose writing is the hassle because it has to program all of the visual logic - with the variety of technologies used in web application development, such as HTML, JavaScript, CSS, and XML, this view logic is very complex for larger components confusing. This is also the reason for specifying the JSF standard - the "normal" web developer no longer has to worry about developing this view logic. 
-The following list shows the methods of the class Renderer :
-void decode (FacesContext ctx, UIComponent comp)
+The term renderer in JSF stands for a class that maps to a component (or component family) and creates the view for that component, but also retrieves the value of a component from the HTTP request and transmits it to the component instance. 
+Each renderer class must be derived from the abstract class `javax.faces.render.Renderer` and override the methods that should not have the default functionality.
+
+The renderer is ultimately the class whose writing means the most work, because it has to program the entire view logic - with the variety of technologies used in web application development, such as HTML, JavaScript, CSS, and XML, this view logic is very complex for larger components. 
+This is also the reason for specifying the JSF standard - the "normal" web developer no longer has to worry about developing this view logic.
+
+The following list shows the methods of the class `Renderer`:
+
+* `void decode (FacesContext ctx, UIComponent comp)` +
 Reads the value of the component from the request parameters.
-void encodeBegin (FacesContext ctx, UIComponent comp)
+
+* `void encodeBegin (FacesContext ctx, UIComponent comp)` +
 Called first when rendering the component.
-void encodeChildren (FacesContext ctx, UIComponent comp)
-If the rendering of the component after encodeBegin () called when getRendersChildren () the value true returns.
-void encodeEnd (FacesContext ctx, UIComponent comp)
+
+* `void encodeChildren (FacesContext ctx, UIComponent comp)` +
+Called after `encodeBegin()` when rendering the component, if `getRendersChildren()` returns `true`.
+
+* `void encodeEnd (FacesContext ctx, UIComponent comp)` +
 Called last when rendering the component.
-boolean getRendersChildren ()
-Returns true if the renderer renders all child components themselves. The default value is false .
-Object getConvertedValue (FacesContext ctx, UIComponent comp, Object submittedValue)
+
+* `boolean getRendersChildren ()` +
+Returns `true` if the renderer renders all child components themselves. The default value is `false`.
+
+* `Object getConvertedValue (FacesContext ctx, UIComponent comp, Object submittedValue)` +
 Converts the submitted value of a string to the value required for the component.
-String convertClientId (FacesContext ctx, String clientId)
-Converts the client ID into a form valid for the client.
-Some of these methods need to be overridden by (almost) any custom component developer. Depending on the type of component, this is either encodeBegin () or encodeEnd () . These methods are called when the associated tag is opened or closed in the page declaration. This is where the HTML code associated with the component should be written - if it is at all a renderer for HTML. In principle, of course, renderers for other output formats such as WML, XML, XUL or SVG are conceivable. 
-The renderer for our input spinner component is implemented in the InputSpinnerRenderer class .
+
+* `String convertClientId (FacesContext ctx, String clientId)` +
+Converts the `clientID` into a form valid for the client.
+
+Some of these methods need to be overridden by (almost) any custom component developer. 
+Depending on the type of component, this is either `encodeBegin()` or `encodeEnd()`. 
+These methods are called when the associated tag is opened or closed in the page declaration. 
+This is where the HTML code associated with the component should be written - if it is at all a renderer for HTML. 
+In principle, of course, renderers for other output formats such as WML, XML, XUL or SVG are conceivable.
+
+The renderer for our input spinner component is implemented in the `InputSpinnerRenderer` class.
 
 ===== Rendering (Encoding)
 
-Listing The encodeBegin () method of the sample renderer shows the encodeBegin () method of the InputSpinnerRenderer renderer class . The parameters are passed to the Faces context method and the component for which rendering is to take place. The view is written in the two private methods encodeInput () to render the input field and encodeButtons () to render the two spin buttons. At the moment we are only interested in encodeInput () , because there is the input element about calls of the class ResponseWriter which is obtained from the current Faces context by calling the getResponseWriter () method .
- public void encodeBegin(FacesContext ctx,
+Listing <<.The `encodeBegin()` method of the sample renderer, The `encodeBegin()` method of the sample renderer>> shows the `encodeBegin()` method of the `InputSpinnerRenderer` renderer class. 
+The parameters are passed to method the Faces-Context and the component for which rendering is to take place. 
+The view is written in the two private methods `encodeInput()` to render the input field and `encodeButtons()` to render the two spin buttons. 
+At the moment we are only interested in `encodeInput()`, because there the input element is written via calls of the class `ResponseWriter` - which in turn is obtained from the current `Faces-Context` calling the `getResponseWriter()` method.
+
+.The `encodeBegin()` method of the sample renderer
+[source,java]
+----
+public void encodeBegin(FacesContext ctx,
     UIComponent component) throws IOException {
   InputSpinner spinner = (InputSpinner)component;
   String clientId = spinner.getClientId();
@@ -927,20 +1049,57 @@ private void encodeInput(FacesContext ctx,
   writer.writeAttribute("class", "inputSpinner-input", null);
   writer.endElement("input");
 }
-Many existing components typically override the encodeEnd () method, not the encodeBegin () method . This is due to historical reasons in connection with JSF 1.1 - it is only in the encodeEnd () method that all child elements of the currently written JSF component have already been created and mounted in the component tree - hence the encodeEnd () method is usually used used for components with child elements. In JSF versions 1.2 and above, this is no longer necessary because the entire tree is already set up in the render response phase.
-By default, the component tree in JSF is recursively traversed, and each component is rendered by a single call to the encodeAll () method . The method encodeAll () first calls the method encodeBegin () of the current component and then whether the method checks getRendersChildren () the value true returns. If so, not the individual child components are gone through, but the method encodeChildren () called - so that the component itself can write their children in the view! Otherwise, the method encodeAll () called on the individual children and thus recursively the tree written one step deeper into the view. For components that manage their child elements themselves and want to write to the HTML view, so it's important that you renderer method getRendersChildren () overrides and true returns. 
-ResponseWriter : Back to writing the edition of our component. This process works for HTML (and all SGML-derived dialects similar) by opening, closing, and writing attributes from the component's tags. Opening a tag is a simple call to the ResponseWriter :
+----
+Many existing components typically override the `encodeEnd()` method, not the `encodeBegin()` method. 
+This is due to historical reasons in connection with JSF 1.1 - it is only in the `encodeEnd()` method that all child elements of the currently written JSF component have already been created and mounted in the component tree - hence the `encodeEnd()` method is usually used for components with child elements. 
+In JSF versions 1.2 and above, this is no longer necessary because the entire tree is already set up in the `Render-Response-Phase`.
+
+By default, the component tree in JSF is recursively traversed, and each component is rendered by a single call to the `encodeAll()` method. 
+The method `encodeAll()` first calls the method `encodeBegin()` of the current component and then checks whether the method `getRendersChildren()` returns the value `true`. 
+If so, not the individual child components are gone through, but the method `encodeChildren()` called - so that the component itself can write their children in the view. 
+Otherwise, the method `encodeAll()` called on the individual children and thus recursively the tree written one step deeper into the view. 
+For components that manage their child elements themselves and want to write to the HTML view, so it's important that you renderer method overrides `getRendersChildren()` and returns `true`.
+
+*ResponseWriter:* Back to writing the edition of our component. 
+This process works for HTML (and all SGML-derived dialects are similar) by opening, closing, and writing attributes from the component's tags. 
+Opening a tag is a simple call to the `ResponseWriter`:
+----
 writer.startElement("input", spinner);
-startElement () : First, pass thestring to be used as the name of the tagto the method startElement () - in our case input . The second attribute is the component itself. Very important - here should not be zero but always the associated component. If the HTML tag of a component is not one-to-one-for example, if a renderer for a component generates multiple HTML tags-the component should be passed to each of these tags, as well as any child tags. The information about the associated component is evaluated by graphical development environments in order, for example, to mark all tags of a component with a special class during rendering at design time. 
-writeAttribute () : In the next step, the attributes of the tag are written to the HTML view using the writeAttribute () method . Again, the name of the attribute is passed first:
+----
+*startElement():* First, pass the string to be used as the name of the tag to the method `startElement()` - in our case `input`. 
+The second attribute is the component itself. 
+Very important - here should not be null but always the associated component. 
+If the HTML tag of a component is not one-to-one-for example, if a renderer for a component generates multiple HTML tags-the component should be passed to each of these tags, as well as any child tags. 
+The information about the associated component is evaluated by graphical development environments in order, for example, to mark all tags of a component with a special class during rendering at design time. 
+
+*writeAttribute():* In the next step, the attributes of the tag are written to the HTML view using the `writeAttribute()` method. 
+Again, the name of the attribute is passed first:
+
+----
 writer.writeAttribute("id", clientId, "id");
-The attribute name is followed by the value to be written, followed by the corresponding attribute of the component. This connection is also used by development environments and should be set if possible if a corresponding component attribute exists. An example of an attribute where this is not possible is the onclick attribute. This attribute has no equivalent in the component, it is only entered in the map of the attributes.
+----
+
+The attribute name is followed by the value to be written, followed by the corresponding attribute of the component. 
+This connection is also used by development environments and should be set if possible if a corresponding component attribute exists. 
+An example of an attribute where this is not possible is the `onclick` attribute. 
+This attribute has no equivalent in the component, it is only entered in the map of the attributes.
+----
 writer.writeAttribute(HTML.ONCLICK_ATTR,
     onClick.toString(), null);
-value attribute: Important (and slightly different than the treatment of the other attributes) is the handling of the value attribute. When a JSF request arrives at the server, the value of a component is decoded and this value is first written to the submittedValue field . If an error occurs during the conversion or validation of a component of the component tree, further processing of the request is aborted and jumped directly to the render response phase. Instead of outputting now the value of the component, which is obtained by calling getValue () , you first have to check during rendering, if only the Submitted-Value has been set. If this condition is true, you may only write this Submitted Value.
-Conversion: If the component value is not decisive, but a value is actually set for the component, then before the value is rendered, a possibly specified converter must be called to convert the value into a character string. 
-Listing Reading the value of a component while rendering shows the getValue () method of the InputSpin-nerRenderer class , which returns the value of the component for the display, using the algorithm just described.
- private Object getValue(FacesContext ctx,
+----
+
+*value attribute:* Important (and slightly different than the treatment of the other attributes) is the handling of the value attribute. 
+When a JSF request arrives at the server, the value of a component is decoded and this value is first written to the submittedValue field. 
+If an error occurs during the conversion or validation of a component of the component tree, further processing of the request is aborted and jumped directly to the `Render-Response-Phase`. 
+Instead of outputting now the value of the component, which is obtained by calling `getValue()`, you first have to check during rendering, if only the `Submitted-Value` has been set. 
+If this condition is `true`, you may only write this `Submitted-Value`.
+
+*Conversion:* If the component value is not decisive, but a value is actually set for the component, then before the value is rendered, a possibly specified converter must be called to convert the value into a character string. 
+Listing <<.Reading the value of a component while rendering, Reading the value of a component while rendering>> shows the `getValue()` method of the `InputSpin-nerRenderer` class, which returns the value of the component for the display, using the algorithm just described.
+
+[source,java]
+----
+private Object getValue(FacesContext ctx,
     InputSpinner spinner) {
   Object submittedValue = spinner.getSubmittedValue();
   if (submittedValue != null) {
@@ -966,21 +1125,36 @@ private Converter getConverter(FacesContext ctx,
   if (valueType == null) return null;
   return ctx.getApplication().createConverter(valueType);
 }
-Independence from JSF Implementation: You can usually take over functionality from the underlying JSF API without any problems. But you should be careful not to depend on the specific JSF implementation you are developing the component on - so you really should only use the functionality of the javax.faces. * API.
+----
+*Independence from JSF Implementation:* You can usually take over functionality from the underlying JSF API without any problems. 
+But you should be careful not to depend on the specific JSF implementation you are developing the component on - so you really should only use the functionality of the `javax.faces.*` API.
 
 ===== Decoding
 
-Continue in the program: Just as the component is written to the HTML page, the value of the component must be read back from the HTTP request during a postback. This is done by the renderer, using the method de-code () . Listing Decoding a value shows the method of our example renderer.
- public void decode(FacesContext ctx, UIComponent component) {
+*Continue in the program:* Just as the component is written to the HTML page, the value of the component must be read back from the HTTP request during a postback. 
+This is done by the renderer, using the method `decode()`. 
+Listing <<.Decoding a value, Decoding a value>> shows the method of our example renderer.
+
+.Decoding a value
+[source,java]
+----
+public void decode(FacesContext ctx, UIComponent component) {
   Map<String, String> params = ctx
       .getExternalContext().getRequestParameterMap();
   String clientId = component.getClientId();
   String value = params.get(clientId);
   ((UIInput)component).setSubmittedValue(value);
 }
-The procedure is quite simple: the map of the request parameters is searched for the client ID of the component, and the returned value is set as the submitted value of the component. 
-Conversion and Validation: Let's move on to the lifecycle of the HTTP request: The component must now convert the Submitted Value and then validate. To convert the value, call the getConvertedValue () method of the renderer (see Listing Converting the Value in the Sample Renderer ).
- public Object getConvertedValue(FacesContext ctx,
+----
+*The procedure is quite simple:* the map of the request parameters is searched for the `clientID` of the component, and the returned value is set as the `Submitted-Value` of the component. 
+
+*Conversion and Validation:* Let's move on to the lifecycle of the HTTP request: The component must now convert the `Submitted-Value` and then validate. 
+To convert the value, call the `getConvertedValue()` method of the renderer (see Listing <<.Converting the Value in the Sample Renderer, Converting the Value in the Sample Renderer>>).
+
+.Converting the Value in the Sample Renderer
+[source,java]
+----
+public Object getConvertedValue(FacesContext ctx,
     UIComponent component, Object submittedValue)
     throws ConverterException {
   Converter converter = getConverter(ctx, component);
@@ -991,12 +1165,28 @@ Conversion and Validation: Let's move on to the lifecycle of the HTTP request: T
     return submittedValue;
   }
 }
-
+----
 ===== Rendering resources
 
-Rendering resources such as images, stylesheets or scripts is an important aspect of many components. As of JSF 2.0, there is now finally a standardized solution, which greatly simplifies the creation of components. The topic of resources has already been dealt with in detail in Chapter Chapter: Resource Management . It was briefly mentioned here that dependencies between resources and components can be mapped in the form of annotations on the component or renderer class. 
-Let's take a closer look at this for our input spinner component. For the sake of simplicity we become the resources of the composite component inputSpinner from the mygourmet library concomitantly. In order for the component to render properly and function properly, we need the stylesheet components.css and the script inputSpinner.js . We will take care of the two pictures to increase and decrease the value later. For each of the two resources, annotate the renderer class with @ResourceDependency , specifying the library and name. The script is additionally loaded with target = "head" in the header of the rendered output. Listing Resource annotations on the renderer class shows the renderer class with the annotations. More is not necessary to let JSF manage the resources automatically - assuming of course you use it h: head and h: body . You can also use the component multiple times on one page, JSF will always render it only once.
- @ResourceDependencies({
+Rendering resources such as images, stylesheets or scripts is an important aspect of many components. 
+As of JSF 2.0, there is now finally a standardized solution, which greatly simplifies the creation of components. 
+The topic of resources has already been dealt with in detail in Chapter [Chapter: Resource Management]. 
+It was briefly mentioned here that dependencies between resources and components can be mapped in the form of annotations on the component or renderer class.
+
+Let's take a closer look at this for our input spinner component. 
+For the sake of simplicity we will use the resources of the composite component `inputSpinner` from the mygourmet library. 
+In order for the component to render properly and function properly, we need the stylesheet `components.css` and the script `inputSpinner.js`. 
+We will take care of the two pictures to increase and decrease the value later. 
+For each of the two resources, annotate the renderer class with `@ResourceDependency`, specifying the library and name. 
+The script is additionally loaded with target = "head" in the header of the rendered output. 
+Listing <<.Resource annotations on the renderer class, Resource annotations on the renderer class>> shows the renderer class with the annotations. 
+More is not necessary to let JSF manage the resources automatically - assuming of course you use it `h:head` and `h:body`. 
+You can also use the component multiple times on one page, JSF will always render it only once.
+
+.Resource annotations on the renderer class
+[source,java]
+----
+@ResourceDependencies({
   @ResourceDependency(library = "mygourmet",
       name = "inputSpinner.js", target = "head"),
   @ResourceDependency(library = "mygourmet",
@@ -1005,10 +1195,25 @@ Let's take a closer look at this for our input spinner component. For the sake o
 public class InputSpinnerRenderer extends Renderer {
 ...
 }
-Automatic Resource Management also ensures that resources in the rendered output always end up exactly where they should. For example, a stylesheet has no place in an HTML document outside of head . Of course , the 
-two images spin-up.png and spin-down.png , which we also take from the mygourmet library of the composite component, can not simply be linked to the component via an annotation. After they form part of the rendered output of the component, they must be inserted manually. Then there is the class ResourceHandler to use, with which JSF internally manages resources. Access to the resource handler responsible for the application takes place via the application object. 
-Rendering the resource itself is then relatively easy. The most important step is generating the resource using the createResource () method of the resource handler. This method takes as parameters either only the name or the name and the library of the resource and returns an instance of the class Resource , which gives us full access. The image is rendered via the response writer as an img element whose src attribute is set to a specific resource URL. This URL is provided by the method Resource.getRequestPath () is calculated. If the browser reloads the image with this URL when displaying the page, JSF delivers the content of the resource to the client. Listing Direct rendering of resources shows how the rendering of either image looks like with the associated JavaScript code.
- Application app = ctx.getApplication();
+----
+Automatic Resource Management also ensures that resources in the rendered output always end up exactly where they should. 
+For example, a stylesheet has no place in an HTML document outside of head. 
+Of course, the two images `spin-up.png` and `spin-down.png`, which we also take from the mygourmet library of the composite component, can not simply be linked to the component via an annotation. 
+After they form part of the rendered output of the component, they must be inserted manually. 
+Then there is the class `ResourceHandler` to use, with which JSF internally manages resources. 
+Access to the resource handler responsible for the application takes place via the application object. 
+
+Rendering the resource itself is then relatively easy. 
+The most important step is generating the resource using the `createResource()` method of the resource handler. 
+This method takes as parameters either only the `name` or the `name` and the `library` of the resource and returns an instance of the class `Resource`, which gives us full access. 
+The image is rendered via the response writer as an img element whose src attribute is set to a specific resource URL. 
+This URL is provided by the method Resource.getRequestPath () is calculated. 
+If the browser reloads the image with this URL when displaying the page, JSF delivers the content of the resource to the client. 
+Listing Direct rendering of resources shows how the rendering of either image looks like with the associated JavaScript code.
+
+[source,java]
+----
+Application app = ctx.getApplication();
 ResourceHandler handler = app.getResourceHandler();
 Resource spinUpRes = handler.createResource(
     "spin-up.png", "mygourmet");
@@ -1020,13 +1225,18 @@ writer.writeAttribute("class", "inputSpinner-button", null);
 writer.writeAttribute("src", spinUpRes.getRequestPath(), null);
 writer.writeAttribute("onclick", onclickUp, null);
 writer.endElement("img");
+----
+
 If you are writing a large number of components, you will probably pack them into component libraries as jar files. With the use of JSF resources, this is no longer a problem, as the required classes and resources can be summarized in a jar file. A detailed description can be found in section [Section: The Own Component Library] .
 
 ==== Registering the Component and Renderer Classes
 
 The component and renderer classes just written must now be registered with an entry in faces-config.xml in the Faces environment. 
 Listing registration of a component class shows the registration of the component class of the example under the at.irian.InputSpinner component type .
- <component>
+
+[source,xml]
+----
+<component>
   <component-type>
     at.irian.InputSpinner
   </component-type>
@@ -1034,15 +1244,26 @@ Listing registration of a component class shows the registration of the componen
     at.irian.jsfatwork.gui.jsf.component.InputSpinner
   </component-class>
 </component>
+----
 As with converters and validators, JSF 2.0 or higher allows you to register components with an annotation. Annotating the component class with @FacesComponent is enough to register the component under the component type specified in the value element . Listing registration of a component class by annotation shows the matching code.
- @FacesComponent("at.irian.InputSpinner")
+
+[source,java]
+----
+@FacesComponent("at.irian.InputSpinner")
 public class InputSpinner extends UIInput {
 ...
 }
+----
+
 JSF 2.2: As of JSF 2.2, the element value of the annotation @FacesComponent is optional and is supplemented with a naming convention. If not specified, JSF uses the class name with a small initial letter as the component ID. For the example of listing a component class using annotation , this would be the ID inputSpinner . 
+
 When registering the renderer, you must first select a rendering kit that will register the additional renderer class. The choice is usually simple, and almost always remains with the use of the standard render-kit with the render- kit ID HTML_BASIC . 
+
 listing Registering a Renderer Class Shows the registration of the sample renderer under the component family javax.faces.Input and the renderer type at.irian.InputSpinner .
- <render-kit>
+
+[source,xml]
+----
+<render-kit>
   <render-kit-id>HTML_BASIC</render-kit-id>
   <renderer>
     <component-family>javax.faces.Input</component-family>
@@ -1052,40 +1273,60 @@ listing Registering a Renderer Class Shows the registration of the sample render
     </renderer-class>
   </renderer>
 </render-kit>
+----
 A renderer can also be registered in the system with the @FacesRenderer annotation as of JSF version 2.0 . The necessary data is specified in the elements renderKitId , componentFamily and rendererType . The render-kit ID can also be omitted, and then set to the default render-kit. Listing registration of a renderer class by annotation shows the code.
- @FacesRenderer(componentFamily = "javax.faces.Input",
+
+[source,java]
+----
+@FacesRenderer(componentFamily = "javax.faces.Input",
     rendererType = "at.irian.InputSpinner")
 public class InputSpinnerRenderer extends Renderer {
   ...
 }
+----
 
 ==== Writing Tag Definition
 
 All previous steps, the creation of the component and renderer class and the registration of the two classes in the system, are always the same regardless of the page declaration language used. Unfortunately, this is no longer possible when defining the tag of the component. 
 With JSP, defining the tag and then creating the tag class is a tedious task. With Version 2.0 of the specification, the focus has clearly been put on facelets and JSP plays only a minor role, we will not go into more detail here.
 With facelets, creating a tag definition does not require much effort. If a matching tag library already exists, specifying the tag name, component type, and renderer type will specify the tag. If this is not the case, a new tag library must first be created and made known to the system. How to do this is shown in Section Section: Creating Tag Libraries with Facelets . The complete definition of the tag for our example component shows the listing definition of the example component tag .
- <tag>
+
+[source,xml]
+----
+<tag>
   <tag-name>inputSpinner</tag-name>
   <component>
     <component-type>at.irian.InputSpinner</component-type>
     <renderer-type>at.irian.InputSpinner</renderer-type>
   </component>
 </tag>
+----
+
 JSF 2.2: JSF 2.2 reduces the overhead of creating a component tag to an absolute minimum. In the simplest case, it is sufficient to set the element createTag of @FacesComponent to true . JSF provides the component by convention in the namespace http://xmlns.jcp.org/jsf/component . The name of the tag derives automatically from the class name (with a lower initial letter). 
+
 If you want to use your own values ​​for the namespace or the tag name, you must specify these explicitly. The tag name can be in element tagName and the namespace in element namespace be set. Illustration Definition of the tag using annotation shows a concrete example.
- @FacesComponent(value="at.irian.InputSpinner",
+
+[source,java]
+----
+@FacesComponent(value="at.irian.InputSpinner",
     createTag=true, tagName="inputSpinner",
     namespace="http://at.irian/test")
 public class InputSpinner extends UIInput {
 ...
 }
+----
+
 This method works well for quickly defining tags for individual components. At the latest, if you have more than a handful of components, consider a full tag library, including XML configuration. 
+
 Attributes about Reflection: How does Facelets know which attributes are available for the tag? Through Reflection , facelets access the component class and determine the possible attributes from that class.
 
 ==== Write Tag Treatment Class
 
 In rare cases, a treatment class is needed for facelet tags as well. This is the case, for example, if there is no component behind the tag, as is the case for c: if from the JSTL library of facelets. Listing tag handler for c: if shows the code of this tag handler.
- public final class IfHandler extends TagHandler {
+
+[source,java]
+----
+public final class IfHandler extends TagHandler {
   private final TagAttribute test;
   private final TagAttribute var;
 
@@ -1103,22 +1344,38 @@ In rare cases, a treatment class is needed for facelet tags as well. This is the
     if (b) this.nextHandler.apply(ctx, parent);
   }
 }
+----
+
 In the constructor, the tag handler is initialized with the values ​​from the page. Calling getRequiredAttribute () guarantees that the attribute is set in the page declaration . If this is not the case, facelets throw an exception. Essential is the method apply - which is called whenever the tag is called internally when building the component tree. Here, the actual logic takes place, which, in the case of c: if, inserts the child components of the tag into the component tree depending on the value of the test attribute . Because the child components are explicitly called by a call to this.nextHandler.apply () it is easy to influence this process. 
+
 Tag handlers such as those just described are used in the tag library directly in a tag definition and can thus be used in the page declaration as a component. Here, however, it should be noted that a tag handler is called only when the component tree is created. The definition of the tag in this case looks like this:
+
+[source,xml]
+----
 <tag>
   <tag-name>if</tag-name>
   <handler-class>IfHandler</handler-class>
 </tag>
+----
+
 Tag handlers can also be used on components that require special behavior. As a demonstration, we create a tag handler for our input spinner component, which makes the inc attribute mandatory. For the source code of the tag handler, see Listing Tag Handlers for the sample component .
- public class InputSpinnerTagHandler extends ComponentHandler {
+
+[source,java]
+----
+public class InputSpinnerTagHandler extends ComponentHandler {
   private TagAttribute inc;
   public InputSpinnerTagHandler(ComponentConfig conf) {
     super(conf);
     this.inc = getRequiredAttribute("inc");
   }
 }
+----
+
 This tag handler can now also be specified when defining the component tag. Listing Definition of the tag component tag tag tag shows the definition extended by the tag handler.
- <tag>
+
+[source,xml]
+----
+<tag>
   <tag-name>inputSpinner</tag-name>
   <component>
     <component-type>at.irian.InputSpinner</component-type>
@@ -1128,6 +1385,7 @@ This tag handler can now also be specified when defining the component tag. List
     </handler-class>
   </component>
 </tag>
+----
 
 ==== Include tag library
 
@@ -1141,7 +1399,10 @@ In the last two sections, we have introduced you to the development of composite
 In the development of composite components, the case always occurs that a desired behavior can only be achieved with Java code. So we need an extension point to integrate this code. As we have already shown, composite components are built internally from classical components. The most obvious idea is therefore to implement this Java code in the form of a classic component.
 JSF follows exactly this idea and allows composite components to freely choose the type of root component. The componentType attribute in the cc: interface element can be used to explicitly specify the component type of this component. The components used class must implement the only prerequisite in the interface and getFamily () the components family javax.faces.NamingContainer return. If component-Type is not set, JSF will automatically create a component of type. 
 This is exactly what we are going to do now for the composite component presented in Section [Section: The component mc: collapsiblePanel] make collapsiblepanel . There, we have already noted critically that users of the component must provide the logic for showing and hiding themselves. We will implement this functionality in the CollapsiblePanel component , which we then associate with the composite component . The component itself can be kept very simple. It just needs to have the collapsed property and an fade-in event-handling method. Listing Component CollapsiblePanel shows the component class registered with @FacesComponent under the at.irian.CollapsiblePanel component type .
- @FacesComponent("at.irian.CollapsiblePanel")
+
+[source,java]
+----
+@FacesComponent("at.irian.CollapsiblePanel")
 public class CollapsiblePanel extends UINamingContainer {
   enum PropertyKeys {collapsed}
 
@@ -1164,9 +1425,13 @@ public class CollapsiblePanel extends UINamingContainer {
     if (ve != null) ve.setValue(ctx, isCollapsed());
   }
 }
+----
 Since the component class is derived from UINamingContainer , we do not need to take any further precautions and can use them directly in the composite component . If your component is derived from another class, such as UIInput , it must also implement the NamingContainer interface and return the value javax.faces.NamingContainer in getFamily () . The value of the collapsed property is managed internally with the already known StateHelper . A call to the toggle event handling method just change the value of this property. If the user of the composite component has specified a value expression in the collapsed attribute , the method setCollapsedValueExpression () also restores the current collapsed state. 
 Let us now turn to the composite component itself. The internals change only minimally compared to section [section: the component mc: collapsiblePanel] and are wired a little differently. Listing composite component collapsiblePanelmit custom root component of the updated component CollapsiblePanel with gesetzem componentType attribute.
- <ui:composition xmlns="http://www.w3.org/1999/xhtml"
+
+[source,xhmtl]
+----
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
     xmlns:h="http://xmlns.jcp.org/jsf/html"
     xmlns:cc="http://xmlns.jcp.org/jsf/composite"
     xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
@@ -1190,6 +1455,7 @@ Let us now turn to the composite component itself. The internals change only min
   </h:panelGroup>
 </cc:implementation>
 </ui:composition>
+----
 As a first step, the obligatory attribute model is replaced by the optional attribute collapsed . This allows the collapse state to be linked externally via a value expression with a bean property. This gives the user the opportunity to set an initial value and to save the current collapsed state. The evaluation of the initial state from the collapsed attribute is done internally automatically by the StateHelper of the component. 
 The second change affects the toggle event handler and the collapsed property , Since both are now provided directly by the root component, the EL expressions change to access cc.toggle and cc.collapsed . This is possible because the cc referenced component is now an instance of the previously created CollapsiblePanel class . 
 Thus, the improved version of the composite component collapsiblePanel is already ready for use. Now we can actually talk about a standalone and reusable building block. The next logical step would be to make the component including all available as a jar file. Section [Section: The Own Component Library] shows how it works.
@@ -1201,7 +1467,10 @@ A component consists of the parts component class, the renderer class, and an op
 ==== Replacing the Renderer Class
 
 To change the renderer class you have to change the configuration in faces-config.xml first. Listing configuration of a renderer shows an example.
- <render-kit>
+
+[source,xml]
+----
+<render-kit>
   <render-kit-id>HTML_BASIC</render-kit-id>
   <renderer>
     <component-family>javax.faces.Output</component-family>
@@ -1211,8 +1480,12 @@ To change the renderer class you have to change the configuration in faces-confi
     </renderer-class>
   </renderer>
 </render-kit>
+----
 Example: RequiredLabel: Overrides the renderer for the Label component with the class mypackage.RequiredLabelRenderer . All that remains is to implement this class. Listing Rendering a label with an obligatory field star shows an implementation that evaluates the required attribute of the component that belongs to the label.
- public class RequiredLabelRenderer extends HtmlLabelRenderer {
+
+[source,java]
+----
+public class RequiredLabelRenderer extends HtmlLabelRenderer {
   protected void encodeBeforeEnd(FacesContext facesContext,
       ResponseWriter writer, UIComponent uiComponent)
       throws IOException {
@@ -1234,24 +1507,34 @@ Example: RequiredLabel: Overrides the renderer for the Label component with the 
     }
   }
 }
+----
 Depending on the value of this attribute, an asterisk is added to the label description. For this purpose, the mandatory field renderer is derived from HtmlLabelRenderer and overrides the encodeBeforeEnd () method of the base class. In this method, first the component belonging to the label is searched; then the attribute of this component is queried. If the component is required, a span tag is output with a CSS class and a * content. Very simple and very effective! Please note, however, that the HtmlLabelRenderer class comes from Apache MyFaces and is not included in the standard. Nonetheless, even if you Mojarra changes nothing at the basic functionality.
 
 ==== Replacement of the component class
 
 Just as the replacement of the renderer class, the replacement of the component class is possible - in the faces-config.xml file, an additional entry must be made as follows:
+
+[source,xml]
+----
 <component>
   <component-type>javax.faces.HtmlInputText</component-type>
   <component-class>
     mypackage.SpecialHtmlInputText
   </component-class>
 </component>
+----
 Auto-Converter: This procedure, for example, automatically connects a converter to the component without using its own converter tag. An example of such a class:
+
+[source,java]
+----
 public class SpecialHtmlInputText extends HtmlInputText {
   public SpecialHtmlInputText() {
     super();
     setConverter(ConverterFactory.getSpecialConverter());
   }
 }
+----
+
 This means that this special converter is used for all elements of these components!
 
 ==== Custom component from the backing beans - component binding
@@ -1259,14 +1542,24 @@ This means that this special converter is used for all elements of these compone
 The two tricks used so far apply to all elements of a component type - what can be done if you only want to distinguish individual components with this special behavior and others do not? 
 Example: Newline: An example from the field: For an application, a connection to a legacy database running on an AS400 server was developed. The data returned by the server was marked with an r to mark the line break - on the frontend this mark should also lead to a line break in the HTML markup, so it had to be output as <br/> . Since not all text edits should be parsed, the rendering behavior has been replaced only for some of the components.
 To make this substitution, you can either create your own tag and set a new renderer for the component over that tag, but you can also use component binding, but this second way is much easier. First of all, all components that should have a special rendering behavior have to be given a binding attribute. In the next step, this attribute is linked to the underlying business logic. The following example shows a section of such a modified page declaration:
+
+[source,xhtml]
+----
 <h:outputText value="#{limitDetail.limitView.comment}"
     binding="#{componentBean.outputWithBreaks}"/>
+----
 The referenced method looks like this:
+[source,java]
+----
 UIComponent getOutputWithBreaks() {
   return new OutputTextWithBreaks();
 }
+----
 All we need now is an implementation of this component - this is shown in Listing modifying the rendering behavior of a component by component 10mmBinding . It overrides the encodeEnd () method - where usually a renderer is searched for the component and its encodeEnd () method is called. In this case, we do the rendering right in the component itself. The actual rendering is hidden in the figure because it should correspond exactly to the functionality in the renderer class.
- public static final class OutputText extends HtmlOutputText {
+
+[source,java]
+----
+public static final class OutputText extends HtmlOutputText {
   public OutputText() {
     super();
   }
@@ -1284,50 +1577,69 @@ All we need now is an implementation of this component - this is shown in Listin
     ...
   }
 }
-6.5 MyGourmet 13: Components and Services
+----
+=== MyGourmet 13: Components and Services
+
 The example MyGourmet 13 integrates all the components developed in this chapter - the composite components from section [Section: composite components ] as well as the classic component from section [Classical components] and their combination from section [Section: Combining composite components and classical components] . In addition to the many new components, there is the new view editProvider.xhtml to edit a provider. As part of this change, we have slightly tweaked the architecture of the application and introduced a service class for provider- type objects . listing MyGourmet 13: ProviderService shows the Interface ProviderService of the service class.
- public interface ProviderService {
+
+[source,java]
+----
+public interface ProviderService {
   Provider createNew();
   boolean save(Provider entity);
   void delete(Provider entity);
   List<Provider> findAll();
   Provider findById(long id);
 }
+----
 The reason for this optimization is explained quickly. After the managed bean ProviderBean is stored in the view scope, it is recreated for each view. This also means that the list of providers is reinitialized each time. In the last example this was not a problem, because the provider data was not changeable. With the new view editProvider.xhtml However, it is a problem because the data changed by the user when leaving the page are lost - they are only stored in the bean. With a service in the application scope, a database is virtually simulated and the problem no longer occurs. As an added benefit, an existing service class makes switching to a real database very easy. With this change, it is also possible to outsource the functionality required for the view providerList.xhtml to the managed bean ProviderListBean in the request scope. 
 The ProviderServiceImpl class implements the ProviderService interface and represents the actual service. It is available as a managed bean under the name providerService in the application scope. Listing MyGourmet 13: Implementation of the service shows the hull of the class with the annotations. The implementation is very simple and is based internally on a list which is initialized when creating the bean with three objects of type Provider .
- @ManagedBean(name = "providerService")
+[source,java]
+----
+@ManagedBean(name = "providerService")
 @ApplicationScoped
 public class ProviderServiceImpl implements ProviderService {
   ...
 }
+----
 Much more interesting is the automatic setting of the service in the managed bean provider bean via a managed property. Listing MyGourmet 13: Setting the Service in ProviderBean shows the corresponding code snippet. You do not have to worry about the service in this case. After creating a ProviderBean managed bean , JSF automatically sets the service - and this is guaranteed before the user's first access.
- @ManagedProperty(value = "#{providerService}")
+[source,java]
+----
+@ManagedProperty(value = "#{providerService}")
 private ProviderService providerService;
 public void setProviderService(
     ProviderService providerService) {
   this.providerService = providerService;
 }
+----
 But now back to the actual topic of this chapter: Components. The list of available composite components includes mc: panelBox , mc: dataTable , mc: collapsiblePanel, and mc: inputSpinner . The prefix mc stands for the namespace http: //at.irian/mygourmet of the MyGourmet-Tag-Bibliothek. Figure MyGourmet 13: Resources of the library mygourmet displays the contents of the resource library mygourmet with all composite components , stylesheets, pictures and scripts.
  
 Figure: MyGourmet 13: resources of the library mygourmet
 The component mg: inputSpinner , which is the classic version of our input spinner component, can be used in the same way as the composite component.
 
-=== MyGourmet 13: Components and Services
+=== The own component library
 
 In this section, we'll show how easy it is to create your own component library with JSF 2.0. For this purpose, we pack the composite component collapsiblePanel from section [Section: Combining Composite Components and Classic Components] including all required artifacts into a jar file. After making the component itself reusable, this jar file can be used in any JSF application. 
 A first version of our component library is created quickly. All we have to do is add the mygourmet resource library directory and the CollapsiblePanel class of the custom root component to the jar file.
 Since the CollapsiblePanel component is registered with the @FacesComponent annotation in the system, we do not really need an XML configuration. But in the end we have to create an empty faces-config.xml . JSF only considers annotations in those jar files that contain a file named faces-config.xml or with the extension .faces-config.xml in the directory META-INF . Listing faces-config.xml for the component library shows the empty faces-config.xml for JSF 2.2.
- <faces-config xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+
+[source,XML]
+----
+<faces-config xmlns="http://xmlns.jcp.org/xml/ns/javaee"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
       http://xmlns.jcp.org/xml/ns/javaee/web-facesconfig_2_2.xsd"
     version="2.2">
 </faces-config>
+----
 For JSF to be able to resolve the resources of our mygourmet library from the jar files in the classpath, it must be located in the META-INF / resources directory . The component library is now ready for use and can be used in any JSF application as soon as the jar archive is available in the classpath. The use of the composite component collapsiblePanel has not changed. As before, it will be integrated via the namespace http://xmlns.jcp.org/jsf/composite/mygourmet and the tag name collapsiblePanel .
 This admittedly very simple component library lends itself as the basis for extensions. In addition to other composite components, it can also be supplemented with classic components, converters and validators. However, the tags for these artifacts must be configured in a tag library (see section Section: Creating tag libraries with facelets ). For our example we create in the directory META-INF the tag library mygourmet.taglib.xml with the namespace http: //at.irian/mygourmet .
 The tags of the composite components and the tags of the tag library are accessible via different namespaces. To avoid this, JSF allows you to import composite components into tag libraries. For this, the name of the library - in our case mygourmet - must be specified in the element composite-library-name . Although this approach works, you can only include one complete resource library per tag library. JSF 2.2: JSF 2.2 solves this problem and allows you to define tags for individual composite components from different libraries. To do this, the tag library must have a tag for a component with a resource ID in the resource-id element 
 to be added. This resource ID consists of the library name and the compound component's resource name separated by a slash ( / ). Listing The tag library configuration for the component library shows the configuration of the tag for the composite component collapsiblePanel from our tag library.
- <facelet-taglib version="2.2"
+
+[source,XML]
+----
+<facelet-taglib version="2.2"
     xmlns="http://xmlns.jcp.org/xml/ns/javaee"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
@@ -1341,13 +1653,12 @@ to be added. This resource ID consists of the library name and the compound comp
     </component>
   </tag>
 </facelet-taglib>
+----
 JSF automatically includes tag libraries from jar files in the classpath - but only if there is a configuration file in the META-INF directory whose name ends with the extension .taglib.xml . The tag collapsiblePanel is now available in applications under the namespace http: //at.irian/mygourmet . 
 Figure structure of the own component library shows conclusively nor the structure and the contents of the jar file for our example.
  
 Figure: Structure of the own component library
 In section [Section:  MyGourmet 13 with component library] you will find again the example MyGourmet 13 - but this time with a tag library that combines all composite components, components, validators and converters into a separate jar file.
-
-=== The own component library
 
 === MyGourmet 13 with component library
 
@@ -1355,12 +1666,3 @@ This section provides a brief description of an alternate version of MyGourmet 1
 This component library includes the one in the directory META-INF / resources the Resource Library mygourmet and secondly the tag library mygourmet.taglib.xml in the directory META-INF, There are also a number of Java classes such as component and renderer classes, converters, and validators. The composite components are imported into the tag library as described in the last section. Thus, all artifacts are available under the namespace http: //at.irian/mygourmet . 
 At the source code level, the component library is implemented as a Maven module. The project description pom.xml of the example MyGourmet 13 with component library consists of two modules: mygourmet13-taglib contains all components of the component library and mygourmet13-webapp contains the rest of the application. The connection between the two modules is in mygourmet13-webapp defines a dependency on mygourmet13-taglib . 
 To start the application, you must call mvn jetty: run in the directory of the mygourmet13-webapp module . Before that, however, the module mygourmet13-taglib or the whole project mygourmet13 has to be built. The result of creating mygourmet13-taglib is a jar file containing all parts of the component library.
-
-
-
-
-
-
-
-
-
