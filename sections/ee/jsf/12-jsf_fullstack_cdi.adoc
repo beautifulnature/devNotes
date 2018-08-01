@@ -1,11 +1,208 @@
 == MyGourmet Fullstack - JSF, CDI and JPA combined with CODI
+In this chapter we will use our MyGourmet example to introduce the architecture of a JSF application with CDI and Apache MyFaces CODI, which has proven itself in practice in this or similar form. 
+It provides an optimal starting point for your own JSF web applications - even for more complex applications. 
+The example MyGourmet FullStack is an extension of the example MyGourmet 17, in which on the one hand the functionality of the application is expanded and on the other hand the architecture of the application is brought to the current state of the technology.
+
+By default, Apache MyFaces comes as a JSF implementation for use. 
+The example also works with the current version of Mojarra . 
+As in all other examples, you can also define the JSF implementation via a profile in the pom.xml file (see Appendix Chapter: A Brief Introduction to Maven for details). 
+To persist data, the Java Persistence API (JPA) version 2.0 is used as the implementation with the Hibernate EntityManager . 
+On the database side, HyperSQL Data-Base (HSQLDB) is available - but any database supported by Hibernate can be used. 
+
+The source code for MyGourmet Fullstack you will find the code of all previous examples at http://jsfatwork.irian.at .
 
 === Architecture of MyGourmet Fullstack
 
+In MyGourmet Fullstack , Java architecture is widely used with three superimposed layers. 
+The presentation layer is the top layer and includes the user interface. 
+It accesses the service layer in which the business logic of the application is defined. 
+At the bottom is the data access layer , which encapsulates all access to the application data in the service layer. 
+The entities behind the model behind the application are available across layers. 
+Illustration Architecture of MyGourmet Fullstack shows a graphic representation of the architecture of MyGourmet Fullstack ,
+ 
+Figure: Architecture of MyGourmet Fullstack
+
+An advantage of the layered architecture is the strict separation of responsibilities (SOC). 
+Each layer is responsible for a specific area of ​​the application. 
+A layer can access the functionality of the layer directly under it and can offer functionality to the layer directly above it. 
+Since there must never be any dependencies upwards, each layer with its underlying layers forms a closed subsystem. 
+
+We recommend that you always adhere to a clean delineation - even if at first glance it looks like an unnecessary extra effort. 
+The separation (of course only in reasonable places) pays off at the latest in the maintenance. 
+
+In the next sections we will take a quick look at all layers of Throw MyGourmet Fullstack including the cross-layer entities. 
+The structure of the Maven project is a bit simpler and does not directly correspond to the layers of the application. 
+For the sake of simplicity, we have summarized the entities, the data access layer, and the service layer in the mygourmet-service module . 
+The presentation layer is in the module mygourmet-webapp . But for larger projects, it makes sense to house each layer in its own Maven module.
+
 ==== Entities
 
+Entities make up the model of business objects and are a central component of any application. 
+Entities are simple JavaBeans with properties and their getter and setter methods. 
+They represent the object-oriented representation of the tables in the database. 
+Because they are used in all layers, they are located outside the layers from an architectural perspective. 
+The entity classes can be found in the package at.irian.jsfatwork.domain in the module mygourmet-service .
+
+The information about the mapping between the tables and columns of the database and the entities and properties is contained directly in the classes. 
+JPA offers a number of annotations. This eliminates the need to create tons of XML files to configure this mapping. 
+
+The custom bean validation validators must also be in the mygourmet-service module because they are used in the entities. 
+But since bean validation is not dependent on JSF, this is not a problem. 
+You can find the validator classes and annotations in at.irian.jsfatwork.validation .
 ==== Data access layer
+In the data access layer, the interface to the database is realized with a generic CRUD service. 
+This service is implemented in the class CrudService as a CDI bean in the application scope and uses the JPA support of CODI. 
+The CRUD service provides generic methods for the key features of JPA's Entity Manager. 
+For MyGourmet, this simple implementation is enough - in more complex applications, such a CRUD service can serve as the basis for repositories, for example. Listing MyGourmet Fullstack: CrudService shows parts of the CrudService class .
+ @ApplicationScoped
+public class CrudService {
+  @Inject
+  private EntityManager em;
 
+  public <T extends BaseEntity> void persist(T entity) {
+    em.persist(entity);
+  }
+
+  public <T extends BaseEntity> T findById(
+      Class<T> clazz, long id) {
+    return em.find(clazz, id);
+  }
+
+  public <T extends BaseEntity> void delete(T entity) {
+    em.remove(entity);
+  }
+}
+The central place to interact with the persistence context of JPA is the EntityManager class . 
+In MyGourmet , the entity manager is configured as usual in the persistence.xml and managed by CDI. 
+The CRUD service then gets the entity manager injected directly as a CDI bean into a field annotated with @Inject . 
+
+However, the Entity Manager is not automatically made available as a CDI bean - so we have to take care of it ourselves. 
+But with a producer method this is done with just a few lines of code. 
+Listing MyGourmet Fullstack: Entity Manager Producer shows the EntityManagerProducer class using the Producer method createEntityManager () , which provides an EntityManager bean in the request scope. 
+This ensures that all beans that have defined a dependency on the entity manager always get the same instance per request. 
+
+The Entity Manager instance provided by the Producer method comes from the Bean EntityManagerProducer . 
+To do this, CDI evaluates the annotation @PersistenceContext when creating the bean and sets the entity manager to the annotated property. 
+The bean is defined in the dependency scope so that the producer method really provides a new entity manager for each request.
+ @Dependent
+public class EntityManagerProducer {
+
+  @PersistenceContext(unitName = "mygourmet")
+  private EntityManager entityManager;
+
+  @Produces
+  @RequestScoped
+  public EntityManager createEntityManager() {
+    return this.entityManager;
+  }
+
+  public void dispose(@Disposes EntityManager em) {
+    if (em.isOpen()) {
+      em.close();
+    }
+  }
+}
+At the end of the request, the entity manager is first closed properly in the disposer method dispose () and then removed from memory. 
+CDI supports disposer methods for all beans produced by producer methods. 
+The method must have exactly one @Disposes annotated parameter of the type of bean to be eliminated. 
+
+The configuration of the JPA persistence context is done in the file /META-INF/persistence.xml in the Maven module mygourmet-service . 
+In addition to the JDBC connection to HSQLDB and some settings for Hibernate, there is also a connection pool, in our case C3P0 . 
+Hibernate is configured to rebuild the database from the mappings in the entities each time the application is started. 
+Details can be found in the source code of the example.
 ==== Service layer
+The business logic of the application resides in the service layer and is decoupled from the user interface. 
+The service layer is injected with the CRUD service and calls it when needed, such as during a persistence. 
+The way to the database should be in the presentation layer only through the service layer and not directly through the data access layer. 
+The service classes are in the package at.irian.jsfatwork.service and are defined as CDI beans in the application scope. 
+Listing MyGourmet Fullstack: Service implementation shows an example of a section of the ProviderService class .
+ @ApplicationScoped
+public class ProviderService {
 
+  @Inject
+  private CrudService crudService;
+
+  @Transactional
+  public void save(Provider entity) {
+    if (entity.isTransient()) {
+      crudService.persist(entity);
+    } else {
+      crudService.merge(entity);
+    }
+  }
+  @Transactional
+  public void delete(Provider provider) {
+    provider = crudService.merge(provider);
+    for (Order order : provider.getOrders()) {
+      order.setCustomer(null);
+      crudService.delete(order);
+    }
+    provider.getCategories().clear();
+    crudService.delete(provider);
+  }
+  @Transactional
+  public Provider findById(long id) {
+    return crudService.findById(Provider.class, id);
+  }
+  @Transactional
+  public List<Provider> findAll() {
+    return crudService.findAll(Provider.class);
+  }
+}
+The service layer in MyGourmet Fullstack is also responsible for the transaction control of the application. 
+The transactions are geared to individual service methods and are managed by CODI with an interceptor. 
+Each method of a service class annotated with the CODI annotation @Transactional is executed in a transaction. 
+If the service class itself is annotated @Transactional , all methods of the class are executed in one transaction. 
+
+The service layer is the ideal place to define transactions because it represents the gateway to business logic for the user interface. 
+If you take another look at Listing MyGourmet Fullstack: CrudService throw, you will notice that there is no @Transactional there. 
+After CRUD operations are only used in the service, they automatically run in the transactions defined there. 
+
+For example, delamination is also extremely important for testing. 
+The application can then be tested directly (without running the GUI itself) via the service layer. 
+We recommend that you test the service layer from the beginning and keep the tests consistent with the GUI logic. 
+Especially in the development of web applications, any failure to restart the server that could have been prevented by running a test costs valuable development time.
 ==== Presentation Layer
+The presentation layer includes the user interface of the application and forms the top layer of the architecture. 
+In MyGourmet Fullstack , the presentation layer consists of the JSF web application and is housed in the Maven module mygourmet-webapp. 
+This module contains all page declarations, including their page beans, as well as all components, converters, validators, and phase listeners.
+
+The presentation layer is only responsible for the user interface and accesses the service layer to execute business logic. 
+Conversely, there must be no dependencies on the service layer or even the data access layer on the presentation layer. 
+Of course, GUI / JSF specifics have not lost anything there. 
+
+Let's take a closer look at this process using the vendor summary page and its page bean. 
+Listing MyGourmet Fullstack: Page bean of the provider overview page shows the class ProviderListBean of the page bean. 
+Initial access to the view creates the bean, including the conversation. 
+
+When loading the provider list in the method preRenderView comes when calling providerService.findAll () in the underlying CRUD service of the entity manager created by the producer method for the current request. 
+
+Since the service method is annotated with @Transactional , CODI starts a transaction before the method is actually called. 
+When exiting the method, CODI will continue to normally commit the transaction normally with a commit and a rollback if the method raises an exception.
+ @Named
+@ViewAccessScoped
+public class ProviderListBean implements Serializable {
+  @Inject
+  private ProviderService providerService;
+  private List<Provider> providerList;
+
+  @PreRenderView
+  public void preRenderView() {
+    providerList = providerService.findAll();
+  }
+  public List<Provider> getProviderList() {
+    return providerList;
+  }
+  public void deleteProvider(Provider provider) {
+    providerService.delete(provider);
+  }
+}
+The same is true for deleting a provider in deleteProvider. 
+When calling providerService.delete (provider), the entity manager bean from the current request is also used in the underlying CRUD service. 
+When the action method is called, the provider to be deleted is passed directly via the method expression as one of the previously loaded entities. 
+In the ProviderService , the entity must first be bound to the current entity manager with a call to the merge method.
+After the method delete is annotated in the service with @Transactional , the operation takes place in a transaction. 
+
+Thus, MyGourmet Full Stack Completely configured and ready for use. 
+We invite you to take a close look at the source code of the application. 
+Consider the example as a basis for your own experiments and explore the details of the collaboration between JSF, JPA, CDI and CODI in practice.

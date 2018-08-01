@@ -184,18 +184,23 @@ The default value is `@none`.
 In this attribute, a method of a managed bean can be registered as a listener via a method expression. 
 The method must have a parameter of type `AjaxBehaviorEvent` and is executed during the Ajax request in the `Invoke-Application-Phase`. 
 Details follow in section [Section: Events and Listeners in Ajax Requests].
+
 * `onevent`: + 
 Allows registering a client-side JavaScript callback function for Ajax events. 
 Details follow in section [Section: JavaScript API].
+
 * `onerror`: + 
 Allows registering a client-side JavaScript callback function for errors encountered while editing the Ajax request. 
 Details follow in section [Section: JavaScript API].
+
 * `disabled`: + 
 The Ajax behavior is "disabled" if this attribute is set to `true`.
+
 * `delay`: + 
 Allow delaying Ajax requests by the value specified in milliseconds. 
 If multiple Ajax requests occur during this time, only the most recent will be processed. 
 Details follow in Section [Section: Controlling the Ajax Queue].
+
 * resetValues`: + 
 JSF 2.2 allows the selective resetting of input fields for Ajax requests. 
 Details follow in section [section: Reset input fields].
@@ -225,10 +230,19 @@ If you enter a first and last name in the browser and activate the button, the t
 </h:form>
 ----
  
-The execute attribute contains the IDs first and last of the two input components and the render attribute the ID name of the text component. These values ​​are included in the Ajax request, and JSF executes the lifecycle for only the two input components, and then renders the text box. The event attribute is not set explicitly, but for h: commandButton , action is defined as the default event .
-Tip: Components that are re-rendered using Ajax - whose IDs therefore occur in the render attribute of `f:ajax` - must always be present in the DOM of the page (see section [Section: Ajax in composite components ] ).
-In the second example, an additional `f:ajax` tag is used to give Ajax behavior to a whole area of ​​the declaration. Listing `f:ajax` in action: Example 2 shows the extended declaration.
- <h:form id="form">
+The `execute` attribute contains the IDs `first` and `last` of the two input components and the `render` attribute the ID `name` of the text component. 
+These values ​​are included in the Ajax request, and JSF executes the lifecycle for only the two input components, and then renders the text box. 
+The event attribute is not set explicitly, but for `h:commandButton`, action is defined as the default event.
+
+TIP: Components that are re-rendered using Ajax - whose IDs therefore occur in the render attribute of `f:ajax` - must always be present in the DOM of the page (see section [Section: Ajax in composite components]).
+
+In the second example, an additional `f:ajax` tag is used to give Ajax behavior to a whole area of ​​the declaration. 
+Listing <<.`f:ajax` in action: Example 2, `f:ajax` in action: Example 2>> shows the extended declaration.
+
+.`f:ajax` in action: Example 2
+[source,xhtml]
+----
+<h:form id="form">
   <f:ajax render="name">
     <h:panelGrid columns="1">
       <h:inputText id="first" value="#{test.first}"/>
@@ -240,23 +254,37 @@ In the second example, an additional `f:ajax` tag is used to give Ajax behavior 
   </f:ajax>
   <h:outputText id="name" value="#{test.name}"/>
 </h:form>
-Since `f:ajax` does not define an event in the event attribute , only those components within the tag that have a default event are equipped with Ajax behavior. Specifically, these are the two input components with the valueChange event . The Ajax behavior of the button for the default event already determines the inner `f:ajax` tag and therefore does not change. With the added Ajax functionality, the text box will now be re-rendered each time the browser changes one of the two input fields. 
-Table tab: ajax-default-events shows an overview of all standard components with default events .
-component	Default event
-h: commandButton	action
-h: commandLink	action
-h: inputText	value change
-h: input textarea	value change
-h: input secret	value change
-h: selectBooleanCheckbox	value change
-h: selectOneRadio	value change
-h: selectOneListbox	value change
-h: selectOneMenu	value change
-h: selectManyCheckbox	value change
-h: selectManyListbox	value change
-h: selectManyMenu	value change
-Listing `f:ajax` in action: Example 3 shows the same example as Listing `f:ajax` in action: Example 2 , with the difference that in the outer `f:ajax` tag the event attribute is set to dblclick .
- <h:form id="form">
+----
+Since `f:ajax` does not define an event in the event attribute, only those components within the tag that have a default event are equipped with Ajax behavior. 
+Specifically, these are the two input components with the valueChange event. 
+The Ajax behavior of the button for the default event already determines the inner `f:ajax` tag and therefore does not change. 
+With the added Ajax functionality, the text box will now be re-rendered each time the browser changes one of the two input fields. 
+Table: ajax-default-events shows an overview of all standard components with default events.
+
+[options="header",cols="1,1"]
+|===
+|component   				|Default event   
+//------------------------------------------
+|h:commandButton   			|action   
+|h:commandLink   			|action   
+|h:inputText   				|valueChange   
+|h:inputTextarea   			|valueChange
+|h:inputSecret   			|valueChange
+|h:selectBooleanCheckbox   	|valueChange   
+|h:selectOneRadio   		|valueChange
+|h:selectOneListbox   		|valueChange
+|h:selectOneMenu   			|valueChange
+|h:selectManyCheckbox  		|valueChange   
+|h:selectManyListbox   		|valueChange
+|h:selectManyMenu   		|valueChange
+|===
+
+Listing <<.`f:ajax` in action: Example 3, `f:ajax` in action: Example 3>> shows the same example as Listing <<.`f:ajax` in action: Example 2,`f:ajax` in action: Example 2>>, with the difference that in the outer `f:ajax` tag the event attribute is set to `dblclick`.
+
+.`f:ajax` in action: Example 3
+[source,xhtml]
+----
+<h:form id="form">
   <f:ajax event="dblclick" render="name">
     <h:panelGrid columns="1">
       <h:inputText id="first" value="#{test.first}"/>
@@ -268,9 +296,22 @@ Listing `f:ajax` in action: Example 3 shows the same example as Listing `f:ajax`
   </f:ajax>
   <h:outputText id="name" value="#{test.name}"/>
 </h:form>
-Due to this small change, all components within `f:ajax` now trigger an Ajax request after a double-click. The same applies to the panel grid and the button, which now has two different events with Ajax behavior. 
-The next example in Listing `f:ajax` in action: Again, Example 4 is only a variant of the already known form. This time, however, there are two text boxes for outputting the name: the first is inside the form and has the ID inside . The second text box is outside and listening for the ID outer, The outer field should be updated whenever the value of one of the input fields changes, whereas the inner field should be updated by clicking on the button. That should not be a problem in and of itself. If the render attribute of the inner `f:ajax` tag is set to inner and outer to outer , then this behavior should happen. But it does not - JSF already complains when loading the page that the ID outer does not exist. Why this is so, we clarify the same.
- <h:form id="form">
+----
+Due to this small change, all components within `f:ajax` now trigger an Ajax request after a double-click. 
+The same applies to the panel grid and the button, which now has two different events with Ajax behavior. 
+The next example in Listing <<.`f:ajax` in action: Again, Example 4 , `f:ajax` in action: Again, Example 4>> is only a variant of the already known form. 
+This time, however, there are two text boxes for outputting the name: the first is inside the form and has the ID `inside`. 
+The second text box is outside and listening for the ID `outer`. 
+The outer field should be updated whenever the value of one of the input fields changes, whereas the inner field should be updated by clicking on the button. 
+That should not be a problem in and of itself. 
+If the render attribute of the inner `f:ajax` tag is set to `inner` and outer to `outer`, then this behavior should happen. 
+But it does not - JSF already complains when loading the page that the ID `outer` does not exist. 
+Why this is so, we clarify the same.
+
+.`f:ajax` in action: Again, Example 4
+[source,xhtml]
+----
+<h:form id="form">
   <f:ajax render=":outer">
     <h:panelGrid columns="1">
       <h:inputText id="first" value="#{test.first}"/>
@@ -283,13 +324,29 @@ The next example in Listing `f:ajax` in action: Again, Example 4 is only a varia
   <h:outputText id="inner" value="#{test.name}"/>
 </h:form>
 <h:outputText id="outer" value="#{test.name}"/>
-The problem is caused by the text field outside the form and is due to the calculation of the client IDs for Ajax requests. JSF uses the method UIComponent.findComponent () , which applies a specific algorithm to find the component with the given ID. This algorithm assumes that the passed ID is relative to the next highest naming container. So in our case we try to resolve the component with the ID outer as a child of the form with the ID form . This can not work, however, since the text box is outside. The solution to this problem is simple: findComponent () treats all IDs with a leading colon as absolute IDs, which are resolved starting at the root node of the component tree. So we just need to set the render attribute in the outer `f:ajax` tag to : outer to get the functionality you want.
+----
+The problem is caused by the text field outside the form and is due to the calculation of the client IDs for Ajax requests. 
+JSF uses the method `UIComponent.findComponent()`, which applies a specific algorithm to find the component with the given ID. 
+This algorithm assumes that the passed ID is relative to the next highest naming container. 
+So in our case we try to resolve the component with the ID outer as a child of the form with the ID `form`. 
+This can not work, however, since the text box is outside. 
+The solution to this problem is simple: `findComponent()` treats all IDs with a leading colon as absolute IDs, which are resolved starting at the root node of the component tree. 
+So we just need to set the render attribute in the outer `f:ajax` tag to `:outer` to get the functionality you want.
 
 ==== Events and Listeners in Ajax Requests
 
-In this section, we'll take a closer look at events and listeners in Ajax queries. The use of action methods and event handling methods for Action or Value Change events works the same as in non-Ajax requests. 
-In the example in Listing h: selectOneMenu with `f:ajax` and Value-Change-Listener we show you how to combine two h: selectOneMenu- components with simple means . The choices of the second component should depend on the selection made in the first component and be updated via Ajax. A good example of this is the selection of a country and a matching state. With the `f:ajax` Tag we miss the first component the necessary Ajax behavior.
- <h:selectOneMenu id="country" value="#{test.country}"
+In this section, we'll take a closer look at events and listeners in Ajax queries. 
+The use of action methods and event handling methods for `Action` or `ValueChangeEvents` works the same as in non-Ajax requests.
+
+In the example in Listing <<.`h:selectOneMenu` with `f:ajax` and Value-Change-Listener, `h:selectOneMenu` with `f:ajax` and Value-Change-Listener>> we show you how to combine two `h:selectOneMenu`- components with simple means. 
+The choices of the second component should depend on the selection made in the first component and be updated via Ajax. 
+A good example of this is the selection of a `country` and a matching `state`. 
+With the `f:ajax` Tag we miss the first component the necessary Ajax behavior.
+
+.`h:selectOneMenu` with `f:ajax` and Value-Change-Listener
+[source,xhtml]
+----
+<h:selectOneMenu id="country" value="#{test.country}"
     valueChangeListener="#{test.countryChanged}">
   <f:selectItems value="#{test.countryItems}"/>
   <f:ajax render="state"/>
@@ -297,8 +354,19 @@ In the example in Listing h: selectOneMenu with `f:ajax` and Value-Change-Listen
 <h:selectOneMenu id="state" value="#{test.state}">
   <f:selectItems value="#{test.stateItems}"/>
 </h:selectOneMenu>
-On the h: selectOneMenu component to select the country, the test.countryChanged method is registered as a value change listener. Whenever a user changes the value in the browser, an Ajax request is issued and the life cycle is executed partially for that component. Because the user changed the value, JSF also calls the value change listener. In this method, the list of states is first reset depending on the country selected. Then the currently selected state will be reset to zero . Listing Value Change Listener for initializing the states shows the relevant code. The h: selectOneMenu component with the ID state will then be re-rendered and updated in the browser with the new values.
- public void countryChanged(ValueChangeEvent ev) {
+----
+On the `h:selectOneMenu` component to select the country, the `test.countryChanged` method is registered as a Value-Change listener. 
+Whenever a user changes the value in the browser, an Ajax request is issued and the life cycle is executed partially for that component. 
+Because the user changed the value, JSF also calls the Value-Change listener. 
+In this method, the list of states is first reset depending on the country selected. 
+Then the currently selected state will be reset to zero. 
+Listing <<.Value-Change Listener for initializing the states, Value-Change Listener for initializing the states>> shows the relevant code. 
+The `h:selectOneMenu` component with the ID `state` will then be re-rendered and updated in the browser with the new values.
+
+.Value-Change Listener for initializing the states
+[source,java]
+----
+public void countryChanged(ValueChangeEvent ev) {
   state = null;
   updateStateItems((String)ev.getNewValue());
 }
@@ -309,36 +377,72 @@ private void updateStateItems(String country) {
     stateItems = new ArrayList<SelectItem>();
   }
 }
-The currently selected country is retrieved from the passed event in the method countryChanged and not from the country property of the managed bean. The value change listener is already called in the process validation phase of the lifecycle and the value selected by the user has therefore not yet been written back to the property. 
-As an alternative to the value change listener, an Ajax listener can also be used here. `f:ajax` offers the option of specifying a method expression in the attribute listener . Listing h: selectOneMenu with `f:ajax` and Ajax listener shows the example from above with an Ajax listener. The value change listener is no longer needed in this case.
- <h:selectOneMenu id="country" value="#{test.country}">
+----
+The currently selected country is retrieved from the passed event in the method `countryChanged` and not from the country property of the managed bean. 
+The Value-Change Listener is already called in the `Process-Validation-Phase` of the lifecycle and the value selected by the user has therefore not yet been written back to the property. 
+
+As an alternative to the Value-Change Listener, an Ajax listener can also be used here. 
+`f:ajax` offers the option of specifying a method expression in the attribute `listener`. 
+Listing <<.`h:selectOneMenu` with `f:ajax` and Ajax listener, `h:selectOneMenu` with `f:ajax` and Ajax listener>> shows the example from above with an Ajax listener. 
+The Value-Change Listener is no longer needed in this case.
+
+.`h:selectOneMenu` with `f:ajax` and Ajax listener
+[source,xhtml]
+----
+<h:selectOneMenu id="country" value="#{test.country}">
   <f:selectItems value="#{test.countryItems}"/>
   <f:ajax render="state" listener="#{test.countryChanged}"/>
 </h:selectOneMenu>
 <h:selectOneMenu id="state" value="#{test.state}">
   <f:selectItems value="#{test.stateItems}"/>
 </h:selectOneMenu>
-An Ajax listener method must have an AjaxBehaviorEvent parameter , as Listing Ajax lists to initialize the states . The content of the method differs from the Value-Change-Listener to the Listing Value-Change-Listener for initializing the federal states . After JSF first calls the Ajax listener in the invoke application phase, the value in the country property is already up to date. The updateStateItems method has not changed compared to Listing Value Change listeners for initializing the states .
- public void countryChanged(AjaxBehaviorEvent ev) {
+----
+
+An Ajax listener method must have an `AjaxBehaviorEvent` parameter, as Listing <<.Ajax lists to initialize the states, Ajax lists to initialize the states>>. 
+The content of the method differs from the Value-Change-Listener in Listing <<Value-Change-Listener for initializing the federal states, Value-Change-Listener for initializing the federal states>>. 
+After JSF first calls the Ajax listener in the `Invoke-Application-Phase`, the value in the country property is already up to date. 
+The `updateStateItems` method has not changed compared to Listing <<.Value-Change Listeners for initializing the states, Value-Change Listeners for initializing the states>>.
+
+.Ajax lists to initialize the states
+[source,java]
+----
+public void countryChanged(AjaxBehaviorEvent ev) {
   state = null;
   updateStateItems(country);
 }
-In section [Partial JSF Life Cycle Section] , the partial lifecycle of Ajax requests is examined in more detail.
+----
+In section [Partial JSF Life Cycle Section], the partial lifecycle of Ajax requests is examined in more detail.
 
 ==== JavaScript API
 
-JSF defines as of version 2.0 a JavaScript library as a client-side basis for the integration of Ajax. The library is stored in the resource named jsf.js in the library javax.faces . If you use Ajax declaratively with the `f:ajax` tag , you do not have to worry about including this resource. Only when using the JavaScript API directly do you need to specify:
+JSF defines as of version 2.0 a JavaScript library as a client-side basis for the integration of Ajax. 
+The library is stored in the resource named `jsf.js` in the library `javax.faces`. 
+If you use Ajax declaratively with the `f:ajax` tag , you do not have to worry about including this resource. 
+Only when using the JavaScript API directly you do need to specify:
+
+[source,xml]
+----
 <h:outputScript name="jsf.js" library="javax.faces"
     target="head"/>
-You do not have to worry about the script resource jsf.js itself. It is included in the standard delivery of JSF and is included in the jar files. When using the JavaScript API, it is important to use h: head and h: body in the page declaration. Only then can it be guaranteed that the script will arrive correctly in the rendered output at the browser. 
+----
+
+You do not have to worry about the script resource `jsf.js` itself. 
+It is included in the standard delivery of JSF and is included in the jar files. 
+When using the JavaScript API, it is important to use `h:head` and `h:body` in the page declaration. 
+Only then can it be guaranteed that the script will arrive correctly in the rendered output at the browser. 
+
 Here is a list of the key features of the JavaScript API:
-jsf.ajax.request (source, event, options) : 
+
+* `jsf.ajax.request (source, event, options)`: +
 This method sends an Ajax request to the server.
-jsf.ajax.response (request, context) : 
+
+* `jsf.ajax.response (request, context)`: +
 This method handles the server's response to the Ajax request and is not relevant to end users.
-jsf.ajax.addOnError (callback) : 
+
+* `jsf.ajax.addOnError (callback)`: +
 This method registers a callback function to handle errors that occurred while processing the Ajax request.
-jsf.ajax.addOnEvent (callback) : 
+
+* `jsf.ajax.addOnEvent (callback)`: +
 This method registers a callback function to handle Ajax events.
 
 ===== Sending Ajax Requests

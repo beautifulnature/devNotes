@@ -1,23 +1,385 @@
-== JSF and Spring
+13 JSF und Spring
+Der Einsatz von Spring in JSF-Projekten bietet eine ganze Reihe von Vorteilen gegenüber dem Einsatz der internen Managed Bean Creation Facility . Spring bringt unter anderem einen viel mächtigeren Dependency-Injection-Mechanismus, Autowiring von Beans und eine sehr ausgefeilte Unterstützung von Aspect-Oriented Programming (AOP) mit, um nur einige der Vorteile zu nennen - und das alles, ohne die Komplexität der Anwendung merklich zu erhöhen. Aus Sicht von JSF macht es keinen Unterschied, ob Beans über Spring oder JSF-intern verwaltet werden. Die Verbindung zwischen der Ansicht und dem Modell erfolgt in beiden Fällen über die Unified-EL .
+Nach einigen Informationen zur Konfiguration von Spring in Abschnitt [Sektion:  Konfiguration von Spring] zeigt Abschnitt [Sektion:  Dependency-Injection mit Spring und JSR-330] wie JSF-Applikationen mit Spring entwickelt werden können. Im Anschluss daran zeigt Abschnitt [Sektion:  MyGourmet 16 Spring: Integration von Spring] Details zum Beispiel MyGourmet 16 Spring .
+Ein weiteres wichtiges Thema bei der Webentwicklung ist die Abbildung von Geschäftsprozessen. Dazu werden immer häufiger Konversationen eingesetzt. Warum das so ist zeigt Abschnitt [Sektion:  Konversationen mit JSF] . Wenn Sie in Ihrem Projekt bereits Spring zur Verwaltung der Managed-Beans verwenden, steht einem Einsatz von Konversationen nichts mehr im Weg. Abschnitt [Sektion:  Apache MyFaces Orchestra] zeigt anschließend, wie Sie mit dem Projekt Apache MyFaces Orchestra Konversationen mit Spring verwenden.
+13.1 Konfiguration von Spring
+Das Einbinden von Spring in eine JSF-Anwendung erfolgt in zwei Schritten. Zuerst muss Spring selbst konfiguriert und aktiviert werden. Am einfachsten funktioniert das mit dem in Spring integrierten Servlet-Context-Listener ContextLoaderListener , der in die web.xml eingebunden wird und beim Initialisieren eines Servlets den ApplicationContext von Spring einrichtet. Die dazu benötigten Konfigurationsdateien holt sich der Listener aus dem Kontextparameter contextConfigLocation . Dort kann eine Liste von Dateinamen, getrennt durch Leerzeichen, Komma oder Semikolon, angegeben werden. Die Pfade werden relativ zum Root der Webapplikation ausgewertet und es besteht die Möglichkeit, Suchmuster wie /WEB-INF/*Context.xml oder /WEB-INF/**/*Context.xml einzusetzen. Listing Konfiguration von Spring in der web.xml zeigt die notwendige Konfiguration in der web.xml .
+ <context-param>
+  <param-name>contextConfigLocation</param-name>
+  <param-value>
+    /WEB-INF/spring-config.xml
+  </param-value>
+</context-param>
+<listener>
+  <listener-class>
+    org.springframework.web.context.ContextLoaderListener
+  </listener-class>
+</listener>
+<listener>
+  <listener-class>
+  org.springframework.web.context.request.RequestContextListener
+  </listener-class>
+</listener>
+Spring unterstützt ab Version 2.0 die für Webanwendungen relevanten Scopes request und session . Damit diese richtig funktionieren, muss in der web.xml zusätzlich der Servlet-Request-Listener RequestContextListener konfiguriert werden. Zusätzlich erlaubt Spring ab Version 2.0 die Definition eigener Scopes. Wir werden von dieser Möglichkeit auch Gebrauch machen und den in JSF 2.0 hinzugekommenen View-Scope implementieren (siehe Abschnitt [Sektion:  MyGourmet 16 Spring: Integration von Spring] ). Spring selbst unterstützt diesen neuen Scope in der momentan aktuellen Version noch nicht.
+Im zweiten Schritt müssen wir JSF anweisen, Managed-Beans nicht mehr selbst aufzulösen, sondern die Arbeit an Spring zu delegieren. Spring bietet zu diesem Zweck einen eigenen EL-Resolver, der zuerst Managed-Beans über den ApplicationContext von Spring auflöst, bevor er - wenn die Auflösung erfolglos war - die Kontrolle an den Standard-Resolver von JSF weitergibt. Dieser EL-Resolver wird im application -Bereich der faces-config.xml , wie in Listing Konfiguration des Spring-EL-Resolvers in der faces-config.xml gezeigt, konfiguriert.
+ <faces-config>
+  <application>
+    <el-resolver>
+      org.springframework.web.jsf.el.SpringBeanFacesELResolver
+    </el-resolver>
+    ...
+  </application>
+</faces-config>
+Alle hier gemachten Angaben beziehen sich auf Spring in Version 2.5 oder höher in Kombination mit JSF ab Version 1.2. Für ältere Versionen von Spring (deren Einsatz wir nicht mehr empfehlen) oder JSF in Version 1.1 weicht die Konfiguration an einigen Stellen von der hier gezeigten ab.
+13.2 Dependency-Injection mit Spring und JSR-330
+Spring unterstützt ab Version 3.0 den Standard Dependency Injection for Java (JSR-330, auch At Inject genannt). Mit JSR-330 ist es erstmals gelungen, die wichtigsten Annotationen für die Dependency-Injection zu standardisieren. Dadurch ist es endlich möglich, in unterschiedlichen Umgebungen wie Java EE 6 , Spring 3 oder Guice 2 die selben Annotationen aus dem Package javax.inject einzusetzen. Mit diesem Ansatz lassen sich Abhängigkeiten zu Annotationen eines spezifischen Dependency-Injection-Frameworks vermeiden.
+JSR-330 deckt die Kernbereich der Dependency-Injection ausreichend ab. Andere Bereiche wie die Definition von Beans werden in JSR-330 allerdings nur rudimentär berücksichtigt - dafür ist der Einsatz umso einfacher. Spring unterstützt zum Registrieren von Beans unter anderem die JSR-330-Annotation @Named . Der Bean-Name wird dabei entweder direkt im Element value angegeben oder ansonsten vom Klassennamen abgeleitet.
+Für den Gültigkeitsbereich einer Bean steht in JSR-330 nur die Annotation @Singleton zur Verfügung. Alle anderen Gültigkeitsbereiche können im value -Element der Spring-Annotation @Scope angegeben werden.
+Spring unterstützt ab Version 2.0 standardmäßig folgende Gültigkeitsbereiche, die bei der Konfiguration über Annotationen und über XML gleichermaßen gelten:
+Prototype-Scope ( prototype ): 
+Die Bean wird nicht gespeichert und bei jedem Aufruf neu erstellt. Entspricht dem None-Scope in JSF.
+Request-Scope ( request ): 
+Die Bean lebt für die Zeitdauer einer HTTP-Anfrage. Entspricht dem Request-Scope in JSF.
+Session-Scope ( session ): 
+Die Bean lebt für die Dauer einer Sitzung, in der der Benutzer mit der Anwendung verbunden ist. Entspricht dem Session-Scope in JSF.
+Singleton-Scope ( singleton ): 
+Für die gesamte Lebensdauer der Anwendung ist nur eine für alle Benutzer gleiche Instanz dieser Bean vorhanden. Entspricht dem Application-Scope in JSF.
+Die Annotation eines Feldes mit @Inject reicht aus um einen Injektionspunkt zu definieren. Listing Dependency-Injection mit @Inject zeigt die Definition einer Bean mit einem Injektionspunkt.
+ @Named
+@Singleton
+public class MyBean {
+  @Inject
+  private Service service;
+  ...
+}
+Spring 3.0 (oder jedes andere Dependency-Injection-Framework mit Unterstützung für JSR-330) kann diese Abhängigkeit auflösen und eine Bean vom Typ Service injizieren. Für den Fall, dass es mehrere Beans mit gleichem Typ gibt, muss die Auswahl weiter eingeschränkt werden. Dazu sieht JSR-330 sogenannte Qualifier vor. Ein Qualifier ist eine beliebige Annotation, die mit @javax.inject.Qualifier annotiert ist. Listing JSR-330 Qualifier zeigt als Beispiel den Qualifier @Special .
+ @Retention(RUNTIME)
+@Target({TYPE, FIELD, METHOD})
+@Qualifier
+public @interface Special {
+}
+Mit einem solchen Qualifier wird dann einerseits die Klasse der Bean und andererseits der Injektionspunkt annotiert. Aber sehen wir uns das am besten anhand eines Beispiels an. Listing Service-Beans mit und ohne Qualifier zeigt zwei unterschiedliche Implementierungen des Interfaces Service . Beide Klassen werden mit den Spring-Annotationen @Service und @Scope als Beans im Singleton-Scope definiert. Da beide Beans den Typ Service haben (wir gehen davon aus, dass nur das Interface nach außen hin bekannt ist), annotieren wir zur weiteren Unterscheidung die Klasse SpecialServiceImpl mit unserem Qualifier @Special .
+ @Service("service")
+@Scope("singleton")
+public class ServiceImpl implements Service {
+  ...
+}
 
-=== Configuration of Spring
+@Service("specialService")
+@Scope("singleton")
+@Special
+public class SpecialServiceImpl implements Service {
+  ...
+}
+Dieselbe Qualifier-Annotation wird auch beim Injektionspunkt benutzt um die Auswahl der Beans vom Typ Service auf das gewünschte Exemplar einzuschränken. Listing Dependency-Injection mit @Injectund Qualifier zeigt das entsprechende Codefragment.
+ public class MyBean {
+  @Inject @Special
+  private Service service;
+  ...
+}
+JSR-330 stellt mit @Named eine konkrete Qualifier-Annotationen zum Einschränken der Auswahl basierend auf dem Namen der Bean zur Verfügung. In Listing Dependency-Injection mit @Injectund @Named wird zum Beispiel die Bean vom Typ Service mit dem Namen specialService aus Listing Service-Beans mit und ohne Qualifier injiziert.
+ public class MyBean {
+  @Inject @Named("specialService")
+  private Service service;
+  ...
+}
+Dependency Injection for Java ist ein wichtiger Schritt in die richtige Richtung. Im nächsten Abschnitt sehen wir uns an, wie der Einsatz von Spring in Kombination mit JSR-330 in MyGourmet aussieht.
+13.3 MyGourmet 16 Spring: Integration von Spring
+In MyGourmet 16 Spring dreht sich alles um die Integration von Spring . Die dazu notwendigen Bibliotheken werden über Abhängigkeiten in der pom.xml in das Maven-Projekt eingebunden. Details entnehmen Sie bitte direkt dem Sourcecode.
+Die zusätzlich notwendige Konfiguration in der web.xml entspricht genau der im letzten Abschnitt vorgestellten und wird hier nicht mehr wiederholt. Jetzt fehlt für ein funktionstüchtiges System nur mehr die im Kontextparameter contextConfigLocation referenzierte XML-Datei spring-config.xml und die Konfiguration der Beans. Listing Spring-Konfiguration von MyGourmet 16 zeigt die komplette Spring -Konfiguration für MyGourmet 16 Spring (einige Klassennamen und Schema-Locations enthalten aus Platzgründen einen Zeilenumbruch, was aber nicht erlaubt ist).
+ <beans xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:context="http://www.springframework.org/schema/context"
+  xsi:schemaLocation="
+      http://www.springframework.org/schema/beans
+      http://www.springframework.org/schema/beans/
+          spring-beans-3.0.xsd
+      http://www.springframework.org/schema/context
+      http://www.springframework.org/schema/context/
+          spring-context-3.0.xsd">
 
-=== Dependency Injection with Spring and JSR-330
+  <!-- Classpath nach Spring-Komponenten scannen -->
+  <context:component-scan base-package="at.irian.jsfatwork"/>
 
-=== MyGourmet 16 Spring: Integration of Spring
+  <!-- View-Scope registrieren -->
+  <bean class="org.springframework.beans.factory
+      .config.CustomScopeConfigurer">
+    <property name="scopes">
+      <map>
+        <entry key="view">
+          <bean class="at.irian.jsfatwork.spring.ViewScope"/>
+        </entry>
+      </map>
+    </property>
+  </bean>
+</beans>
+Beans werden in Spring entweder über Annotationen oder in der XML-Konfiguration definiert. Da wir bisher in allen Beispielen die Managed-Beans über Annotationen konfiguriert haben, sehen wir uns zuerst diese Variante an. Die Umstellung in MyGourmet beschränkt sich auf das Austauschen der JSF-Annotationen durch ihre JSR-330- und Spring -Pendants in den Klassen ProviderServiceImpl , AddressBean , CustomerBean , ProviderBean und ProviderListBean .
+Die Implementierung des View-Scopes für Spring erfolgt in der Klasse at.irian.jsfatwork.spring.ViewScope . Wir werden die Klasse hier nicht abbilden, bei Interesse werfen Sie bitte einen Blick in den Sourcecode von MyGourmet 16 Spring . Das Registrieren des Scopes erfolgt mit einer Bean vom Typ CustomScopeConfigurer , deren Eigenschaft scopes eine Map mit den benutzerdefinierten Scopes aufnimmt. In Listing Spring-Konfiguration von MyGourmet 16 sehen Sie die Registrierung des neuen View-Scopes.
+Listing Bean-Definition und Dependency-Injection mit Spring-Annotationen zeigt die Konfiguration der Beans mit den Namen providerService und providerBean über die Annotation @Named . Das Beispiel beschreibt auch, wie Abhängigkeiten zwischen Beans mit Annotationen konfiguriert werden. Die JSR-330-Annotation @Inject auf dem Feld providerService der Klasse ProviderBean bewirkt, dass beim Erstellen einer Bean mit dem Bezeichner providerBean die Bean mit dem Bezeichner providerService in das gleichnamige Feld injiziert wird. Mit @Inject kann entweder direkt ein Feld der Klasse oder die Setter-Methode einer Eigenschaft annotiert werden.
+ @Named("providerService")
+@Singleton
+public class ProviderServiceImpl
+    implements ProviderService {
+...
+}
 
-=== Conversations with JSF
+@Named("providerBean")
+@Scope("view")
+public class ProviderBean {
 
-=== Apache MyFaces Orchestra
+    @Inject
+    private ProviderService providerService;
+    ...
+}
+Die Definition von Beans über Annotationen funktioniert allerdings nur, wenn Spring in der XML-Konfiguration mit dem Element context:component-scan angewiesen wird, Klassen nach Annotationen zu durchsuchen. Das Attribut base-package definiert dabei einen Startpunkt, um den Suchvorgang so weit wie möglich einzuschränken und den Start der Anwendung nicht unnötig zu verlängern. Wir beschränken uns in MyGourmet auf Klassen, deren vollqualifizierter Name mit at.irian.jsfatwork beginnt (siehe Listing Spring-Konfiguration von MyGourmet 16 ). Als angenehmer Nebeneffekt aktiviert context:component-scan auch die Verarbeitung von Standardannotationen wie @Resource , @PostConstruct und @PreDestroy und ab Spring 3.0 auch von JSR-330-Annotationen.
+Zum Abschluss werfen wir noch einen kurzen Blick auf die Konfiguration von Beans über XML. Listing XML-Konfiguration der Beans in MyGourmet 16 Spring zeigt, wie eine zu den Annotationen äquivalente Konfiguration in der spring-config.xml aussehen würde. Eine Bean wird in Spring mit dem Element bean deklariert. Der Name wird dabei im Attribut id angegeben, der Gültigkeitsbereich im Attribut scope und die zugrundeliegende Klasse im Attribut class . Das Einbringen der Bean providerService in die Bean providerBean erfolgt mit dem Kindelement property . Das Attribut name gibt dazu den Namen der zu setzenden Eigenschaft an und das Attribut ref den Bezeichner der zu setzenden Bean.
+ <bean id="providerService"
+    class="at.irian.jsfatwork.service.ProviderServiceImpl"/>
+<bean id="addressBean" scope="session"
+    class="at.irian.jsfatwork.gui.page.AddressBean"/
+<bean id="customerBean" scope="session"
+    class="at.irian.jsfatwork.gui.page.CustomerBean"/>
+<bean id="providerBean" scope="view"
+    class="at.irian.jsfatwork.gui.page.ProviderBean">
+  <property name="providerService" ref="providerService"/>
+</bean>	
+Was wir Ihnen hier gezeigt haben, ist die einfachste Form der Bean-Definition mit Spring und JSR-330. Sobald Spring läuft und in JSF eingebunden ist, stehen Ihnen alle Möglichkeiten des Spring-Frameworks offen - und glauben Sie uns, das sind eine Menge. Besonders hervorzuheben ist hier die sehr gute und umfangreiche Integration von Aspect Oriented Programming (AOP) zur einfachen Implementierung von Querschnittsfunktionalität. Weiterführende Informationen zu Spring und Spring AOP finden Sie in der sehr gelungenen Dokumentation unter http://www.springsource.org/documentation .
+Ein wichtiges Einsatzgebiet für die Verwendung von Spring mit JSF ist die Möglichkeit, zusätzliche Scopes zu definieren. Insbesondere Konversationen sind hier interessant. In Abschnitt [Sektion:  Konversationen mit JSF] finden Sie allgemeine Informationen zu diesem Thema und Abschnitt [Sektion:  Apache MyFaces Orchestra] zeigt wie Sie Konversationen mit Spring und Apache MyFaces Orchestra einsetzen.
+13.4 Konversationen mit JSF
+In vielen Webanwendungen lassen sich die zugrunde liegenden Geschäftsprozesse nicht direkt auf den Seitenfluss abbilden. Viele Prozesse, die aus Sicht des Benutzers eine abgeschlossene Einheit bilden, erstrecken sich in der Anwendung über mehrere Anfragen oder sogar über mehrere Ansichten hinweg. Denken Sie zum Beispiel an die Registrierung eines Benutzers, bei der im ersten Schritt die Login-Daten und im zweiten Schritt Daten zur Person abgefragt werden. Für den Benutzer der Anwendung ist dieser Vorgang eine in sich abgeschlossene Tätigkeit, die mit dem Anzeigen der ersten Ansicht beginnt und durch das Betätigen der Fertigstellen-Schaltfläche im zweiten Schritt abgeschlossen wird. Aus Sicht der Webanwendung handelt es sich dabei allerdings nur um eine Reihe von Anfragen auf zwei verschiedene Seiten - das Konzept eines Geschäftsprozesses ist im JSF-Standard voraussichtlich erst ab Version 2.2 enthalten.
+Dadurch stellt sich die Frage, in welchem Gültigkeitsbereich die Daten während des Prozesses abgelegt werden müssen, damit sie in jedem Schritt zur Verfügung stehen. Managed-Beans im Request-Scope werden nach jeder Anfrage neu erzeugt und eignen sich daher nicht. Der View-Scope ist auch nur dann ausreichend, wenn der Prozess nicht mehr als eine Ansicht umfasst. Managed-Beans im Application-Scope eignen sich nicht für unsere Zwecke, da sie nur einmal pro Anwendung erzeugt werden und dadurch alle Benutzer die selben Daten sehen. Bleibt als letzte Alternative nur noch der Session-Scope übrig. Der Session-Scope löst zwar das Verfügbarkeitsproblem während des Prozesses, bringt aber einige entscheidende Nachteile mit sich.
+An dieser Stelle kommen Konversationen ins Spiel. Konversationen sind der ideale Speicherort für Managed-Beans, deren Lebensdauer über eine Anfrage oder Ansicht hinausgeht. Bei Webanwendungen tritt dieser Fall öfters ein, da sich Geschäftsprozesse nicht immer direkt auf den Seitenfluss der Applikation abbilden lassen. Konversationen bietet einige entscheidende Vorteile gegenüber der Session:
+Eine Konversation kann im Gegensatz zur Session sehr einfach beendet und aus dem Speicher entfernt werden, ohne andere Konversationen oder Managed-Beans außerhalb der Konversation zu beeinflussen.
+Es kann beliebig viele Konversationen pro Benutzer geben.
+Eine Konversation wird normalerweise für jedes Fenster oder Tab des Browsers neu angelegt. Dadurch kann die Anwendung gleichzeitig in mehreren Fenstern oder Tabs laufen, die sich gegenseitig nicht beeinflussen. Mit der Session ist das nicht so einfach möglich, da bei den meisten Browsern für alle Tabs und oft sogar für Fenster die gleiche Session zum Einsatz kommt Der Browser bestimmt natürlich nicht selbst, welche Session zum Einsatz kommt. Wenn aber im Browser für alle Tabs und Fenster dieselben Cookies verwendet werden, kann der Server diese nicht unterscheiden.: .
+JSF kann sehr einfach um Konversationen erweitert werden. Wenn Sie Spring einsetzen, stellt das Projekt Apache MyFaces Orchestra Konversationen und eine Reihe anderer Erweiterungen für die Entwicklung von Webapplikationen mit JSF und Spring zur Verfügung. Details zu Orchestra finden Sie in Abschnitt [Sektion:  Apache MyFaces Orchestra] .
+13.5 Apache MyFaces Orchestra
+Apache MyFaces Orchestra bietet eine ganze Reihe von Erweiterungen um die Integration von JSF und Spring so einfach wie möglich zu gestalten. Das wichtigste Feature ist dabei aber sicherlich die Unterstützung von Konversationen. Abschnitt [Sektion:  Konversationen mit Orchestra] widmet sich daher komplett dem Thema Konversationen mit Orchestra und Spring .
+Ähnlich wie bei Konversationen ist beim Einsatz der Java Persistence API (JPA) die Lebensdauer des Persistenzkontexts ein wichtiges Kriterium. Wie bei den Managed-Beans kann es auch hier zu Problemen kommen, wenn die Lebensdauer zu kurz oder zu lang gewählt wird. Orchestra bietet auch für dieses Problem eine Lösung, indem es den Persistenzkontext und Konversationen zusammenführt. Weiterführende Informationen zur Persistenzunterstützung von Orchestra finden Sie in Abschnitt [Sektion:  Persistenz] .
+Als weiteres interessantes Feature bietet Orchestra die Möglichkeit, einen View-Controller für eine Ansicht zu definieren. Dabei handelt es sich um eine Managed-Bean, die über eine Annotation oder eine Namenskonvention an eine Ansicht gebunden ist. Der View-Controller wird dann bei der Ausführung des Lebenszyklus an mehreren Stellen, wie etwa kurz vor dem Rendern der Ansicht, benachrichtigt und kann entsprechend darauf reagieren. Abschnitt [Sektion:  View-Controller] zeigt Details zu den View-Controllern und beschreibt wie sie in der Praxis eingesetzt werden können.
+Abschließend finden Sie in Abschnitt [Sektion:  MyGourmet 17 Spring: Apache MyFaces Orchestra] das Beispiel MyGourmet 17 Spring , in dem einige Orchestra -Features in die Praxis umgesetzt werden.
+13.5.1 Konversationen mit Orchestra
+Eine Konversation ist genau wie die Session oder die HTTP-Anfrage als Gültigkeitsbereich für Managed-Beans einsetzbar. Die Lebensdauer einer Konversation beginnt in Orchestra mit dem ersten Zugriff auf eine Bean im Conversation-Scope. Wie wird allerdings festgelegt, wie lange eine Konversation dauert? Bei den Standard-Gültigkeitsbereichen ist das Ende der Lebensdauer klar definiert. Der Request-Scope endet nach jeder Anfrage, der Session-Scope endet mit dem Ende der Session und so weiter.
+Orchestra definiert zwei verschiedene Strategien, um eine Konversation zu beenden. Konversationen mit manueller Lebensdauer (Manual-Scope) müssen explizit über die Orchestra-API oder ein spezielles Tag in der Seitendeklaration beendet werden. Alternativ bietet Orchestra auch eine automatische Verwaltung der Lebensdauer (Access-Scope). Dabei bleibt die Konversation über mehrere Anfragen hinweg aktiv, bis nicht mehr auf die Eigenschaften oder Methoden einer Bean in der Konversation zugegriffen wird.
+13.5.1.1 Konfiguration von Orchestra
+Orchestra setzt für die Verwaltung der Conversation-Scopes auf Spring und die ab Spring in Version 2.0 verfügbaren benutzerdefinierten Scopes. Dadurch ist es zwingend erforderlich, dass alle Managed-Beans im Conversation-Scope über Spring definiert werden. Sie sollten das allerdings nicht als Einschränkung, sondern als Chance betrachten - Sie können auch sonst von der Konfiguration Ihrer Beans über Spring profitieren .
+Die Basiskonfiguration von Spring haben wir ja bereits in Abschnitt [Sektion:  Konfiguration von Spring] behandelt. Listing Spring-Konfiguration der Conversation-Scopes von Orchestra zeigt alle für Orchestra zusätzlich notwendigen Einträge in der Spring-Konfiguration.
+ <import resource=
+    "classpath*:/META-INF/spring-orchestra-init.xml"/>
 
-==== Conversations with Orchestra
+<!-- Configure additional Orchestra scopes -->
+<bean class="org.springframework.beans.factory.config
+    .CustomScopeConfigurer">
+  <property name="scopes">
+    <map>
+      <entry key="manual">
+        <bean class="org.apache.myfaces.orchestra
+            .conversation.spring.SpringConversationScope">
+          <property name="timeout" value="30"/>
+          <property name="lifetime" value="manual"/>
+        </bean>
+      </entry>
+      <entry key="access">
+        <bean class="org.apache.myfaces.orchestra
+            .conversation.spring.SpringConversationScope">
+          <property name="timeout" value="30"/>
+          <property name="lifetime" value="access"/>
+        </bean>
+      </entry>
+    </map>
+  </property>
+</bean>
+Zuerst werden mit dem import -Element alle im Classpath befindlichen Spring-Konfigurationen für Orchestra importiert. In diesen importierten Dateien werden einige Basiseinstellungen vorgenommen. Anschließend kommt erneut eine Bean mit der bereits aus Abschnitt [Sektion:  MyGourmet 16 Spring: Integration von Spring] bekannten Klasse CustomScopeConfigurer zum Einsatz, um die beiden Conversation-Scopes von Orchestra zu definieren.
+Die beiden Gültigkeitsbereiche können mit den im Attribut key angegebenen Namen bei der Definition von Managed-Beans verwendet werden. Mit access wird eine Bean im Access-Scope und mit manual eine Bean im Manual-Scope erstellt. Die beiden Scope-Definitionen unterscheiden sich in der Konfiguration nur durch die unterschiedliche Initialierung der Eigenschaft lifetime . Die Eigenschaft timeout gibt die Zeitspanne in Minuten an, die Orchestra nach dem letzten Zugriff auf eine Konversation abwartet, bevor sie automatisch beendet wird.
+Bei der Wahl dieses Timeouts sollten Sie das richtige Verhältnis zum Session-Timeout im Auge behalten. Wenn der Session-Timeout kleiner ist als der Timeout der Konversation, wird bei kompletter Inaktivität des Benutzers die Konversation bereits mit dem Session-Timeout beendet. Arbeitet der Benutzer allerdings mit einem anderen Bereich der Applikation weiter, ohne auf die offene Konversation zuzugreifen, wird der Session-Timeout bei jeder Anfrage zurückgesetzt. In diesem Fall greift der Timeout der Konversation.
+Damit Orchestra ordnungsgemäß funktioniert, muss der in Listing Konfiguration für Orchestra in der web.xml gezeigte Listener in der web.xml konfiguriert werden.
+ <listener>
+  <listener-class>
+    org.apache.myfaces.orchestra.conversation.servlet
+        .ConversationManagerSessionListener
+  </listener-class>
+</listener>
+13.5.1.2 Konversationen im Einsatz
+Zur Demonstration der neuen Scopes werden wir zuerst den Gültigkeitsbereich der Managed-Bean customerBean von Session auf Access umstellen. Dazu muss nur der Wert des value -Elements der Annotation @Scope von session auf access geändert werden. Listing Definition einer Bean im Access-Scope zeigt die Klassendefinition mit den Annotationen. Werden die Beans mit XML-Elementen definiert, muss dort das Attribut scope auf den Wert access gesetzt werden.
+ @Named("customerBean")
+@Scope("access")
+public class CustomerBean {
+...
+}
+Wie verhält sich diese Managed-Bean in der Praxis? In unserem Beispiel wird die Bean mit dem Namen customerBean in den Ansichten showCustomer.xhtml und editCustomer.xhtml verwendet. Durch den initialen Aufruf von showCustomer.xhtml wird neben der Bean auch die Konversation erstellt. Der Name der Konversation leitet sich automatisch vom Namen der Managed-Bean ab und lautet ebenfalls customerBean . Navigiert der Benutzer dann weiter zu editCustomer.xhtml , um die Daten zu ändern und anschließend wieder zurück, bleibt die Konversation offen. Erst wenn der Benutzer eine Ansicht aufruft, in der kein Zugriff auf die Eigenschaften und Methoden der Bean customerBean erfolgt, wird die Konversation beendet. In Abschnitt [Sektion:  MyGourmet 17 Spring: Apache MyFaces Orchestra] werden wir die Lebensdauer von Konversationen anhand von MyGourmet 17 Spring noch etwas genauer analysieren.
+Konversationen mit automatischer Lebensdauer sind zwar sehr praktisch, können aber in manchen Fällen zu unerwarteten Ergebnissen führen. Wenn zum Beispiel während der Ausführung einer Ajax-Anfrage kein Zugriff auf die Managed-Bean erfolgt, wird sie von Orchestra entfernt und beim nächsten Zugriff wieder neu erstellt. Das kann zu sehr unangenehmen Nebeneffekten führen, die nur schwer zu lokalisieren sind. Ebenso gut kann der Fall eintreten, dass eine Managed-Bean sehr lange im Speicher bleibt, wenn sie - vielleicht unbeabsichtigt - in irgendeiner Form auf mehreren Seiten in Folge referenziert wird. Das kann insbesondere in Kombination mit der Persistenzverwaltung von Orchestra zu ungewollten Effekten führen. Bei manueller Lebensdauer müssen Sie selbst bestimmen, wie lange die Konversation im Speicher gehalten wird.
+In der Praxis ist es nicht immer erwünscht, dass jede Bean eine eigene Konversation erhält. Mit der Annotation @ConversationName kann deswegen der Name der Konversation explizit im Element value angegeben werden. Wenn zwei Managed-Beans denselben Namen für ihre Konversation definieren und gleichzeitig verwendet werden, landen sie in derselben Konversation.
+Das Beispiel in Listing Definition zweier Beans in derselben Konversation mit Annotation umfasst die Beans mit den Namen bean1 und bean2 im Manual-Scope, deren Konversationsname explizit auf conversation gesetzt ist. Die Konversation wird beim ersten Zugriff auf eine der Beans erstellt und bleibt so lange aktiv, bis sie manuell oder durch einen Timeout beendet wird. Werden in diesem Zeitraum beide Beans referenziert, landen sie in derselben Konversation. Ohne @ConversationName würde es in diesem Fall eine Konversation mit dem Namen bean1 und eine mit dem Namen bean2 geben.
+ @Named("bean1")
+@Scope("manual")
+@ConversationName("conversation")
+public class SomeBean {
+...
+}
 
-===== Configuration of Orchestra
+@Named("bean2")
+@Scope("manual")
+@ConversationName("conversation")
+public class AnotherBean {
+...
+}
+Der Name der Konversation kann auch in XML über das Attribut conversationName gesetzt werden. Listing Definition zweier Beans in derselben Konversation mit XML zeigt die XML-Variante des Beispiels inklusive der Definition des Orchestra-Namensraums.
+ <beans ... xmlns:orchestra="http://myfaces.apache.org/orchestra"
+    xsi:schemaLocation="http://myfaces.apache.org/orchestra
+    http://myfaces.apache.org/orchestra/orchestra.xsd">
+...
+<bean id="bean1" class="SomeBean" scope="manual"
+    orchestra:conversationName="conversation"/>
+<bean id="bean2" class="AnotherBean" scope="manual"
+    orchestra:conversationName="conversation"/>
+</beans>
+Sehen wir uns auch noch eine Managed-Bean im Manual-Scope an. Als Beispiel werden wir in MyGourmet 17 Spring einen kleinen Wizard zum Anlegen eines Kunden in zwei Schritten erstellen. Der Wizard umfasst die Ansichten addCustomer1.xhtml und addCustomer2.xhtml , in denen die Managed-Bean addCustomerBean verwendet wird. Listing Manuelles Beenden einer Konversation über die Java-API zeigt den relevanten Teil des Sourcecodes dieser Bean im Manual-Scope. Die Bean und die Konversation werden beim ersten Zugriff erstellt. Da es sich aber diesmal um eine manuelle Konversation handelt, wird sie nicht automatisch beendet. Diese Aufgabe wird manuell beim Speichern oder Abbrechen des Wizards in den Action-Methoden über einen Aufruf der Methode invalidate() auf der aktuellen Konversation erledigt. Die aktuelle Konversation wird von Conversation.getCurrentInstance() zurückgeliefert. Listing Manuelles Beenden einer Konversation über die Java-API zeigt die beiden Methoden save() zum Speichern des neuen Kunden und cancel() zum Abbrechen des Wizards.
+ @Named("addCustomerBean")
+@Scope("manual")
+public class AddCustomerBean extends CustomerBeanBase {
+  ...
+  public String save() {
+    customerService.save(customer);
+    Conversation.getCurrentInstance().invalidate();
+    return ViewIds.CUSTOMER_LIST_VIEW_ID;
+  }
+  public String cancel() {
+    Conversation.getCurrentInstance().invalidate();
+    return ViewIds.CUSTOMER_LIST_VIEW_ID;
+  }
+}
+Eine Konversation kann auch mit dem Tag endConversation aus der Orchestra-Tag-Bibliothek beendet werden, die über den Namensraum http://myfaces.apache.org/orchestra verfügbar ist. Dieses Tag wird als Kind-Tag zu einer Befehlskomponente hinzugefügt und bekommt im Attribut name den Namen der zu beendenden Konversation. Listing Manuelles Beenden einer Konversation in der Seitendeklaration zeigt die Cancel-Schaltfläche des Beispiels mit dem Tag endConversation . Beide Varianten erfüllen denselben Zweck.
+ <h:commandButton id="cancel" value="#{msgs.cancel}"
+    action="#{addCustomerBean.cancel}" immediate="true">
+  <o:endConversation name="addCustomerBean"/>
+</h:commandButton>
+Wenn Sie MyGourmet 17 Spring starten und im Browser durch die Anwendung klicken, werden Sie bemerken, dass jede URL der Anwendung den Request-Parameter mit dem Namen conversationContext aufweist. Orchestra benutzt den Wert dieses Parameters, um verschiedene Fenster und Tabs derselben Browserinstanz zu unterscheiden. Wie Sie bereits wissen, werden Konversationen in der Session abgelegt. Damit sich diese Konversationen eindeutig auf ein Fenster oder ein Tab des Browsers abbilden lassen, führt Orchestra das Konzept des Konversationskontexts ein. Der Wert des Parameters conversationContext ist der Bezeichner des aktuellen Kontexts und stellt die Verbindung her. Ein solcher Kontext ist ein Container für alle Konversationen eines Fensters oder Tabs.
+Wenn die Anwendung in einem neuen Fenster oder Tab erneut geöffnet wird, fehlt dieser Parameter und Orchestra erstellt einen neuen Konversationskontext mit einem neuen Bezeichner. Sie können das überprüfen, indem Sie MyGourmet 17 Spring in zwei Tabs Ihres Browsers parallel starten. Sie werden sehen, dass sich der Wert des Parameters conversationContext unterscheidet.
+Abbildung Session mit Orchestra-Konversationen stellt eine Session mit zwei Konversationskontexten dar, in denen jeweils die gleichen Konversationen aktiv sind. Diese Situation entsteht, wenn die Anwendung in zwei Fenstern oder Tabs gleichzeitig benutzt wird. Erst durch den Kontext ist es möglich, dass eine Konversation mehrfach existiert.
+ 
+Abbildung:Session mit Orchestra-Konversationen
+13.5.2 Persistenz
+Bei Webanwendungen, die zum Persistieren der Daten die Java Persistence API (JPA) einsetzen, taucht bei der Abbildung von Geschäftsprozessen ein weiteres Problem auf. Neben der Lebensdauer der Managed-Beans ist die Lebensdauer des Persistenzkontexts ein weiteres entscheidendes Kriterium. Ist diese Dauer zu kurz gewählt, kann es zu Problemen beim Laden von Daten kommen (die LazyInitializationException dürfte vielen Entwicklern ein Begriff sein). Ist sie hingegen zu lang, steigt der Speicherverbrauch der Anwendung zunehmend an.
+Die meisten Probleme rühren daher, dass die Lebensdauer des Persistenzkontexts und die der Managed-Beans nicht übereinstimmen. In vielen Fällen ist die Lebensdauer der Beans länger als die des Persistenzkontexts. Da Managed-Beans oft geladene Entitäten halten, kommt es bei einem Zugriff auf eine Eigenschaft, die vor dem Schließen des Persistenzkontexts noch nicht geladen wurde, zur gefürchteten LazyInitializationException .
+Orchestra bietet auch für dieses Problem eine Lösung an, indem es den Persistenzkontext an eine Konversation bindet und für die Lebensdauer der Konversation offen hält. Wie bei den Konversationen gilt, dass der Persistenzkontext so lange wie benötigt, aber so kurz wie möglich, offen bleiben soll. Mit dem Ende der Konversation wird auch der Persistenzkontext geschlossen.
+Da der Persistenzkontext während der ganzen Lebensdauer der Konversation offen bleibt, kann ohne Probleme direkt mit den von der Datenbank geladenen Entitäten gearbeitet werden.
+Ein wichtiger Punkt ist, dass jede Konversation einen eigenen Persistenzkontext und somit auch einen eigenen JPA-Entity-Manager erhält. Entitäten, die in einer Konversation geladen wurden, können daher nicht so ohne Weiteres in einer anderen Konversation verwendet werden, da sie an einen Entity-Manager gebunden sind. Wenn Sie dieselbe Entität gleichzeitig in mehreren Konversationen benötigen, sollte sie auch in jeder Konversation eigenständig geladen werden. Wenn Sie eine Entität von einer Konversation zu einer anderen weiterreichen wollen, zum Beispiel beim Übergang von einer Listenansicht auf eine Detailansicht, sollten Sie nur die ID übergeben und die Entität in der zweiten Konversation neu laden.
+Alternativ können Sie auch mehrere Managed-Beans in derselben Konversation ablegen, damit sie automatisch denselben Persistenzkontext verwenden. Wie das funktioniert haben wir ja im letzten Abschnitt gezeigt. Sie sollten sich allerdings bewusst sein, dass der Speicherverbrauch mit jeder geladenen Entität ansteigt.
+Wir werden hier nicht weiter auf die zusätzlich notwendige Konfiguration und die praktischen Aspekte der Persistenzunterstützung in Orchestra eingehen. Nachdem dieser Teil von Orchestra nur in Kombination mit JPA funktioniert, werden wir dieses Thema erst in Kapitel Sektion:  MyGourmet Fullstack Spring -- JSF, Spring, Orchestra und JPA kombiniert behandeln. Dort zeigen wir Ihnen dann anhand von MyGourmet , wie Sie eine komplette Anwendung mit JSF, Spring , Orchestra und JPA erstellen.
+Doch bevor es so weit ist, zeigen wir Ihnen im nächsten Abschnitt erst noch, wie Sie in Orchestra View-Controller definieren.
+13.5.3 View-Controller
+Als weiteres interessantes Feature bietet Orchestra die Möglichkeit, einen View-Controller für eine Ansicht zu definieren. Dabei handelt es sich um eine Managed-Bean, die an eine Ansicht gebunden ist und bei der Ausführung des Lebenszyklus an mehreren Stellen benachrichtigt wird. Ab JSF 2.0 können Sie alternativ auch System-Events einsetzen, um auf Ereignisse des Lebenszyklus zu reagieren.
+Die Verbindung zwischen Ansicht und View-Controller kann mit der Annotation @ViewController auf der Klasse der Managed-Bean oder über eine Namenskonvention definiert werden. Die Annotation @ViewController nimmt im Element viewIds eine Liste der View-IDs auf, für die die Bean als View-Controller fungieren soll. Listing Annotationsbasierte Definition eines View-Controllers zeigt die Klasse AddCustomerBean , die als View-Controller für die Ansichten mit den View-IDs /addCustomer1.xhtml und /addCustomer2.xhtml definiert ist.
+ @Named("addCustomerBean")
+@Scope("manual")
+@ViewController(viewIds = {"/addCustomer1.xhtml",
+    "/addCustomer2.xhtml"})
+public class AddCustomerBean
+    extends CustomerBeanBase {
 
-===== Conversations in Action
+  @InitView
+  public void createCustomer() {
+    if (customer == null) {
+      customer = customerService.createNew();
+    }
+  }
+  ...
+}
+Ein View-Controller kann auch über eine Namenskonvention mit einer Ansicht verbunden werden. Der Name der Managed-Bean (nicht der Klassenname), die als View-Controller zum Einsatz kommt, wird dabei aus dem Namen der View-ID berechnet. Dazu werden in der View-ID alle Zeichen nach einem Schrägstrich in Großbuchstaben umgewandelt. Anschließend werden alle Schrägstriche und sämtliche Zeichen ab dem ersten Punkt entfernt. Entsteht dadurch ein ungültiger Bean-Name, wird das Präfix _ vorangestellt. Tabelle tab:orchestra-namemapper zeigt einige Beispiele.
+View-ID	Bean-Name
+addCustomer1.xhtml	addCustomer1
+customer/registration1.xhtml	customerRegistration1
+1addCustomer.xhtml	_ 1addCustomer
+Die Definition der View-Controller über die Namenskonvention hat einige Nachteile gegenüber der annotationsbasierten Variante. Annotationen bieten neben der beliebigen Wahl der Bean-Namen auch die Möglichkeit, eine Bean als View-Controller für mehrere Ansichten zu verwenden. Das Beispiel aus Listing Annotationsbasierte Definition eines View-Controllers kann daher über die Namenskonvention in der Form nicht realisiert werden.
+Sobald eine Ansicht mit einem View-Controller verbunden ist, kann Orchestra zu bestimmten Zeiten während der Ausführung des Lebenszyklus den View-Controller benachrichtigen. Dabei werden folgende Methoden des View-Controllers aufgerufen:
+Nach der Restore-View-Phase wird die mit @InitView annotierte Methode des View-Controllers aufgerufen. Wenn die Methode den Namen initView() hat, kann die Annotation entfallen.
+Vor der Invoke-Application-Phase wird die mit @PreProcess annotierte Methode aufgerufen. Wenn die Methode den Namen preProcess() hat, kann die Annotation entfallen.
+Vor der Render-Response-Phase wird die mit @PreRenderView annotierte Methode aufgerufen. Wenn die Methode den Namen preRenderView() hat, kann die Annotation entfallen.
+Im View-Controller in Listing Annotationsbasierte Definition eines View-Controllers ist zum Beispiel die Methode createCustomer() mit @InitView annotiert. Diese Methode wird für die beiden Ansichten /addCustomer1.xhtml und /addCustomer2.xhtml nach jeder Restore-View-Phase aufgerufen, um die Variable customer zu initialisieren, falls sie null ist.
+View-Controller bilden die Grundlage für ein weiteres Feature von Orchestra . Mit der Annotation @ConversationRequire kann eine Reihe von Ansichten mit einer bestimmten Konversation verknüpft werden. Das ist besonders für Geschäftsprozesse interessant, die sich über mehrere Ansichten mit einer definierten Einstiegsseite erstrecken. Solange die Konversation noch nicht existiert, kann der Benutzer nur auf die Einstiegsseite zugreifen. Jeder Zugriff auf eine andere Seite des Prozesses führt, je nach Konfiguration, zu einem Redirect oder dem Auslösen einer Navigation. Erst wenn die Konversation über die Einstiegsseite erzeugt wird, sind auch die anderen Ansichten des Prozesses verfügbar.
+Sehen wir uns das anhand des letzten Beispiels an. Listing View-Controller für einen Prozess mit mehreren Ansichten zeigt nochmals die Klasse AddCustomerBean , diesmals allerdings mit der Annotation @ConversationRequire . Im Element conversationNames der Annotation werden alle Konversationen angegeben, auf deren Existenz überprüft werden soll, bevor ein Benutzer auf die Ansichten zugreifen kann. Eine Ausnahme bilden alle im Element entryPointViewIds angegebenen View-IDs. Diese Ansichten können auch ohne eine existierende Konversation aufgerufen werden - irgendwie muss der Ablauf ja gestartet werden. In unserem Beispiel ist der Einstiegspunkt des Ablaufs die Ansicht addCustomer1.xhtml . Erfolgt ein Zugriff auf addCustomer2.xhtml , ohne dass die Konversation addCustomerBean existiert, wird eine Navigation mit der im Element navigationAction angegebenen Zeichenkette ausgeführt. Dabei kann es sich um eine globale Navigationsregel oder ab JSF 2.0 auch direkt um eine View-ID handeln. In unserem Beispiel wird einfach auf die erste Ansicht navigiert. Alternativ kann statt des Elements navigationAction auch das Element redirect mit einer URL für einen Redirect angegeben werden.
+ @Named("addCustomerBean")
+@Scope("manual")
+@ViewController(viewIds = {"/addCustomer1.xhtml",
+    "/addCustomer2.xhtml"})
+@ConversationRequire(conversationNames = "addCustomerBean",
+    entryPointViewIds = "/addCustomer1.xhtml",
+    navigationAction = "/addCustomer1.xhtml")
+public class AddCustomerBean extends CustomerBeanBase {
+...
+}
+13.5.4 MyGourmet 17 Spring: Apache MyFaces Orchestra
+MyGourmet 17 Spring integriert Apache MyFaces Orchestra und zeigt neben der notwendigen Konfiguration auch einige Anwendungsfälle. Orchestra bietet ab Version 1.4 ein neues Modul Core20 , das bereits an JSF 2.0 angepassst ist. Core20 fasst die aus älteren Versionen von Orchestra bekannten Module Core mit der Basisfunktionalität und Core15 mit den im Laufe des Abschnitts vorgestellten Annotationen zusammen. Das Modul wird über eine Abhängigkeit in der pom.xml in das Maven-Projekt eingebunden. Details entnehmen Sie bitte direkt dem Sourcecode. Auf die Konfiguration von Spring und Orchestra werden wir hier nicht mehr näher eingehen.
+In MyGourmet 17 Spring haben wir den Kundenbereich der Anwendung leicht umgebaut. Die Startseite ist jetzt customerList.xhtml , auf der eine Liste aller Kunden in einer mc:dataTable -Komponente dargestellt wird. Von dieser Ansicht aus kann der Benutzer zur Detailseite eines Kunden springen, einen neuen Kunden anlegen oder einen bereits vorhandenen Kunden löschen.
+Die Bean customerListBean im Access-Scope ist als View-Controller der Ansicht definiert. Listing MyGourmet 17 Spring: View-Controller der Kunden-Übersichtsseite zeigt die Klasse CustomerListBean der Bean. Die Liste der Kunden wird in der Methode preRenderView geladen. Da sie mit @PreRenderView annotiert ist, wird sie vor jedem Rendern der Ansicht von Orchestra aufgerufen. Zum Löschen eines Kunden wird über eine h:commandLink -Komponente die Methode deleteCustomer aufgerufen. Der zu löschende Kunde wird dabei direkt als Parameter übergeben:
+<h:commandLink value="#{msgs.delete}" action=
+    "#{customerListBean.deleteCustomer(customer)}">
+  <f:ajax render="@form"/>
+</h:commandLink>
+Das Löschen eines Kunden wird als Ajax-Anfrage ausgeführt. Der Access-Scope der Bean bedeutet, dass die Konversation der Bean so lange offen bleibt, bis nicht mehr auf sie zugegriffen wird.
+ @Named("customerListBean")
+@Scope("access")
+@ViewController(viewIds = {"/customerList.xhtml"})
+public class CustomerListBean {
 
-==== Persistence
+  @Inject
+  private CustomerService customerService;
+  private List<Customer> customerList;
 
-==== View Controller
+  @PreRenderView
+  public void preRenderView() {
+    customerList = customerService.findAll();
+  }
+  public List<Customer> getCustomerList() {
+    return customerList;
+  }
+  public void deleteCustomer(Customer customer) {
+    customerService.delete(customer);
+  }
+}
+Wir haben im Zuge der Änderungen am Kundenbereich in MyGourmet 17 Spring alle Operationen für Objekte vom Typ Customer im Interface CustomerService zusammengefasst. Die Implementierung Cus-tomerServiceImpl dieses Interface steht als Bean mit dem Bezeichner customerService zur Verfügung. In Listing MyGourmet 17 Spring: View-Controller der Kunden-Übersichtsseite sehen Sie, wie die Abhängigkeit zum Service mit @Inject definiert wird.
+Die Detailseite showCustomer.xhtml ist ebenfalls über eine h:commandLink -Komponente in der Übersichtsseite erreichbar. Beim Aktivieren der Komponente wird die Methode showCustomer der Bean customerBean mit der ID des Kunden als Parameter aufgerufen. Die Methode lädt den Kunden und gibt die View-ID der Detailseite für die Navigation zurück. Die Managed-Bean customerBean ist als View-Controller für editCustomer.xhtml , showCustomer.xhtml und editAddress.xhtml definiert und wird im Access-Scope angelegt. Die Klasse AddressBean ist in dieser Klasse aufgegangen. Listing MyGourmet 17 Spring: View-Controller der Kundenansichten zeigt den Kopf der Klasse CustomerBean . Die Klasse CustomerBean ist von der abstrakten Klasse CustomerBeanBase abgeleitet, die einige Basisfunktionalität für Kundenansichten beinhaltet, die auch von AddCustomerBean beim Anlegen eines Kunden verwendet wird - doch dazu später mehr.
+ @Named("customerBean")
+@Scope("access")
+@ViewController(viewIds = {"/editCustomer.xhtml",
+    "/showCustomer.xhtml", "/editAddress.xhtml"})
+public class CustomerBean extends CustomerBeanBase {
+...
+}
+Werfen wir noch einen Blick auf die Konversation der Managed-Bean customerBean . Wenn der Benutzer von der Übersichtsseite auf die Detailseite eines Kunden geht, wird neben der Managed-Bean auch die Konversation customerBean mit automatisch verwalteter Lebensdauer erstellt (Access-Scope). Die Konversation wird erst dann beendet, wenn während einer Anfrage keine Zugriffe mehr auf die Bean customerBean erfolgen. Abbildung Lebensdauer der Konversation customerBean zeigt eine Serie von Zugriffen auf die Ansichten customerList.xhtml , showCustomer.xhtml , editCustomer.xhtml und editAddress.xhtml . Der Balken am unteren Ende der Abbildung zeigt die Lebensdauer der Konversation customerBean .
+ 
+Abbildung:Lebensdauer der Konversation customerBean
+Der Wizard zum Anlegen eines neuen Kunden ist ebenfalls von der Übersichtsseite aus erreichbar. Der Ablauf besteht aus den beiden Ansichten addCustomer1.xhtml zur Eingabe der Basisdaten des Kunden und addCustomer2.xhtml zur Eingabe einer Adresse. Die Managed-Bean addCustomerBean ist der View-Controller für beide Ansichten und liegt diesmal im Manual-Scope. Listing MyGourmet 17 Spring: View-Controller des Wizards zum Anlegen eines Kunden zeigt die Klasse AddCustomerBean . Die Bean bekommt auch den Service customerService injiziert, der zum Erzeugen einer neuen Customer -Instanz in der Methode createCustomer verwendet wird. Da diese Methode mit @InitView annotiert ist, wird sie von Orchestra nach der Restore-View-Phase aufgerufen, wenn der Lebenszyklus für eine der beiden verknüpften Ansichten ausgeführt wird. So ist gewährleistet, dass immer eine Instanz der Klasse Customer existiert.
+ @Named("addCustomerBean")
+@Scope("manual")
+@ViewController(viewIds = {"/addCustomer1.xhtml",
+    "/addCustomer2.xhtml"})
+@ConversationRequire(conversationNames = "addCustomerBean",
+    entryPointViewIds = "/addCustomer1.xhtml",
+    navigationAction = "/addCustomer1.xhtml")
+public class AddCustomerBean extends CustomerBeanBase {
 
-==== MyGourmet 17 Spring: Apache MyFaces Orchestra
+  @Inject
+  private CustomerService customerService;
+
+  @InitView
+  public void createCustomer() {
+    if (customer == null) {
+      customer = customerService.createNew();
+    }
+  }
+  public String save() {
+    customerService.save(customer);
+    Conversation.getCurrentInstance().invalidate();
+    return ViewIds.CUSTOMER_LIST_VIEW_ID;
+  }
+  public String cancel() {
+    Conversation.getCurrentInstance().invalidate();
+    return ViewIds.CUSTOMER_LIST_VIEW_ID;
+  }
+  public Address getAddress() {
+    return customer.getAddresses().get(0);
+  }
+}
+Mit der Annotation @ConversationRequire auf dem View-Controller wird sichergestellt, dass ein Benutzer im Browser nur auf die Einstiegsseite addCustomer1.xhtml des Wizards zugreifen kann, solange die Konversation addCustomerBean nicht existiert. Als Einstiegsseiten gelten alle Ansichten, deren View-IDs im Element entryPointViewIds der Annotation aufgeführt sind. Ruft der Benutzer im Browser die Ansicht addCustomer2.xhtml auf, ohne dass die Konversation addCustomerBean existiert, oder tritt nach dem Zugriff auf die erste Seite ein Timeout der Konversation auf, wird der Navigation-Handler mit der in navigationAction angegebenen Zeichenkette /addCustomer1.xhtml aufgerufen. Durch die implizite Navigation von JSF ab Version 2.0 wird dadurch im Browser direkt die Ansicht mit der entsprechenden View-ID angezeigt. Die Ansicht ist als Einstiegsseite deklariert und Orchestra erzeugt beim ersten Zugriff auf die Bean die Konversation. Nach dem Ausfüllen der ersten Seite kann jetzt auch die zweite Seite zum Abschließen der Registrierung aufgerufen werden.
+Da die Bean addCustomerBean im Manual-Scope liegt, müssen wir uns selbst um das Beenden der Konversation kümmern. Dazu wird in den beiden Action-Methoden save und cancel die Methode invalidate auf der aktuellen Konversation aufgerufen, die wir über Conversation.getCurrentInstance() erhalten.

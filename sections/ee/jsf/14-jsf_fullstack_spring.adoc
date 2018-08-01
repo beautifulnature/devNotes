@@ -1,17 +1,201 @@
-== MyGourmet Fullstack Spring - JSF, Spring, Orchestra and JPA combined
+14 MyGourmet Fullstack Spring -- JSF, Spring, Orchestra und JPA kombiniert
+In diesem Kapitel werden wir anhand unseres MyGourmet -Beispiels die Architektur einer JSF-Anwendung mit Spring vorstellen, die sich in dieser oder ähnlicher Form in der Praxis bewährt hat. Sie stellt eine optimale Ausgangsbasis für Ihre eigenen JSF-Webapplikationen dar - auch für komplexere Anwendungen. Das Beispiel MyGourmet Fullstack Spring ist eine Erweiterung des Beispiels MyGourmet 16 Spring , in dem zum einen die Funktionalität der Anwendung ausgebaut wird und zum anderen die Architektur der Anwendung auf den derzeitigen Stand der Technologie gebracht wird.
+Als JSF-Implementierung kommt standardmäßig Apache MyFaces zum Einsatz. Das Beispiel funktioniert aber auch mit der aktuellen Version von Mojarra . Wie in allen anderen Beispielen können Sie auch hier die JSF-Implementierung über ein Profil in der Datei pom.xml bestimmen (siehe Anhang Kapitel:  Eine kurze Einführung in Maven für Details). In Spring wird als Persistenzschicht die Java Persistence API (JPA) in Version 2.0 mit dem Hibernate EntityManager als Implementierung eingesetzt. Datenbankseitig steht HyperSQL Data-Base (HSQLDB) bereit - es kann aber jede Datenbank, die von Hibernate unterstützt wird, verwendet werden.
+Den Quellcode zu MyGourmet Fullstack finden Sie wie den Code aller bisherigen Beispiele unter http://jsfatwork.irian.at .
+14.1 Architektur von MyGourmet Fullstack
+In MyGourmet Fullstack kommt eine bei der Java-Webentwicklung weitverbreitete Architektur mit drei übereinanderliegenden Schichten zum Einsatz. Die Präsentationsschicht ist die oberste Schicht und beinhaltet die Benutzerschnittstelle. Sie greift auf die Serviceschicht zu, in der die Geschäftslogik der Anwendung definiert ist. Ganz unten liegt die Datenzugriffsschicht , in der sämtliche in der Serviceschicht getätigten Zugriffe auf die Daten der Anwendung gekapselt sind. Die Entitäten des hinter der Anwendung liegenden Modells sind schichtübergreifend verfügbar. Abbildung Architektur von MyGourmet Fullstack Spring zeigt eine grafische Darstellung der Architektur von MyGourmet Fullstack Spring .
+ 
+Abbildung:Architektur von MyGourmet Fullstack Spring
+Ein Vorteil der Schichtenarchitektur ist die strikte Trennung der Zuständigkeiten (Separation of Concerns, SOC). Jede Schicht ist dabei für einen bestimmten Bereich der Anwendung zuständig. Eine Schicht kann auf die Funktionalität der direkt unter ihr liegenden Schicht zugreifen und kann Funktionalität für die direkt über ihr liegende Schicht anbieten. Nachdem es nie Abhängigkeiten nach oben geben darf, bildet jede Schicht mit den unter ihr liegenden Schichten ein abgeschlossenes Subsystem.
+Wir empfehlen Ihnen, immer eine saubere Schichtentrennung einzuhalten - auch wenn das im ersten Moment wie ein unnötiger Mehraufwand aussieht. Die Trennung (natürlich nur an vernünftigen Stellen) zahlt sich spätestens in der Wartung aus.
+In den nächsten Abschnitten werden wir einen kurzen Blick auf alle Schichten von MyGourmet Fullstack Spring inklusive der schichtübergreifenden Entitäten werfen. Die Struktur des Maven-Projekts ist etwas einfacher gehalten und entspricht nicht direkt den Schichten der Anwendung. Aus Gründen der Einfachheit haben wir die Entitäten, die Datenzugriffsschicht und die Serviceschicht im Modul mygourmet-service-spring zusammengefasst. Die Präsentationsschicht befindet sich im Modul mygourmet-webapp-spring . Für umfangreichere Projekte macht es aber durchaus Sinn, jede Schicht in einem eigenen Maven-Modul unterzubringen.
+14.1.1 Entitäten
+Entitäten bilden das Modell der Geschäftsobjekte und sind ein zentraler Bestandteil jeder Applikation. Entitäten sind einfache JavaBeans mit Eigenschaften und deren Getter- und Setter- Methoden. Sie stellen die objektorientierte Repräsentation der Tabellen in der Datenbank dar. Da sie in allen Schichten verwendet werden, sind sie aus Sicht der Architektur außerhalb der Schichten angesiedelt. Die Entitätsklassen finden Sie im Package at.irian.jsfatwork.domain im Modul mygourmet-service-spring .
+Die Information über die Zuordnung zwischen den Tabellen und Spalten der Datenbank und den Entitäten und Eigenschaften ist direkt in den Klassen enthalten. JPA bietet dazu eine Reihe von Annotationen an. Dadurch ist es nicht mehr nötig, Unmengen von XML-Dateien zur Konfiguration dieser Zuordnung anzulegen.
+Die benutzerdefinierten Bean-Validation-Validatoren müssen sich ebenfalls im Modul mygourmet-service-spring befinden, da sie in den Entitäten benutzt werden. Nachdem Bean-Validation aber nicht von JSF abhängig ist, stellt das kein Problem dar. Die Validatorklassen und Annotationen finden Sie in at.irian.jsfatwork.validation .
+14.1.2 Datenzugriffsschicht
+In der Datenzugriffsschicht wird die Schnittstelle zur Datenbank mit einem generischen Crud-Service realisiert. Dieser Service ist in der Klasse CrudService als Spring -Bean im Singleton-Scope umgesetzt und nutzt die JPA-Unterstützung von Spring . Der Crud-Service stellt generische Methoden für die wichtigsten Funktionen des Entity-Managers von JPA bereit. Für MyGourmet reicht diese simple Umsetzung aus - in komplexeren Applikationen kann ein solcher Crud-Service dann zum Beispiel als Grundlage für Repositories dienen. Listing MyGourmet Fullstack Spring: CrudService zeigt Teile der Klasse CrudService .
+ @Named("crudService")
+@Singleton
+public class CrudService {
 
-=== Architecture of MyGourmet Fullstack
+  @PersistenceContext(unitName = "mygourmet")
+  private EntityManager em;
 
-==== Entities
+  public <T extends BaseEntity> void persist(T entity) {
+    em.persist(entity);
+  }
+  public <T extends BaseEntity> T findById(
+      Class<T> clazz, long id) {
+    return em.find(clazz, id);
+  }
+  public <T extends BaseEntity> void delete(T entity) {
+    em.remove(entity);
+  }
+}
+Die zentrale Stelle zur Interaktion mit dem Persistenzkontext von JPA ist die Klasse EntityManager . In MyGourmet wird der Entity-Manager über Spring konfiguriert und von Orchestra verwaltet. Spring wertet dazu die Annotation @PersistenceContext aus und setzt den Entity-Manager beim Erzeugen der Bean CrudService in die annotierte Eigenschaft.
+Orchestra stellt dabei sicher, dass Spring den Persistenzkontext der aktuellen Konversation verwendet. Wenn Sie Listing MyGourmet Fullstack Spring: CrudService nochmals genauer betrachten, werden Sie feststellen, dass die Bean im Singleton-Scope definiert ist. Der Persistenzkontext ist allerdings an eine kurzlebigere Konversation gebunden. Wie kann das funktionieren? Der von Spring injizierte Entity-Manager ist ein Proxy, der den Zugriff auf den aktuellen Persistenzkontext regelt.
+Durch die Persistenzunterstützung von Orchestra läuft der Crud-Service im Kontext der aktuellen Konversation ab. Sie bekommen den selben Entity-Manager injiziert, der zu Beginn der Konversation erstellt und bis zu ihrem Ende offen gehalten wird. Dadurch ist es mit Orchestra auch ohne Probleme möglich, innerhalb einer Konversation direkt mit den Entitäten zu arbeiten. Exceptions, die durch einen zu kurzlebigen Persistenzkontext hervorgerufen werden, gehören der Vergangenheit an.
+Auf die Konfiguration von JPA werden wir erst in Abschnitt [Sektion:  Konfiguration von JPA] näher eingehen.
+14.1.3 Serviceschicht
+Die Geschäftslogik der Anwendung ist in der Serviceschicht untergebracht und von der Benutzerschnittstelle entkoppelt. Die Serviceschicht bekommt den Crud-Service injiziert und ruft ihn bei Bedarf, wie zum Beispiel bei einer Persistierung, auf. Der Weg zur Datenbank sollte in der Präsentationsschicht ausschließlich über die Serviceschicht und nicht direkt über die Datenzugriffsschicht erfolgen.
+Im Package at.irian.jsfatwork.service gibt es für jede Service-Bean ein Interface. Die zugehörige Implementierung befindet sich im Unterpackage impl . Somit ist sichergestellt, dass gegen das Interface programmiert werden kann und beim Zugriff auf die Services konkrete Implementierungsdetails vor der Anwendung verborgen bleiben. Die Implementierungsklassen sind über die JSR-330-Annotation @Named als Spring -Beans im Singleton-Scope definiert. Listing MyGourmet Fullstack Spring: Serviceimplementierung zeigt exemplarisch die Klasse ProviderServiceImpl .
+ @Named("providerService")
+@Singleton
+public class ProviderServiceImpl implements ProviderService {
+  @Inject
+  private CrudService crudService;
 
-==== Data access layer
+  public Provider createNew() {
+    return crudService.createNew(Provider.class);
+  }
+  @Transactional
+  public void save(Provider entity) {
+    crudService.persist(entity);
+  }
+  @Transactional
+  public void delete(Provider provider) {
+    for (Order order : provider.getOrders()) {
+      order.setCustomer(null);
+      crudService.delete(order);
+    }
+    provider.getCategories().clear();
+    crudService.delete(provider);
+  }
+  @Transactional(readOnly = true)
+  public Provider findById(long id) {
+    return crudService.findById(Provider.class, id);
+  }
+  @Transactional(readOnly = true)
+  public List<Provider> findAll() {
+    return crudService.findAll(Provider.class);
+  }
+}
+Die Serviceschicht ist in MyGourmet Fullstack Spring auch für die Transaktionskontrolle der Applikation zuständig. Die Transaktionen sind an einzelnen Servicemethoden ausgerichtet und werden von Spring verwaltet. Jede Methode einer Serviceklasse, die mit @Transactional annotiert ist, wird in einer Transaktion ausgeführt. Die Serviceschicht ist der ideale Ort zur Definition der Transaktionen, da sie für die Benutzerschnittstelle das Tor zu Geschäftslogik darstellt. Wenn Sie nochmals einen Blick auf Listing MyGourmet Fullstack Spring: CrudService werfen, werden Sie bemerken, dass es dort keine @Transactional -Annotationen gibt. Nachdem Crud-Operationen nur im Service verwendet werden, laufen sie automatisch in den dort definierten Transaktionen ab.
+Die Schichtentrennung ist beispielsweise auch für das Testen außerordentlich wichtig. Die Applikation kann dann nämlich (ohne Ausführung der GUI selbst) über die Serviceschicht direkt getestet werden. Wir empfehlen Ihnen, die Serviceschicht von Beginn an zu testen und die Tests immer auf gleichem Stand wie die GUI-Logik zu halten. Gerade bei der Entwicklung von Webanwendungen kostet jeder zu einem Neustart des Servers führende Fehler, der mit der Ausführung eines Tests verhindert hätte werden können, wertvolle Entwicklungszeit.
+14.1.4 Präsentationsschicht
+Die Präsentationsschicht umfasst die Benutzerschnittstelle der Applikation und bildet die oberste Schicht der Architektur. In MyGourmet Fullstack Spring besteht die Präsentationsschicht aus der JSF-Webanwendung und ist im Maven -Modul mygourmet-webapp-spring untergebracht. Dieses Modul enthält alle Seitendeklarationen und ihre View-Controller sowie alle Komponenten, Konverter, Validatoren und Phase-Listener.
+Die Präsentationsschicht ist nur für die Benutzerschnittstelle zuständig und greift zur Ausführung von Geschäftslogik auf die Serviceschicht zu. Umgekehrt darf es aber keine Abhängigkeiten der Serviceschicht oder gar der Datenzugriffsschicht auf die Präsentationsschicht geben. GUI/JSF-Spezifika haben dort natürlich nichts verloren. Aufmerksame Leser werden jetzt anmerken, dass wir bereits in Abschnitt [Sektion:  Datenzugriffsschicht] , über die Datenzugriffsschicht, die Rolle von Orchestra bei der Verwaltung des Persistenzkontexts besprochen haben. Haben wir hier bereits das Prinzip der Schichtentrennung verletzt? Die Antwort lautet nein, denn Orchestra verwaltet den Persistenzkontext aus der Präsentationsschicht heraus.
+Sehen wir uns diesen Vorgang anhand der Kunden-Übersichtsseite und ihrem View-Controller etwas genauer an. Listing MyGourmet Fullstack Spring: View-Controller der Kunden-Übersichtsseite zeigt die Klasse CustomerListBean des View-Controllers. Beim initialen Zugriff auf die Ansicht wird die Bean customerListBean inklusive der gleichnamigen Konversation mit dem Persistenzkontext erstellt. Orchestra stellt ab diesem Zeitpunkt sicher, dass Spring den mit der Konversation verbundenen Persistenzkontext verwendet. Beim Laden der Kundenliste in der Methode preRenderView kommt beim Aufruf von customerService.findAll() im dahinterliegenden Crud-Service bereits der Persistenzkontext der Konversation zum Einsatz.
+ @Named("customerListBean")
+@Scope("access")
+@ViewController(viewIds = {"/customerList.xhtml"})
+public class CustomerListBean {
+  @Inject
+  private CustomerService customerService;
+  private List<Customer> customerList;
 
-==== Service layer
+  @PreRenderView
+  public void preRenderView() {
+    customerList = customerService.findAll();
+  }
+  public List<Customer> getCustomerList() {
+    return customerList;
+  }
+  public String deleteCustomer(Customer customer) {
+    customerService.delete(customer);
+    return null;
+  }
+}
+Dasselbe gilt für das Löschen eines Kunden in deleteCustomer . Beim Aufruf von customerService.delete(customer) wird im dahinterliegenden Crud-Service ebenfalls der Persistenzkontext der Konversation verwendet. Der zu löschende Kunde wird beim Aufruf der Action-Methode direkt über die Method-Expression als eine der zuvor geladenen Entitäten übergeben. Durch den an die Konversation gebundenen Persistenzkontext ist auch das ohne Probleme möglich. Nachdem die Methode delete im Service mit @Transactional annotiert ist, läuft die Operation sogar in einer Transaktion ab.
+Die automatische Verwaltung des Persistenzkontexts durch Orchestra funktioniert natürlich nur für Managed-Beans im Access- oder Manual-Scope.
+14.2 Konfiguration der Anwendung
+Die Konfiguration von MyGourmet Fullstack Spring entspricht weitestgehend der bereits bekannten Konfiguration aus den vorherigen Beispielen. Neu sind lediglich die Einstellungen für JPA und die Persistenzunterstützung von Orchestra . Wir werden daher in diesem Abschnitt nicht mehr auf die Basiskonfiguration eingehen.
+Im ersten Schritt haben wir auch die Spring-Konfiguration an die neue Struktur des Maven-Projekts angepasst. Es gibt jetzt eine Konfigurationsdatei für jedes Maven-Modul:
+service.spring.xml im Modul mygourmet-service-spring
+web.spring.xml im Modul mygourmet-webapp-spring
+Listing MyGourmet Fullstack Spring: Konfiguration von Spring in der web.xml zeigt den Parameter contextConfigLocation mit den Namen der Konfigurationsdateien in der web.xml . Die Konfigurationsdatei service.spring.xml kommt dabei aus dem Classpath, da das Service-Modul als Maven-Abhängigkeit im Webapp-Modul definiert ist.
+ <context-param>
+  <param-name>contextConfigLocation</param-name>
+  <param-value>
+    /WEB-INF/web.spring.xml
+    classpath:service.spring.xml
+  </param-value>
+</context-param>
+In Abschnitt [Sektion:  Konfiguration von JPA] werden wir kurz auf die Details der Konfiguration von JPA in Spring in der Datei service.spring.xml eingehen. Anschließend folgen in Abschnitt [Sektion:  Konfiguration von Orchestra] weiterführende Informationen zur Konfiguration der Persistenzunterstützung von Orchestra in web.spring.xml .
+14.2.1 Konfiguration von JPA
+In diesem Abschnitt werden wir Ihnen einige Details der Konfigurationsdatei service.spring.xml mit den Einstellungen für JPA unter Spring näherbringen. Wir haben den Hibernate EntityManager als Implementierung von JPA 2.0 gewählt. Als Datenbank kommt HyperSQL DataBase (HSQLDB) zum Einsatz.
+Zuerst muss eine Data-Source für die Datenbank definiert werden. Dazu kommt am besten ein Connection-Pool, in unserem Fall C3P0 , zum Einsatz. Listing MyGourmet Fullstack Spring: Konfiguration der Entity-Manager-Factory zeigt die Definition der Bean dataSource mit den Einstellungen für die Datenbank und den Connection-Pool.
+ <!-- Configure a c3p0 pooled data source -->
+<bean id="dataSource" class="com.mchange.v2.c3p0
+    .ComboPooledDataSource">
+  <property name="user" value="sa"/>
+  <property name="password" value=""/>
+  <property name="driverClass" value="org.hsqldb.jdbcDriver"/>
+  <property name="jdbcUrl" value="jdbc:hsqldb:mem:."/>
+  <property name="initialPoolSize" value="1"/>
+  <property name="minPoolSize" value="1"/>
+  <property name="maxPoolSize" value="10"/>
+</bean>
+<!-- Hibernate JPA entity manager factory -->
+<bean id="entityManagerFactory"
+    class="org.springframework.orm.jpa
+        .LocalContainerEntityManagerFactoryBean">
+  <property name="dataSource" ref="dataSource"/>
+  <property name="jpaVendorAdapter">
+    <bean class="org.springframework.orm.jpa.vendor
+        .HibernateJpaVendorAdapter">
+      <property name="showSql" value="false"/>
+      <property name="database" value="HSQL"/>
+      <property name="generateDdl" value="true"/>
+    </bean>
+  </property>
+  <property name="persistenceUnitName" value="mygourmet"/>
+</bean>
+Der zentrale Punkt der Konfiguration von JPA in Spring ist die Definition der Entity-Manager-Factory. Diese Factory wird zum Beispiel zum Erstellen des Entity-Managers benutzt, der im Crud-Service-Bean verwendet wird. In unserem Beispiel wird die Factory in der Bean entityManagerFactory definiert (siehe Listing MyGourmet Fullstack Spring: Konfiguration der Entity-Manager-Factory ). In der Eigenschaft dataSource setzen wir die zuvor definierte Data-Source und in der Eigenschaft jpaVendorAdapter folgen Details zur gewählten JPA-Implementierung. Für Hibernate kommt dazu eine Bean der Klasse HibernateJpaVendorAdapter zum Einsatz. Diese Bean bekommt in der Eigenschaft database den Typ der verwendeten Datenbank übergeben. Durch das Setzen der Eigenschaft generateDdl auf true weisen wir Hibernate an, die Datenbank aus den Mappings zu erstellen.
+Damit Spring die Annotation @PersistenceContext zum Injizieren des Entity-Managers im Crud-Service richtig verarbeitet, muss das Element <context:annotation-config/> zur Konfiguration hinzugefügt werden.
+In MyGourmet wird die Transaktionskontrolle deklarativ mit der Annotation @Transactional realisiert. @Transactional kann auf Interfaces, Klassen und Methoden mit der Sichtbarkeit public angewandt werden. Spring empfiehlt allerdings, nur konkrete Klassen zu annotieren, um Probleme mit Proxies zu vermeiden. Die Annotationen selbst reichen allerdings nicht aus, um Transaktionen zu starten. Spring muss erst noch mit dem Tag tx:annotation-driven angewiesen werden, die Transaktionskontrolle basierend auf den Annotationen durchzuführen. Der dazu benötigte Transaktionsmanager wird im Attribut transaction-manager des Tags angegeben. In unserem Fall handelt es sich dabei um einen speziellen Transaktionsmanager für JPA. Listing MyGourmet Fullstack Spring: Konfiguration der Transaktionskontrolle zeigt die Konfiguration der Transaktionskontrolle.
+ <tx:annotation-driven
+    transaction-manager="transactionManager"/>
 
-==== Presentation Layer
-
-=== Configuration of the application
-
-==== Configuration of JPA
-
-==== Configuring Orchestra
+<bean id="transactionManager"
+    class="org.springframework.orm.jpa.JpaTransactionManager">
+  <property name="entityManagerFactory"
+      ref="entityManagerFactory"/>
+</bean>
+14.2.2 Konfiguration von Orchestra
+Mit der im letzten Abschnitt gezeigten Konfiguration von JPA können wir die in Abschnitt Sektion:  Konfiguration von Orchestra beschriebene Basiskonfiguration von Orchestra für die Persistenzunterstützung erweitern. Die komplette Konfiguration finden Sie in der Konfigurationsdatei web.spring.xml im Modul mygourmet-webapp-spring .
+Damit die Bindung des Persistenzkontexts an die Konversation funktioniert, müssen die Conversation-Scopes um einen Interceptor erweitert werden. Dazu wird in der Bean-Definition über die Eigenschaft advices ein AOP-Advice hinzugefügt, der bei jedem Zugriff auf eine Bean in der Konversation prüft, ob der richtige Persistenzkontext gesetzt ist. Listing MyGourmet Fullstack Spring: Konfiguration der Conversation-Scopes mit Persistenzunterstützung zeigt die Konfiguration des Access- und des Manual-Scopes mit dem Interceptor.
+ <bean class="org.springframework.beans.factory.config
+    .CustomScopeConfigurer">
+  <property name="scopes">
+    <map>
+      <entry key="manual">
+        <bean class="org.apache.myfaces.orchestra
+            .conversation.spring.SpringConversationScope">
+          <property name="timeout" value="30"/>
+          <property name="lifetime" value="manual"/>
+          <property name="advices">
+            <list><ref bean="persistentContextInterceptor"/>
+            </list>
+          </property>
+        </bean>
+      </entry>
+      <entry key="access">
+        <bean class="org.apache.myfaces.orchestra
+            .conversation.spring.SpringConversationScope">
+          <property name="timeout" value="30"/>
+          <property name="lifetime" value="access"/>
+          <property name="advices">
+            <list><ref bean="persistentContextInterceptor"/>
+            </list>
+          </property>
+        </bean>
+      </entry>
+    </map>
+  </property>
+</bean>
+Die Bean persistentContextInterceptor ist der Interceptor für die Scopes und stellt sicher, dass immer der richtige Persistenzkontext verwendet wird. Der Interceptor benötigt eine passende Factory für die eingesetzte Persistenztechnologie, die über die Eigenschaft persistenceContextFactory gesetzt wird. Für JPA liefert Orchestra bereits eine fertige Factory mit, die zum Erzeugen des Persistenzkontexts eine fertig konfigurierte JPA-Entity-Manager-Factory in der Eigenschaft entityManagerFactory erwartet. Mit der Konfiguration der Entity-Manager-Factory verlassen wir Orchestra und tauchen in die Welt von JPA ein. Wie das funktioniert, haben wir ja bereits im letzten Abschnitt gesehen. Listing MyGourmet Fullstack Spring: Konfiguration der Persistenzunterstützung in Orchestra zeigt die Konfiguration der Persistenzunterstützung in Orchestra .
+ <bean id="persistentContextInterceptor"
+    class="org.apache.myfaces.orchestra.conversation
+    .spring.PersistenceContextConversationInterceptor">
+  <property name="persistenceContextFactory"
+      ref="persistentContextFactory"/>
+</bean>
+<bean id="persistentContextFactory"
+    class="org.apache.myfaces.orchestra.conversation
+    .spring.JpaPersistenceContextFactory">
+  <property name="entityManagerFactory"
+      ref="entityManagerFactory"/>
+</bean>
+Damit ist MyGourmet Fullstack Spring fertig konfiguriert und einsatzbereit. Wir möchten Sie dazu einladen, den Quellcode der Anwendung genau unter die Lupe zu nehmen. Betrachten Sie das Beispiel als Basis für eigene Experimente und erkunden Sie die Details der Zusammenarbeit von JSF, JPA, Spring und Orchestra in der Praxis.

@@ -1,39 +1,331 @@
-== Tobago - JSF and more
+15 Tobago -- JSF und mehr
+Für die Entwicklung von Webapplikationen unter Verwendung des JSF-Standards stehen eine Vielzahl von Frameworks zur Verfügung. In der Regel bieten diese Frameworks Controls und weitere Features zur Gestaltung des Frontends einer Applikation an. Eines dieser Frameworks nennt sich Tobago , auf das wir im Folgenden genauer eingehen werden.
+15.1 Tobago -- ein Überblick
+Die Entwicklung von Tobago startete im Jahr 2002. Seit 2005 ist Tobago ein Open-Source-Projekt und wurde wie das Framework Trinidad im Jahr 2006 ein Subprojekt des Apache MyFaces -Projekts.
+Tobago bietet eine komfortable Möglichkeit, Webapplikationen auf Basis weiterentwickelter JSF-Standardcontrols zu erstellen. Die Positionierung der einzelnen Controls wird dabei im Gegensatz zu anderen Frameworks über einen Layout-Manager gesteuert, auf den im weiteren Verlauf noch genauer eingegangen wird.
+Tobago ist jedoch mehr als nur eine Komponentenbibliothek, die auf den JSF-Standard aufsetzt. Der Fokus von Tobago liegt vielmehr darin, Geschäftsanwendungen ohne die direkte Nutzung von HTML, CSS und JavaScript zu erstellen. Zudem folgt eine Tobago -Seitenbeschreibung mehr der Entwicklung eines Desktop-User-Interface als einer Webseite. Eine Seitenbeschreibung in Tobago benötigt kein HTML, somit auch nicht das typische HTML-Gerüst aus DIV-Tags, um die Controls auf der Seite zu positionieren.
+Das Design und die Styles werden in Tobago über CSS geregelt. Zurzeit unterstützt Tobago lediglich Themes für HTML/CSS-Clients (Renderer für WML und XSL:FO stellen ein Proof of Concept dar). Um eine gewisse Unabhängigkeit zu erreichen, sollte in der Seitenbeschreibung weder HTML noch CSS oder JavaScript verwendet werden. Eine Seitenbeschreibung in Tobago beinhaltet in der Regel nur Tobago - und JSF-Tags.
+Das Tobago -Projekt steht unter http://myfaces.apache.org/tobago/ zur Verfügung und bietet neben weiterführender Dokumentation noch Folgendes:
+Controlübersicht Die Demonstration stellt vorhandene Controls und deren Umgang beziehungsweise Konfigurationsmöglichkeiten vor. http://people.apache.org/repo/m2-snapshot-repository/org/apache/myfaces/tobago/tobago-example-demo/
+Adressbuchapplikation Das Adressbuch ist eine kleine, in sich geschlossene Anwendung und zeigt den Umgang mit Tobago in einer komplexeren Umgebung. http://people.apache.org/repo/m2-snapshot-repository/org/apache/myfaces/tobago/tobago-example-addressbook/
+Basis-Setup Das Basis-Setup kann als initiales Projekt-Setup verwendet werden. http://people.apache.org/repo/m2-snapshot-repository/org/apache/myfaces/tobago/tobago-example-blank/
+15.2 Tobago und MyGourmet
+Um einen Einblick in Tobago zu bekommen, gehen wir auf die bereits bekannte Applikation MyGourmet ein. Abbildung Tobago und MyGourmet zeigt eine mit Tobago erstellte Webseite der Applikation.
+ 
+Abbildung:Tobago und MyGourmet
+Entwicklern von Webapplikationen wird durch den Einsatz von Tobago die Erstellung eines Frontends erleichtert, indem sie sich nicht mit einer Vielzahl verschiedener Technologien auseinandersetzen müssen, sondern sich lediglich auf ein Framework konzentrieren können.
+Listing Seitendeklaration mit Tobago und Facelets zeigt einen Ausschnitt aus der für die Seitenerstellung verwendeten Datei customer.xhtml . Für die Seitenbeschreibung mittels Tobago wurde kein HTML verwendet und das generelle Layout der Seite wurde lediglich durch Angabe der vorhandenen Zeilen bzw. Spalten und eine jeweilige Größendefinition geregelt. Auf die möglichen Definitionen und deren Bedeutung wird im Abschnitt [subsec Grid-Layout] eingegangen.
+ <tc:tabGroup switchType="reloadTab">
+  <tc:tab label="#{msgs.title_show_customer}">
+    <tc:panel>
+      <f:facet name="layout">
+        <tc:gridLayout rows="fixed;fixed;..."/>
+      </f:facet>
+      <tx:in label="#{msgs.first_name}" required="true"
+          value="#{customerController.customer.firstName}"/>
+      ....
+      <tx:selectBooleanCheckbox label="#{msgs.use_credit_card}"
+          value="#{customerController.customer.useCreditCard}">
+        <f:facet name="change">
+          <tc:command action=
+              "#{customerController.changeCreditCardUsage}"/>
+        </f:facet>
+      </tx:selectBooleanCheckbox>
+      ...
+      <tc:cell/>
+        <tc:panel>
+          <f:facet name="layout">
+            <tc:gridLayout columns="*;fixed;fixed"/>
+          </f:facet>
+          <tc:cell/>
+          <tc:button label="#{msgs.cancel}" immediate="true"
+              action="#{customerController.cancel}"/>
+          <tc:button label="#{msgs.save}" transition="true"
+              action="#{customerController.saveCustomer}"/>
+        </tc:panel>
+      </tc:panel>
+  </tc:tab>
+  <tc:tab label="#{msgs.title_addresses}">
+    ...
+  </tc:tab>
+</tc:tabGroup>
+Um bestehende Applikationen auf Tobago zu portieren, sind nur einige Schritte notwendig. In der Applikation MyGourmet wurden nur wenige Anpassungen vorgenommen, um sie auf Tobago umzustellen. Unter Verwendung der bisherigen Services wurden neben der Seitenbeschreibung folgende Änderungen durchgeführt:
+web.xml
+In der web.xml wurde das Resource-Servlet von Tobago eingetragen. Das Resource-Servlet wird verwendet, um CSS, JS und Grafiken zu laden. Die Angabe des Resource-Servlets ist für den Fall, dass die Ressourcen als Bibliothek eingebunden werden, erforderlich. Bei entpackten Ressourcen ist die Angabe hingegen nicht notwendig. Listing Resource-Servlet in der web.xml zeigt die Deklaration eines Resource-Servlets innerhalb der web.xml .
+ <servlet>
+  <servlet-name>ResourceServlet</servlet-name>
+  <servlet-class>
+    org.apache.myfaces.tobago.servlet.ResourceServlet
+  </servlet-class>
+</servlet>
 
-=== Tobago - an overview
+<servlet-mapping>
+  <servlet-name>ResourceServlet</servlet-name>
+  <url-pattern>
+    /org/apache/myfaces/tobago/renderkit/*
+  </url-pattern>
+</servlet-mapping>
+faces-config.xml
+Tobago unterstützt in der Version 1.0.x kein JSF 2.0 und somit auch keine implizite Navigation. Daher müssen wir die für die Navigation in MyGourmet notwendigen Navigationsregeln in der faces-config.xml eintragen. Die bereits über Annotationen in Spring definierten Services können ohne Änderungen weiter verwendet werden.
+Abschließend muss die Konfigurationsdatei tobago-config.xml erstellt werden. In der tobago-config.xml (siehe Listing Konfiguration in der tobago-config.xml ) werden das zu verwendende Theme und das Ressourcenverzeichnis eingetragen.
+ <tobago-config>
+  <theme-config>
+    <default-theme>speyside</default-theme>
+  </theme-config>
+  <resource-dir>tobago-resource</resource-dir>
+  <resource-dir>
+    org/apache/myfaces/tobago/renderkit
+  </resource-dir>
+</tobago-config>
+Als Einstieg für die Entwicklung einer Webapplikation mit Tobago als JSF-Framework kann das bereits in Abschnitt [Sektion:  Tobago -- ein Überblick] erwähnte Basis-Setup dienen. Es enthält alle notwendigen Konfigurationsdateien zur initialen Erstellung eines Projekts.
+Im Folgenden wird auf einzelne der in Abbildung Tobago und MyGourmet verwendeten Controls eingegangen.
+15.3 Tobago-Controls
+Generell bietet Tobago zwei Bibliotheken tc und tx zur Deklaration von Controls. In der tc -Bibliothek sind die reinen Controls enthalten, während die tx -Bibliothek Kompositionen aus Controls beinhaltet. So ist ein tx -Control häufig eine Komposition aus dem eigentlichen Control und einem Label.
+15.3.1 Tobago tc:in/tx:in
+Ein einzeiliges Eingabefeld wird durch ein tc:in dargestellt. Als Erweiterung zu diesem Eingabefeld bietet Tobago das tx:in . Diese Erweiterung beinhaltet neben dem Eingabefeld noch ein Label. Listing Das tx:in-Tobago-Control zeigt die Benutzung des tx:in . Das Label wird an das Eingabefeld gebunden und bei einem Klick auf das Label erhält das Eingabefeld den Fokus.
+ <tx:in
+  label="First Name"
+  value="#{customerController.customer.firstName}"
+  required="false" readonly="false"
+  disabled="false" rendered="true" />
+Durch das zugrunde liegende Theme wird die Breite des Labels festgelegt. Jedoch besteht die Möglichkeit, diese Breite durch das Attribut labelWidth anzupassen. Ebenfalls werden Access-Keys unterstützt. Beinhaltet das in der Seitenbeschreibung angegebene Label einen Unterstrich, so wird der nachfolgende Buchstabe als Access-Key definiert. Auf der dargestellten Seite wird der Access-Key nunmehr als unterstrichener Buchstabe gekennzeichnet.
+15.3.2 Tobago UICommand
+Tobago bietet mehrere Möglichkeiten zur Unterstützung von Befehlskomponenten. Die Basis-Controls dafür sind das tc:button und das tc:link . Weitere Controls sind das tc:menu und das tc:toolbar , auf die wir in den nächsten Abschnitten noch genauer eingehen werden.
+ <tc:button label="Delete Customer" defaultCommand="false"
+    action="#{customerController.delete}"
+    image="image/delete.png" transition="false">
+  <f:facet name="confirmation">
+    <tc:out value="Do you want to delete the customer?" />
+  </f:facet>
+</tc:button>
+In Listing Das tc:button-Tobago-Control wird die Deklaration eines tc:button dargestellt. Das action -Attribut beschreibt hier die Funktion, die beim Klick auf den Button ausgeführt werden soll. Zudem kann das tc:button -Control mit einem Bild dekoriert werden. Das Bild kann entweder über den Pfad, relativ zur Wurzel der Webapplikation, oder über den Resource-Manager von Tobago geladen werden.
+Über das Facet confirmation wird erreicht, das die Aktion erst ausgeführt wird, wenn die confirmation message durch den Benutzer mit einem ''OK'' bestätigt wurde. Das transition -Attribut, per Default auf true gesetzt, bewirkt, dass die Seite für die Dauer der Aktion gesperrt ist. Die Seite wird für die Zeit der durchzuführenden Aktion abgedunkelt und eine ''Sanduhr'' angezeigt. Implizit wird durch diese Vorgehensweise erreicht, dass eine Aktion durch mehrfaches Klicken auf einen Button nicht öfter als gewünscht ausgeführt wird. Ein denkbares Szenario wäre hier das Löschen eines Kunden aus der Applikation MyGourmet . Nimmt das Löschen eines Kunden einen längeren Zeitraum in Anspruch, und ein Benutzer klickt währenddessen erneut auf den Löschen-Button, so könnte dies zu einer Fehlermeldung führen, da der Kunde bereits gelöscht ist. Wird das Attribut defaultCommand mit dem Wert true belegt, so wird die an diesem Button gebundene Aktion auch nach Betätigung der Return-Taste ausgeführt.
+Das Tobago-Control tc:command kann verwendet werden, um beispielsweise auf Ereignisse zu reagieren. Listing Das tc:command-Tobago-Control zeigt die in der MyGourmet -Applikation verwendete Deklaration zur Behandlung von Ereignissen.
+ <tx:selectBooleanCheckbox label="Use CC"
+    value="#{customerController.customer.useCreditCard}">
+  <f:facet name="change">
+    <tc:command
+        action="#{customerController.changeCreditCardUsage}"/>
+  </f:facet>
+</tx:selectBooleanCheckbox>
+15.3.3 Tobago tc:tabGroup
+Das Tobago-Control tc:tabGroup bietet die Möglichkeit, Inhalte auf verschiedenen Tab-Panels darzustellen. Der Wechsel zwischen den einzelnen Panels erfolgt über die Tab-Reiter. Abbildung Das tc:tabGroup-Tobago-Control zeigt das in MyGourmet auf der Kundenseite verwendete tc:tabGroup -Control.
+ 
+Abbildung:Das tc:tabGroup-Tobago-Control
+Das Ladeverhalten der einzelnen Tab-Panels wird durch das Attribut switchType gesteuert. Mögliche Werte sind hier:
+client Wird für switchType der Wert client verwendet, so werden alle Daten für die einzelnen Tab-Panels beim Erstellen der Seite mit in die HTML-Ausgabe geschrieben. Nachdem die Seite auf dem Client geladen wurde, ist der Wechsel zwischen den einzelnen Tab-Panels zwar schneller, das HTML kann aber in Abhängigkeit der darzustellenden Inhalte sehr groß werden. Der Wert client ist der Defaultwert.
+reloadTab Sollen die Inhalte erst geladen werden, wenn das Tab-Panel tatsächlich angezeigt wird, so kann der Wert reloadTab verwendet werden. Wird das Tab-Panel ausgewählt, wird der Inhalt vom Server angefordert und das Tab-Panel wird per Ajax aktualisiert.
+reloadPage Auch bei dem Wert reloadPage wird der Inhalt der einzelnen Tab-Panels erst geladen, wenn das Tab-Panel angezeigt werden soll. Jedoch wird im Unterschied zum reloadTab die gesamte Seite neu geladen.
+15.3.4 Tobago tc:menu
+Ein gewisser Anteil an Funktionalität wird bei Desktop-Applikationen oftmals über Menüs angeboten. Über das Tobago-Control tc:menu kann ein Menü auf einer Seite dargestellt werden. Listing Das tc:menu-Tobago-Control zeigt einen Ausschnitt der Deklaration des Controls.
+ <tc:page>
+...
+  <f:facet name="menuBar">
+    <tc:menuBar>
+      <tc:menu label="Sections">
+        <tc:menuItem label="Customers"
+            action="customer-list"
+            immediate="true"
+            image="resources/images/16/customer.png"/>
+        <tc:menuItem label="Providers"
+            action="provider-list"
+            immediate="true"
+            image="resources/images/16/provider.png"/>
+      </tc:menu>
+      ...
+    </tc:menuBar>
+  </f:facet>
+  ...
+<tc:page>
+Ein Menü wird über das Facet menuBar einer tc:page zu einer Seite hinzugefügt. Menüeinträge können durch die Tags tc:menuItem , tc:menuCheckBox und tc:menuRadio erstellt werden. Ein Separator zwischen einzelnen Menüeinträgen wird durch ein tc:separator eingefügt.
+15.3.5 Tobago tc:toolBar
+Das tc:toolBar -Control wird verwendet, um eine Gruppe von Buttons zu rendern. Wie in Abbildung Das tc:toolBar-Tobago-Control dargestellt, gibt es die Möglichkeit, die einzelnen Buttons mit einer Beschriftung beziehungsweise einem Bild zu versehen.
+ 
+Abbildung:Das tc:toolBar-Tobago-Control
+Ein Bild kann in verschiedenen Standardgrößen verwendet werden. Die Größe des darzustellenden Bildes wird durch das Attribut iconsize bestimmt. Gültige Werte für dieses Attribut sind big , small und off . Einzelne Buttons werden durch ein tc:toolBarCommand erstellt. Soll ein Bild beispielsweise ausgegraut dargestellt werden, so besteht diese Möglichkeit über das Attribut disabled . Wird die in diesem Attribut angegebene Bedingung erfüllt, so versucht der Ressourcenmanager ein Bild nach folgendem Namensschema zu laden:
+Normales Bild - images/edit.png
+Ausgegrautes Bild - images/editDisabled.png
+Listing Deklaration des tc:toolBar-Tobago-Controls zeigt die Deklaration eines tc:toolBar -Controls.
+ <tc:toolBar>
+  <tc:toolBarCommand 
+    label="Add Customer"
+    action="customer"
+    image="resources/images/new.png"/>
+  <tc:toolBarCommand
+    label="Edit Customer"
+    action="#{customerController.editCustomer}"
+    image="resources/images/edit.png"
+    disabled="#{customerController.customerAvailable}"/>
+</tc:toolBar>
+15.3.6 Tobago tc:sheet
+Tabellen werden in Tobago mit dem Tag tc:sheet erstellt. Im Tobago - MyGourmet -Beispiel wird eine Tabelle verwendet, um die Adressen von Kunden anzuzeigen. Listing Das tc:sheet-Tobago-Control zeigt einen Ausschnitt der Deklaration einer Tabelle.
+ <tc:sheet var="address"
+    value="#{customerController.addressList}"
+    state="#{customerController.selectedAddress}">
+  <tc:column label="Zip Code">
+    <tc:out value="#{address.zipCode}"/>
+  </tc:column>
+  <tc:column label="City">
+    <tc:out value="#{address.city}"/>
+  </tc:column>
+  ...
+</tc:sheet>
+Über das var -Attribut wird zur Laufzeit auf die Objekte der Liste zugegriffen, die im value -Attribut angegeben wurde. Diese Liste enthält die Daten, die in dem tc:sheet angezeigt werden sollen. Der Zugriff auf Instanzvariablen bzw. Methoden erfolgt durch einfache Punktnotation. Spalten werden innerhalb vom tc:sheet über das Tag tc:column hinzugefügt. In Listing Das tc:sheet-Tobago-Control wird in jeder einzelnen Spalte ein tc:out verwendet, um die einzelnen Adresswerte anzuzeigen. Es können jedoch auch die Tags tc:in , tc:selectOneChoice oder tc:selectBooleanCheckbox in einer Spalte verwendet werden. Über die verschiedenen mit show beginnenden Attribute wird das Navigationsverhalten einer Tabelle gesteuert. So kann über das Attribut showDirectLinks direkt zu einer gewünschten Seite in der Tabelle gesprungen werden. Das state -Attribut wird verwendet, um aktuelle Informationen über die Tabelle zu erhalten. Die durch method-binding angegebene Methode muss als Übergabeparameter ein SheetState empfangen können. Über dieses Objekt kann nun beispielsweise die selektierte Zeile ermittelt werden. So hat ein Entwickler die Möglichkeit, auf Ereignisse des Benutzers zu reagieren. In MyGourmet kann der Benutzer eine ausgewählte Adresse über die Toolbar durch einen Klick auf Delete Address löschen. Die in der Geschäftslogik auszuführende Methode deleteAddress wird in Listing Selektion einer Zeile im tc:sheet-Tobago-Control dargestellt.
+ public String deleteAddress() {
+  Address address = getSingleSelectedAddress();
+  if (address != null) {
+    customerService.deleteAddress(address);
+  }
+  return CUSTOMER;
+}
 
-=== Tobago and MyGourmet
-
-=== Tobago controls
-
-==== Tobago `tc:in`/`tx:in`
-
-==== Tobago `UICommand`
-
-==== Tobago `tc:tabGroup`
-
-==== Tobago `tc:menu`
-
-==== Tobago `tc:toolBar`
-
-==== Tobago `tc:menu`
-
-==== Tobago `tc:toolBar`
-
-==== Tobago `tc:sheet`
-
-=== Partial-Rendering with Tobago
-
-=== Layout in Tobago
-
-==== Grid-Layout
-
-=== Themes and Markup
-
-==== Themes in Tobago
-
-==== Resource Management in Tobago
-
-==== Markup in Tobago
-
-=== Summary and Outlook
+private Address getSingleSelectedAddress() {
+  List<Integer> selection = selectedAddress.getSelectedRows();
+  if (selection.size() != 1) {
+    createFacesMessage(FacesMessage.SEVERITY_ERROR,
+        "Please select exactly one row.");
+    return null;
+  }
+  return addressList.get(selection.get(0));
+}
+Über das Attribut sortable der tc:column wird das Sortieren einzelner Spalten aktiviert. Wird für die Sortierung ein eigener Sortieralgorithmus benötigt, so kann dieser über das Attribut sortActionListener im tc:sheet -Tag ausgeführt werden. Informationen über die derzeitig angewandte Sortierung finden sich auch im SheetState wieder.
+15.4 Partial-Rendering mit Tobago
+Performance ist bei Webapplikationen schon immer ein wichtiges Thema gewesen. Um nicht bei jedem gestellten Request eine Seite komplett neu zu rendern, gibt es die Möglichkeit, nur einzelne Elemente neu zu laden. Tobago unterstützt ebenfalls dieses Partial-Rendering. Im Gegensatz zum bereits erwähnten tc:tabGroup -Control, wo das Ladeverhalten über das Attribut switchType gesteuert wird, erfolgt die Konfiguration des Partial-Renderings für Container-Controls, wie tc:panel , tc:box , tc:popup oder tc:sheet , über das Tag tc:attribute . Listing Partial-Rendering in Tobago zeigt eine mögliche Deklaration von Partial-Rendering innerhalb eines tc:box -Controls.
+ <tc:page id="page">
+  <tc:box label="Container" id="box">
+    <tx:selectBooleanCheckbox label="Use Credit Card"
+      value="#{controller.useCC}">
+      <f:facet name="change">
+      <tc:command>
+        <tc:attribute name="renderedPartially"
+          value=":page:box"/>
+      </tc:command>
+      </f:facet>
+    </tx:selectBooleanCheckbox>
+    <tx:in label="Credit Card Number"
+        rendered="controller.showCCNumber"/>
+  </tc:box>
+</tc:page>
+Die Angabe der neu zu ladenden Elemente erfolgt über eine kommaseparierte Liste von ID-Pfaden. Anhand des in Listing Partial-Rendering in Tobago angegebenen ID-Pfades lässt sich die Zusammensetzung solcher Pfade ablesen. Jeder ID-Pfad beschreibt anhand der IDs den Weg zu dem Element, das neu gerendert werden soll. Wie bei JSF 2.0 wird die Aktualisierung der neu zu ladenden Controls im Komponentenbaum nur partiell vorgenommen. In Listing Partial-Rendering in Tobago ist der valide ID-Pfad somit :page:box . Das tc:box -Control wird nunmehr immer dann neu gerendert, wenn die Checkbox aus- bzw. abgewählt wird.
+Das tc:panel -Control kann zudem periodisch neu geladen werden. Über das Facet reload kann eine Reload-Frequenz angegeben werden. Listing Periodisches Reload des tc:panel-Controls zeigt einen Auschnitt der Deklaration eines reload -Facets.
+ <tc:panel>
+  <f:facet name="reload">
+    <tc:reload frequency="5000"/>
+  </f:facet>
+  ...
+</tc:panel>
+15.5 Layout in Tobago
+Wie schon erwähnt wird das Layout in Tobago durch einen Layout-Manager geregelt. Das Seitenlayout wird lediglich durch die Angabe von sogenannten Layout-Token für die Zeilen- und Spaltengrößen definiert. Die Definition der Größe ist jedoch nicht für alle Controls notwendig, da es beispielsweise für das Eingabefeld tc:in eine bereits festgeschriebene Größe gibt. Die Informationen über die bereits definierten Größen einiger Controls finden sich in der Datei tobago-theme-config.properties des verwendeten Themes wieder.
+Zurzeit verwendet Tobago das Grid-Layout. Die Deklaration eines Layouts und die möglichen Layout-Token werden in Abschnitt [subsec Grid-Layout] behandelt.
+15.5.1 Grid-Layout
+Das Grid-Layout wird in Tobago verwendet, um die in der Seitenbeschreibung angegebenen Controls darzustellen. Es gibt in Tobago fünf Layoutcontainer, die jeweils ein Facet zur Definition des Layout-Managers entgegennehmen können:
+tc:page
+tc:panel
+tc:box
+tc:popup
+tc:tab
+Listing Layoutdefinition in Tobago zeigt eine solche Layoutdefinition in Tobago.
+ <tc:gridLayout rows="100px;fixed;*"/>
+Der Layout-Manager teilt den zur Verfügung stehenden Bereich in ein Gitternetz auf. Die Anzahl der horizontalen bzw. vertikalen Felder wird durch die Angabe der Zeilen und Spalten festgelegt. Um wie in Listing Layoutdefinition in Tobago ein dreizeiliges Gitternetz zu definieren, muss dem rows -Attribut eine über Semikolons separierte Liste mit drei Angaben übergeben werden. Zulässige Werte sind hierbei eine feste Pixelangabe, ein fixed oder ein *. Listing Erweiterte Layoutdefinition in Tobago zeigt ein komplexeres Beispiel einer Layoutdefini-tion.
+Nehmen wir an, dem Layout-Manager stehen für den hier verwendeten Layout-Container tc:panel 400px zur Verfügung, so werden dem einzufügenden Bild 100 Pixel und dem Eingabefeld die Größe zugewiesen, die für das Control tc:in definiert wurde. Dem Textfeld wird abschließend der verfügbare Rest zugewiesen. Das durch den Layout-Manager erstellte Gitternetz wird in Abbildung Durch den Layout-Manager erstelltes Gitternetz dargestellt.
+ <tc:panel>
+  <f:facet name="layout">
+    <tc:gridLayout rows="100px;fixed;*"/>
+  </f:facet>
+  <tc:image ... />
+  <tc:in ... />
+  <tc:textarea ... />
+</tc:panel>
+ 
+Abbildung:Durch den Layout-Manager erstelltes Gitternetz
+Die Positionierung der einzelnen Controls erfolgt somit aufgrund der jeweilig definierten Zeilen- bzw. Spaltengrößen. Dabei ist zu beachten, dass nicht alle Definitionen miteinander kompatibel sind. Bei dem Layout-Token fixed wird die Größe durch die definierte Größe des in der Zeile bzw. Spalte befindlichen Controls festgelegt (bottom-up). Dieses Control kann wiederum ebenfalls ein Layoutcontainer sein. Für diesen Layoutcontainer kann ein neues Layout bestimmt werden. Die Layoutdefinition darf nun allerdings kein * enthalten, da der darüberliegende Container dann nicht in der Lage wäre, eine bereits definierte Größe zurückzuliefern.
+Durch Angabe einer festen Pixelgröße oder * für den inneren Layoutcontainer kann diese Einschränkung jedoch umgangen werden, da bei diesen Layoutdefinitionen die Größenermittlung vom äußeren zum inneren Layoutcontainer (top/down) erfolgt. Tabelle tab:layout-def zeigt mögliche Kombinationen bei der Layoutdefinition. Besteht beispielsweise die Notwendigkeit, Zeilen bzw. Spalten miteinander zu verbinden, so stehen für diese Layoutdefinition die Attribute spanX und spanY zur Verfügung.
+In Listing Erweiterte Layoutdefinition in Tobago wird das Tag tc:textarea verwendet. Durch das in der Layoutdefinition angegebene Layout-Token * wird dem tc:textarea der restliche Platz auf der darzustellenden Seite zugewiesen. Bei einer zur Verfügung stehenden Größe von 400px bedeutet dies, dass dem tc:image 100px, dem tc:in die durch das aktuelle Theme vorgegebene Größe von 20px und dem tc:textarea die restlichen 280px zugewiesen werden. Sollen auf der Seite jedoch nur die beiden Controls tc:image und tc:in angezeigt werden, beide haben eine fest definierte Größe, bleibt ein Rest von 280px übrig. Als Füllelement in Tobago kann hier das tc:cell -Control verwendet werden, um diese restliche Fläche einzunehmen.
+Layout-Token	in Sublayout enthaltene Definition	Auswertung durch Layout-Manager
+fixed	beliebige fixed und px, kein *	korrekt
+fixed	mindestens ein *	nicht korrekt, der Layout-Manager kann den fixed -Wert nicht berechnen
+px	beliebige fixed und px, kein *	möglicherweise nicht korrekt, die einzelnen Werte hängen voneinander ab. Ein Entwickler muss die einzelnen Größen korrekt bestimmen
+px	mindestens ein *	korrekt
+{ * }	beliebige fixed und px, kein *	möglicherweise nicht korrekt, bei zu wenig Platz wird eine Scrollbar angezeigt, bei zu viel Platz werden Controls gestreckt
+{ * }	mindestens ein *	korrekt
+15.6 Themes und Markup
+Tobago betont die Trennung von Aussehen und Struktur. Der Entwickler definiert in der Seitenbeschreibung auf einer abstrakten Ebene, welche Controls sich auf einer Seite befinden sollen und wie sie zueinander in Beziehung stehen sollen.
+15.6.1 Themes in Tobago
+Das Theme bestimmt, wie die Controls dargestellt werden. Das Theme kontrolliert visuelle Eigenschaften wie Farben, Größen und Zeichensätze. Weiterhin legt das Theme fest, welche Technologie für die Darstellung verwendet werden soll. Derzeit unterstützen die ausgelieferten Themes nur HTML als View-Technologie.
+Tobago enthält aktuell vier Themes: Scarborough , Speyside , Richmond und Charlotteville .
+ 
+Abbildung:Tobago-Themes
+Diese wurden nach Orten auf Tobago benannt. Scarborough ist das Basis-Theme, das versucht, die meisten Control-Eigenschaften mit Standard-HTML zu lösen. Speyside stützt sich auf dieses Theme ab und bietet ein schönes und aktuelles Look&Feel. Die Themes Richmond und Charlotteville sind im Großen und Ganzen nur Farbvariationen vom Speyside -Theme. Solche modifizierten Themes kann man analog zu Richmond und Charlotteville und mit etwas CSS-Verständnis einfach selbst machen.
+Ein Theme bietet die Möglichkeit, einheitliche Masken zu erstellen. Als Seitenentwickler hat man keinen direkten Einfluss auf das Design der Seite. So fügen sich die Seiten besser in entsprechenden Anwendungen ein. Mit einem angepassten Theme kann auf einfache Weise ein einheitliches Corporate Design erreicht werden.
+Es ist möglich, die Themes zur Laufzeit zu ändern. Somit kann jeder Benutzer nach eigenem Geschmack ein passendes Theme auswählen. Andererseits kann dadurch eine mandantenfähige Applikation realisiert werden. Abhängig von Marke oder Kunde kann ein spezifisches Theme mit den passenden Farben und Logos verwendet werden.
+15.6.2 Das Ressourcenmanagement in Tobago
+Themes können aufeinander aufbauen. Ressourcen, die ein Theme selbst nicht zur Verfügung stellt, werden vom zugrunde liegenden Theme verwendet. Zu diesen Ressourcen gehören Bilder, Stylesheets , JavaScript-Dateien und Stringressourcen. Eine Ressource wird abhängig vom Locale, Browser und Theme ausgewählt. Dazu geht der Resource-Manager durch alle registrierten Ressourcenverzeichnisse und versucht, eine Ressource passend zum Locale, Browser und Theme zu finden. Danach wird die Suche mit den Fallback-Locales wiederholt, später wird die Suche erst mit den Fallback-Browsern und dann mit den Fallback-Themes wiederholt. Das Ergebnis der Suche wird für eine spätere Wiederverwendung gecacht. Hier ein vereinfachtes Beispiel für die Suchreihenfolge:
+...\html\html\speyside\speyside\mozilla\mozilla\image\image\country_de_DE.gif
+...\html\html\speyside\speyside\mozilla\mozilla\image\image\country_de.gif
+...\html\html\speyside\speyside\mozilla\mozilla\image\image\country.gif
+...\html\html\speyside\speyside\standard\standard\image\image\country_de_DE.gif
+...\html\html\speyside\speyside\standard\standard\image\image\country_de.gif
+...\html\html\speyside\speyside\standard\standard\image\image\country.gif
+...\html\html\scarborough\scarborough\mozilla\mozilla\image\image\country_de_DE.gif
+...\html\html\scarborough\scarborough\mozilla\mozilla\image\image\country_de.gif
+...\html\html\scarborough\scarborough\mozilla\mozilla\image\image\country.gif
+...\html\html\scarborough\scarborough\standard\standard\image\image\country_de_DE.gif
+...\html\html\scarborough\scarborough\standard\standard\image\image\country_de.gif
+...\html\html\scarborough\scarborough\standard\standard\image\image\country.gif
+...\html\html\standard\standard\mozilla\mozilla\image\image\country_de_DE.gif
+...\html\html\standard\standard\mozilla\mozilla\image\image\country_de.gif
+...\html\html\standard\standard\mozilla\mozilla\image\image\country.gif
+...\html\html\standard\standard\standard\standard\image\image\country_de_DE.gif
+...\html\html\standard\standard\standard\standard\image\image\country_de.gif
+...\html\html\standard\standard\standard\standard\image\image\country.gif
+Für Bilder stoppt der Resource-Manager die Suche beim ersten Fund. Für andere Ressourcen wie Stylesheets und Skripte liefert der Resource-Manager alle Funde in einer Liste zurück, in der Reihenfolge, in der sie gesucht wurden. Dieser Suchmechanismus bildet die Basis für den Defaulting-Mechanismus des Theme-Managements.
+Mithilfe des Resource-Managers kann der Entwickler lokalisierte Bilder zur Verfügung stellen. Dies ist notwendig, wenn die Bilder Texte enthalten - zum Beispiel für Bilder auf Buttons. Der Resource-Manager unterstützt das Standard-XML-Format für Stringressourcen, das die Verwendung von Sonderzeichen vereinfacht. Themes können auch Corporate-Wordings unterstützen - jedes Theme kann zum Beispiel festlegen, welche Variante für spezielle Begriffe, wie Email, E-Mail oder eMail, im assoziierten Corporate Design verwendet werden soll.
+In der tobago-config.xml -Datei können weitere Verzeichnisse beim Resource-Manager registriert werden. Diese haben bei der Suche nach Ressourcen Priorität und können daher verwendet werden, um bestehende Ressourcen zu überschreiben oder zu ergänzen. Leider wurde bis jetzt noch keine API für Themes in Tobago definiert. Änderungen auf dieser Ebene können daher in neueren Versionen von Tobago zu Kompatibilitätsproblemen führen.
+ <tobago-config>
+  ...
+  <resource-dir>tobago-resources</resource-dir>
+  ...
+</tobago-config>
+Das Ressourcenverzeichnis beschreibt ein Verzeichnis innerhalb des WAR-Archivs relativ zum Wurzelverzeichnis. Unterhalb des Ressourcenverzeichnisses haben die Pfade folgende Struktur:
+<content-type>/<theme>/<browser>/<directory>
+    /<resource-name>(_<locale>)?.<extension>
+15.6.3 Markup in Tobago
+Mit Markup werden Controls durch logische Markierungen mit semantischen Metainformationen angereichert. Welche Markup-Werte ein Theme unterstützt, steht in dessen theme-config.xml -Datei. Wenn ein Theme keine Markup-Werte für einen Renderer definiert, erbt der Renderer die Werte des Fallback-Themes.
+Die mitgelieferten Themes unterstützen folgende Markup-Werte:
+number für <tc:in> und <tc:out >
+strong für <tc:out>
+deleted für <tc:out>
+Der Markup-Wert number wird verwendet, um Zahlen zu formatieren. Solche Zahlen werden normalerweise rechtsbündig dargestellt. Der Wert strong dient zur Hervorhebung und wird von den ausgelieferten Themes fett visualisiert. Der Wert deleted zeichnet Inhalte als gelöscht aus und wird häufig als durchgestrichen dargestellt. Generell wird die Darstellung durch das jeweilige Theme gesteuert und passt daher zum Look&Feel des Themes.
+Markup kann einfach erweitert werden. Zu diesem Zweck kann ein eigenes Theme geschrieben werden oder ein Markup in der tobago-config.xml -Datei der Anwendung direkt definiert werden. Listing Markup new für Sheet-Zelle zeigt den Einsatz in der Seitendeklaration.
+ <tc:column label="Name"
+    markup="#{customerController.newCustomer == customer 
+        ? 'new' : ''}">
+  <tc:out value="#{customer.fullName}"/>
+</tc:column>
+In der Tobago-Variante von MyGourmet werden neu hinzugefügte Kunden mit dem Markup new in der Kundenliste hervorgehoben. Die Bereitstellung des neuen Markup-Werts new erfolgt in der tobago-config.xml -Datei (siehe Listing Ressourcenverzeichnis in der tobago-config.xml ).
+ <tobago-config>
+  <renderers>
+    <renderer>
+      <name>Column</name>
+      <supported-markup>
+        <markup>new</markup>
+      </supported-markup>
+    </renderer>
+  </renderers>
+  ...
+</tobago-config>
+Um die Visualisierung zu steuern, kann man CSS-Informationen zu einer bestimmten CSS-Style-Klasse hinzufügen, die sich aus Renderer und Markup-Wert nach folgender Vorschrift ergibt:
+"tobago-" + StringUtils.uncapitalize(rendererType) 
+    + "-markup-" + markupName
+Diese Style-Klasse kann dann in einer geeigneten CSS-Datei definiert werden, die vom Resource-Manager gefunden werden kann. Das Regelwerk des Resource-Managers legt fest, unter welchem Pfad die CSS"~Datei erreichbar sein sollte. Für den Markup-Wert new wird das CSS in der Datei
+.../webapp/tobago-resources/html
+    /scarborough/standard/style/style.css
+platziert. Hier die CSS-Definition für Markup new in style.css :
+.tobago-column-markup-new {
+  background-color: lightyellow;
+}
+Darüber hinaus können Renderer erweitert werden, um neue Markup-Werte in einer Form zu realisieren, die sich nicht allein durch Änderungen auf CSS-Ebene bewerkstelligen lässt. Beispiele hierzu gibt es in tobago-theme-example im Tobago -Trunk ( http://svn.apache.org/repos/asf/myfaces/tobago/trunk/tobago-example/ ).
+15.7 Zusammenfassung und Ausblick
+Tobago ermöglicht das Erstellen von Webapplikationen mittels einer Vielzahl von Controls. Die Entwicklung ist einfach und erfordert keine weiterführenden Kentnisse in HTML oder CSS. Die Verwendung von Ajax wird implizit unterstützt. Das Layout wird in Tobago durch einen Layout-Manager verwaltet, sodass kein HTML-Grundgerüst zur Positionierung einzelner Controls verwendet werden muss. Die Layoutdefinition stützt sich auf klaren Regeln ab und erfolgt nach einem fest definierten Schema. Mit Tobago lassen sich aufgrund dieses Ansatzes in kürzester Zeit auch komplex wirkende Webseiten aufbauen. Die Erstellung von Prototypen kann zudem auch ohne die Notwendigkeit eines funktionierenden Backends erfolgen.
+Die Dokumentation auf der Tobago -Projektseite unter der Adresse http://myfaces.apache.org/tobago/documentation.html ermöglicht Entwicklern einen schnellen Einstieg in die Entwicklung mit Tobago . Eine auf der Webseite vorhandene Kompatibilitätsmatrix der unterstützten Server, Container und Bibliotheken rundet das Gesamtpaket ab.
+Die Entwicklung von Tobago zielt zukünftig darauf ab, den JSF-2.0-Standard zu unterstützen. Die Einbindung von externen JSF-Frameworks wie Tomahawk soll ebenfalls ermöglicht werden. Eine detaillierte Übersicht findet sich ebenfalls auf der Projektseite.

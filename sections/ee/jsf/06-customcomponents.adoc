@@ -1207,10 +1207,11 @@ Rendering the resource itself is then relatively easy.
 The most important step is generating the resource using the `createResource()` method of the resource handler. 
 This method takes as parameters either only the `name` or the `name` and the `library` of the resource and returns an instance of the class `Resource`, which gives us full access. 
 The image is rendered via the response writer as an img element whose src attribute is set to a specific resource URL. 
-This URL is provided by the method Resource.getRequestPath () is calculated. 
+This URL is provided by the method `Resource.getRequestPath()` is calculated. 
 If the browser reloads the image with this URL when displaying the page, JSF delivers the content of the resource to the client. 
-Listing Direct rendering of resources shows how the rendering of either image looks like with the associated JavaScript code.
+Listing <<.Direct rendering of resources, Direct rendering of resources>> shows how the rendering of either image looks like with the associated JavaScript code.
 
+.Direct rendering of resources
 [source,java]
 ----
 Application app = ctx.getApplication();
@@ -1227,13 +1228,16 @@ writer.writeAttribute("onclick", onclickUp, null);
 writer.endElement("img");
 ----
 
-If you are writing a large number of components, you will probably pack them into component libraries as jar files. With the use of JSF resources, this is no longer a problem, as the required classes and resources can be summarized in a jar file. A detailed description can be found in section [Section: The Own Component Library] .
+If you are writing a large number of components, you will probably pack them into component libraries as jar files. 
+With the use of JSF resources, this is no longer a problem, as the required classes and resources can be summarized in a jar file. 
+A detailed description can be found in section [Section: The Custom Component Library].
 
 ==== Registering the Component and Renderer Classes
 
-The component and renderer classes just written must now be registered with an entry in faces-config.xml in the Faces environment. 
-Listing registration of a component class shows the registration of the component class of the example under the at.irian.InputSpinner component type .
+The component and renderer classes just written must now be registered with an entry in `faces-config.xml` in the Faces environment. 
+Listing <<.registration of a component class, registration of a component class>> shows the registration of the component class of the example under the `at.irian.InputSpinner` component type.
 
+.registration of a component class
 [source,xml]
 ----
 <component>
@@ -1245,8 +1249,11 @@ Listing registration of a component class shows the registration of the componen
   </component-class>
 </component>
 ----
-As with converters and validators, JSF 2.0 or higher allows you to register components with an annotation. Annotating the component class with @FacesComponent is enough to register the component under the component type specified in the value element . Listing registration of a component class by annotation shows the matching code.
+As with converters and validators, JSF 2.0 or higher allows you to register components with an annotation. 
+Annotating the component class with `@FacesComponent` is enough to register the component under the component type specified in the `value` element. 
+Listing <<.registration of a component class by annotation, registration of a component class by annotation>> shows the matching code.
 
+.registration of a component class by annotation
 [source,java]
 ----
 @FacesComponent("at.irian.InputSpinner")
@@ -1255,11 +1262,14 @@ public class InputSpinner extends UIInput {
 }
 ----
 
-JSF 2.2: As of JSF 2.2, the element value of the annotation @FacesComponent is optional and is supplemented with a naming convention. If not specified, JSF uses the class name with a small initial letter as the component ID. For the example of listing a component class using annotation , this would be the ID inputSpinner . 
+JSF 2.2: As of JSF 2.2, the element value of the annotation `@FacesComponent` is optional and is supplemented with a naming convention. 
+If not specified, JSF uses the class name with a small initial letter as the component ID. 
+For the example of Listing <<.a component class using annotation, a component class using annotation>>, this would be the ID `inputSpinner`. 
 
-When registering the renderer, you must first select a rendering kit that will register the additional renderer class. The choice is usually simple, and almost always remains with the use of the standard render-kit with the render- kit ID HTML_BASIC . 
+When registering the renderer, you must first select a rendering kit that will register the additional renderer class. 
+The choice is usually simple, and almost always remains with the use of the standard render-kit with the `render-kit-id` `HTML_BASIC`.
 
-listing Registering a Renderer Class Shows the registration of the sample renderer under the component family javax.faces.Input and the renderer type at.irian.InputSpinner .
+Listing <<.Registering a Renderer Class, Registering a Renderer Class>> shows the registration of the sample renderer under the component family `javax.faces.Input` and the renderer type `at.irian.InputSpinner`.
 
 [source,xml]
 ----
@@ -1274,8 +1284,12 @@ listing Registering a Renderer Class Shows the registration of the sample render
   </renderer>
 </render-kit>
 ----
-A renderer can also be registered in the system with the @FacesRenderer annotation as of JSF version 2.0 . The necessary data is specified in the elements renderKitId , componentFamily and rendererType . The render-kit ID can also be omitted, and then set to the default render-kit. Listing registration of a renderer class by annotation shows the code.
+A renderer can also be registered in the system with the `@FacesRenderer` annotation as of JSF version 2.0. 
+The necessary data is specified in the elements `renderKitId`, `componentFamily` and `rendererType`. 
+The `renderKitId` can also be omitted, and then set to the default render-kit. 
+Listing <<.registration of a renderer class by annotation, registration of a renderer class by annotation>> shows the code.
 
+.registration of a renderer class by annotation
 [source,java]
 ----
 @FacesRenderer(componentFamily = "javax.faces.Input",
@@ -1287,10 +1301,19 @@ public class InputSpinnerRenderer extends Renderer {
 
 ==== Writing Tag Definition
 
-All previous steps, the creation of the component and renderer class and the registration of the two classes in the system, are always the same regardless of the page declaration language used. Unfortunately, this is no longer possible when defining the tag of the component. 
-With JSP, defining the tag and then creating the tag class is a tedious task. With Version 2.0 of the specification, the focus has clearly been put on facelets and JSP plays only a minor role, we will not go into more detail here.
-With facelets, creating a tag definition does not require much effort. If a matching tag library already exists, specifying the tag name, component type, and renderer type will specify the tag. If this is not the case, a new tag library must first be created and made known to the system. How to do this is shown in Section Section: Creating Tag Libraries with Facelets . The complete definition of the tag for our example component shows the listing definition of the example component tag .
+All previous steps, the creation of the component and renderer class and the registration of the two classes in the system, are always the same regardless of the page declaration language used. 
+Unfortunately, this is no longer possible when defining the tag of the component. 
 
+With JSP, defining the tag and then creating the tag class is a tedious task. 
+With Version 2.0 of the specification, the focus has clearly been put on facelets and JSP plays only a minor role, we will not go into more detail here.
+
+With facelets, creating a tag definition does not require much effort. 
+If a matching tag library already exists, specifying the tag name, component type, and renderer type will specify the tag. 
+If this is not the case, a new tag library must first be created and made known to the system. 
+How to do this is shown in Section [Section: Creating Tag Libraries with Facelets]. 
+The complete definition of the tag for our example component shown in the Listing <<.definition of the example component tag, definition of the example component tag>>.
+
+.definition of the example component tag
 [source,xml]
 ----
 <tag>
@@ -1302,10 +1325,16 @@ With facelets, creating a tag definition does not require much effort. If a matc
 </tag>
 ----
 
-JSF 2.2: JSF 2.2 reduces the overhead of creating a component tag to an absolute minimum. In the simplest case, it is sufficient to set the element createTag of @FacesComponent to true . JSF provides the component by convention in the namespace http://xmlns.jcp.org/jsf/component . The name of the tag derives automatically from the class name (with a lower initial letter). 
+JSF 2.2: JSF 2.2 reduces the overhead of creating a component tag to an absolute minimum. 
+In the simplest case, it is sufficient to set the element createTag of `@FacesComponent` to `true`. 
+JSF provides the component by convention in the namespace http://xmlns.jcp.org/jsf/component. 
+The name of the tag derives automatically from the class name (with a lower initial letter).
 
-If you want to use your own values ​​for the namespace or the tag name, you must specify these explicitly. The tag name can be in element tagName and the namespace in element namespace be set. Illustration Definition of the tag using annotation shows a concrete example.
+If you want to use your own values ​​for the namespace or the tag name, you must specify these explicitly. 
+The tag name can be in element `tagName` and the namespace in element `namespace` be set. 
+Illustration <<.Definition of the tag using annotation, Definition of the tag using annotation>> shows a concrete example.
 
+.Definition of the tag using annotation
 [source,java]
 ----
 @FacesComponent(value="at.irian.InputSpinner",
@@ -1316,14 +1345,19 @@ public class InputSpinner extends UIInput {
 }
 ----
 
-This method works well for quickly defining tags for individual components. At the latest, if you have more than a handful of components, consider a full tag library, including XML configuration. 
+This method works well for quickly defining tags for individual components. 
+At the latest, if you have more than a handful of components, consider a full tag library, including XML configuration.
 
-Attributes about Reflection: How does Facelets know which attributes are available for the tag? Through Reflection , facelets access the component class and determine the possible attributes from that class.
+Attributes about Reflection: How does Facelets know which attributes are available for the tag? 
+Through Reflection, facelets access the component class and determine the possible attributes from that class.
 
 ==== Write Tag Treatment Class
 
-In rare cases, a treatment class is needed for facelet tags as well. This is the case, for example, if there is no component behind the tag, as is the case for c: if from the JSTL library of facelets. Listing tag handler for c: if shows the code of this tag handler.
+In rare cases, a treatment class is needed for facelet tags as well. 
+This is the case, for example, if there is no component behind the tag, as is the case for `c:if` from the JSTL library of facelets. 
+Listing <<.tag handler for `c:if`, tag handler for `c:if`>> shows the code of this tag handler.
 
+.tag handler for `c:if`
 [source,java]
 ----
 public final class IfHandler extends TagHandler {
@@ -1346,9 +1380,16 @@ public final class IfHandler extends TagHandler {
 }
 ----
 
-In the constructor, the tag handler is initialized with the values ​​from the page. Calling getRequiredAttribute () guarantees that the attribute is set in the page declaration . If this is not the case, facelets throw an exception. Essential is the method apply - which is called whenever the tag is called internally when building the component tree. Here, the actual logic takes place, which, in the case of c: if, inserts the child components of the tag into the component tree depending on the value of the test attribute . Because the child components are explicitly called by a call to this.nextHandler.apply () it is easy to influence this process. 
+In the constructor, the tag handler is initialized with the values ​​from the page. 
+Calling `getRequiredAttribute()` guarantees that the attribute is set in the page declaration. 
+If this is not the case, facelets throw an exception. 
+Essential is the method apply - which is called whenever the tag is called internally when building the component tree. 
+Here, the actual logic takes place, which, in the case of `c:if`, inserts the child components of the tag into the component tree depending on the value of the `test` attribute. 
+Because the child components are explicitly called by a call to `this.nextHandler.apply()` it is easy to influence this process.
 
-Tag handlers such as those just described are used in the tag library directly in a tag definition and can thus be used in the page declaration as a component. Here, however, it should be noted that a tag handler is called only when the component tree is created. The definition of the tag in this case looks like this:
+Tag handlers such as those just described are used in the tag library directly in a tag definition and can thus be used in the page declaration as a component. 
+Here, however, it should be noted that a tag handler is called only when the component tree is created. 
+The definition of the tag in this case looks like this:
 
 [source,xml]
 ----
@@ -1358,7 +1399,9 @@ Tag handlers such as those just described are used in the tag library directly i
 </tag>
 ----
 
-Tag handlers can also be used on components that require special behavior. As a demonstration, we create a tag handler for our input spinner component, which makes the inc attribute mandatory. For the source code of the tag handler, see Listing Tag Handlers for the sample component .
+Tag handlers can also be used on components that require special behavior. 
+As a demonstration, we create a tag handler for our input spinner component, which makes the `inc` attribute mandatory. 
+For the source code of the tag handler, see Listing <<.Tag Handlers for the sample component, Tag Handlers for the sample component>>.
 
 [source,java]
 ----
@@ -1371,8 +1414,10 @@ public class InputSpinnerTagHandler extends ComponentHandler {
 }
 ----
 
-This tag handler can now also be specified when defining the component tag. Listing Definition of the tag component tag tag tag shows the definition extended by the tag handler.
+This tag handler can now also be specified when defining the component tag. 
+Listing <<.Definition of the tag of the example component with tag handler, Definition of the tag of the example component with tag handler>> shows the definition extended by the tag handler.
 
+.Definition of the tag of the example component with tag handler
 [source,xml]
 ----
 <tag>
@@ -1389,17 +1434,41 @@ This tag handler can now also be specified when defining the component tag. List
 
 ==== Include tag library
 
-Finally, there is only one step left: Before the component can be used in a declaration, the tag library must be included. How this works, we have already shown in the standard components and various other opportunities and need not be repeated here. 
-At this point we would like to illustrate once again how JSF dissolves the component and renderer class for one day when building the component tree. For example, if JSF encounters the mg: inputSpinner tag , the definition in the tag library is already the at.irian.InputSpinner component type and the at.irian.InputSpinner renderer type known. The component instance can now be used to create the component instance and insert it into the tree. This information can also be used to resolve the renderer class. Assuming that the standard rendering kit is named HTML_BASIC , the renderer's class and component family can be used to determine the class of the renderer from the configuration. The component family can always be called up by calling the getFamily () method of the component. 
-That's all you need to know about writing your own components - good luck creating the most dynamic, interactive, and beautiful JSF components!
+Finally, there is only one step left: Before the component can be used in a declaration, the tag library must be included. 
+How this works, we have already shown in the standard components and various other opportunities and need not be repeated here.
+
+At this point we would like to illustrate once again how JSF resolves the component and renderer class for one tag when building the component tree. 
+For example, if JSF encounters the `mg:inputSpinner` tag, the definition in the tag library is already the `at.irian.InputSpinner` component type and the `at.irian.InputSpinner` renderer type known. 
+The component instance can now be used to create the component instance and insert it into the tree. 
+This information can also be used to resolve the renderer class. 
+Assuming that the standard rendering kit is named `HTML_BASIC`, the renderer's class and component family can be used to determine the class of the renderer from the configuration. 
+The component family can always be called up by calling the `getFamily()` method of the component.
+
+That's all you need to know about writing your own components - good luck creating the most dynamic, interactive, and beautiful JSF components.
 
 === Combine composite components and classical components
 
-In the last two sections, we have introduced you to the development of composite components and classic components. In this section, we will show you that these concepts are not mutually exclusive, but on the contrary even harmonize very well. 
-In the development of composite components, the case always occurs that a desired behavior can only be achieved with Java code. So we need an extension point to integrate this code. As we have already shown, composite components are built internally from classical components. The most obvious idea is therefore to implement this Java code in the form of a classic component.
-JSF follows exactly this idea and allows composite components to freely choose the type of root component. The componentType attribute in the cc: interface element can be used to explicitly specify the component type of this component. The components used class must implement the only prerequisite in the interface and getFamily () the components family javax.faces.NamingContainer return. If component-Type is not set, JSF will automatically create a component of type. 
-This is exactly what we are going to do now for the composite component presented in Section [Section: The component mc: collapsiblePanel] make collapsiblepanel . There, we have already noted critically that users of the component must provide the logic for showing and hiding themselves. We will implement this functionality in the CollapsiblePanel component , which we then associate with the composite component . The component itself can be kept very simple. It just needs to have the collapsed property and an fade-in event-handling method. Listing Component CollapsiblePanel shows the component class registered with @FacesComponent under the at.irian.CollapsiblePanel component type .
+In the last two sections, we have introduced you to the development of composite components and classic components. 
+In this section, we will show you that these concepts are not mutually exclusive, but on the contrary even harmonize very well.
 
+In the development of composite components, the case always occurs that a desired behavior can only be achieved with Java code. 
+So we need an extension point to integrate this code. 
+As we have already shown, composite components are built internally from classical components. 
+The most obvious idea is therefore to implement this Java code in the form of a classic component.
+
+JSF follows exactly this idea and allows composite components to freely choose the type of root component. 
+The `componentType` attribute in the `cc:interface` element can be used to explicitly specify the component type of this component. 
+The component class used must be the only prerequisite to implement the interface and in `getFamily()` return the component family `javax.faces.NamingContainer`. 
+If `componentType` is not set, JSF will automatically create a component of Type.
+
+This is exactly what we are going to do now for the composite component presented in Section [Section: The component `mc:collapsiblePanel`] make collapsiblepanel. 
+There, we have already noted critically that users of the component must provide the logic for showing and hiding themselves. 
+We will implement this functionality in the `CollapsiblePanel` component, which we then associate with the composite component. 
+The component itself can be kept very simple. 
+It just needs to have the collapsed property and an fade-in event-handling method. 
+Listing <<.Component CollapsiblePanel, Component CollapsiblePanel>> shows the component class registered with `@FacesComponent` under the `at.irian.CollapsiblePanel` component type.
+
+.Component CollapsiblePanel
 [source,java]
 ----
 @FacesComponent("at.irian.CollapsiblePanel")
@@ -1456,17 +1525,29 @@ Let us now turn to the composite component itself. The internals change only min
 </cc:implementation>
 </ui:composition>
 ----
-As a first step, the obligatory attribute model is replaced by the optional attribute collapsed . This allows the collapse state to be linked externally via a value expression with a bean property. This gives the user the opportunity to set an initial value and to save the current collapsed state. The evaluation of the initial state from the collapsed attribute is done internally automatically by the StateHelper of the component. 
-The second change affects the toggle event handler and the collapsed property , Since both are now provided directly by the root component, the EL expressions change to access cc.toggle and cc.collapsed . This is possible because the cc referenced component is now an instance of the previously created CollapsiblePanel class . 
-Thus, the improved version of the composite component collapsiblePanel is already ready for use. Now we can actually talk about a standalone and reusable building block. The next logical step would be to make the component including all available as a jar file. Section [Section: The Own Component Library] shows how it works.
+As a first step, the obligatory attribute `model` is replaced by the optional attribute `collapsed`. 
+This allows the collapse state to be linked externally via a value expression with a bean property. 
+This gives the user the opportunity to set an initial value and to save the current collapsed state. 
+The evaluation of the initial state from the collapsed attribute is done internally automatically by the StateHelper of the component.
+
+The second change affects the toggle event handler and the collapsed property, since both are now provided directly by the root component, the EL expressions change to access cc.toggle and cc.collapsed. 
+This is possible because the `cc` referenced component is now an instance of the previously created CollapsiblePanel class. 
+
+Thus, the improved version of the composite component collapsiblePanel is already ready for use. 
+Now we can actually talk about a standalone and reusable building block. 
+The next logical step would be to make the component including all available as a jar file. 
+Section [Section: The Custom Component Library] shows how it works.
 
 === Alternatives to your own component
 
-A component consists of the parts component class, the renderer class, and an optional tag handler. All these parts are connected to each other, but can also be replaced separately. The easiest way to change a component without having to write a new component is to replace the renderer class.
+A component consists of the parts component class, the renderer class, and an optional tag handler. 
+All these parts are connected to each other, but can also be replaced separately. 
+The easiest way to change a component without having to write a new component is to replace the renderer class.
 
 ==== Replacing the Renderer Class
 
-To change the renderer class you have to change the configuration in faces-config.xml first. Listing configuration of a renderer shows an example.
+To change the renderer class you have to change the configuration in `faces-config.xml` first. 
+Listing configuration of a renderer shows an example.
 
 [source,xml]
 ----
@@ -1481,8 +1562,11 @@ To change the renderer class you have to change the configuration in faces-confi
   </renderer>
 </render-kit>
 ----
-Example: RequiredLabel: Overrides the renderer for the Label component with the class mypackage.RequiredLabelRenderer . All that remains is to implement this class. Listing Rendering a label with an obligatory field star shows an implementation that evaluates the required attribute of the component that belongs to the label.
+Example: RequiredLabel: Overrides the renderer for the Label component with the class `mypackage.RequiredLabelRenderer`. 
+All that remains is to implement this class. 
+Listing <<.Rendering a label with an obligatory field star, Rendering a label with an obligatory field star>> shows an implementation that evaluates the required attribute of the component that belongs to the label.
 
+.Rendering a label with an obligatory field star
 [source,java]
 ----
 public class RequiredLabelRenderer extends HtmlLabelRenderer {
@@ -1508,11 +1592,17 @@ public class RequiredLabelRenderer extends HtmlLabelRenderer {
   }
 }
 ----
-Depending on the value of this attribute, an asterisk is added to the label description. For this purpose, the mandatory field renderer is derived from HtmlLabelRenderer and overrides the encodeBeforeEnd () method of the base class. In this method, first the component belonging to the label is searched; then the attribute of this component is queried. If the component is required, a span tag is output with a CSS class and a * content. Very simple and very effective! Please note, however, that the HtmlLabelRenderer class comes from Apache MyFaces and is not included in the standard. Nonetheless, even if you Mojarra changes nothing at the basic functionality.
+Depending on the value of this attribute, an asterisk is added to the label description. 
+For this purpose, the mandatory field renderer is derived from `HtmlLabelRenderer` and overrides the `encodeBeforeEnd()` method of the base class. 
+In this method, first the component belonging to the label is searched; then the attribute of this component is queried. 
+If the component is required, a span tag is output with a CSS class and a * content. 
+Very simple and very effective! 
+Please note, however, that the `HtmlLabelRenderer` class comes from Apache MyFaces and is not included in the standard. 
+Nonetheless, even if you use Mojarra the basic functionality does not change.
 
 ==== Replacement of the component class
 
-Just as the replacement of the renderer class, the replacement of the component class is possible - in the faces-config.xml file, an additional entry must be made as follows:
+Just as the replacement of the renderer class, the replacement of the component class is possible - in the `faces-config.xml` file, an additional entry must be made as follows:
 
 [source,xml]
 ----
@@ -1523,7 +1613,8 @@ Just as the replacement of the renderer class, the replacement of the component 
   </component-class>
 </component>
 ----
-Auto-Converter: This procedure, for example, automatically connects a converter to the component without using its own converter tag. An example of such a class:
+Auto-Converter: This procedure, for example, automatically connects a converter to the component without using its own converter tag. 
+An example of such a class:
 
 [source,java]
 ----
@@ -1535,13 +1626,20 @@ public class SpecialHtmlInputText extends HtmlInputText {
 }
 ----
 
-This means that this special converter is used for all elements of these components!
+This means that this special converter is used for all elements of these components.
 
 ==== Custom component from the backing beans - component binding
 
-The two tricks used so far apply to all elements of a component type - what can be done if you only want to distinguish individual components with this special behavior and others do not? 
-Example: Newline: An example from the field: For an application, a connection to a legacy database running on an AS400 server was developed. The data returned by the server was marked with an r to mark the line break - on the frontend this mark should also lead to a line break in the HTML markup, so it had to be output as <br/> . Since not all text edits should be parsed, the rendering behavior has been replaced only for some of the components.
-To make this substitution, you can either create your own tag and set a new renderer for the component over that tag, but you can also use component binding, but this second way is much easier. First of all, all components that should have a special rendering behavior have to be given a binding attribute. In the next step, this attribute is linked to the underlying business logic. The following example shows a section of such a modified page declaration:
+The two tricks used so far apply to all elements of a component type - what can be done if you only want to distinguish individual components with this special behavior and others do not?
+
+Example: Newline: An example from the practice: For an application, a connection to a legacy database running on an AS400 server was developed. 
+The data returned by the server was marked with an r to mark the line break - on the frontend this mark should also lead to a line break in the HTML markup, so it had to be output as <br/>. 
+Since not all text edits should be parsed, the rendering behavior has been replaced only for some of the components.
+
+To make this substitution, you can either create your own tag and set a new renderer for the component over that tag, but you can also use component binding, but this second way is much easier. 
+First of all, all components that should have a special rendering behavior have to be given a binding attribute. 
+In the next step, this attribute is linked to the underlying business logic. 
+The following example shows a section of such a modified page declaration:
 
 [source,xhtml]
 ----
@@ -1555,8 +1653,12 @@ UIComponent getOutputWithBreaks() {
   return new OutputTextWithBreaks();
 }
 ----
-All we need now is an implementation of this component - this is shown in Listing modifying the rendering behavior of a component by component 10mmBinding . It overrides the encodeEnd () method - where usually a renderer is searched for the component and its encodeEnd () method is called. In this case, we do the rendering right in the component itself. The actual rendering is hidden in the figure because it should correspond exactly to the functionality in the renderer class.
+All we need now is an implementation of this component - this is shown in Listing <<.modifying the rendering behavior of a component by componentBinding, modifying the rendering behavior of a component by componentBinding>>. 
+It overrides the `encodeEnd()` method - where usually a renderer is searched for the component and its `encodeEnd()` method is called. 
+In this case, we do the rendering right in the component itself. 
+The actual rendering is hidden in the figure because it should correspond exactly to the functionality in the renderer class.
 
+.modifying the rendering behavior of a component by componentBinding
 [source,java]
 ----
 public static final class OutputText extends HtmlOutputText {
@@ -1580,8 +1682,12 @@ public static final class OutputText extends HtmlOutputText {
 ----
 === MyGourmet 13: Components and Services
 
-The example MyGourmet 13 integrates all the components developed in this chapter - the composite components from section [Section: composite components ] as well as the classic component from section [Classical components] and their combination from section [Section: Combining composite components and classical components] . In addition to the many new components, there is the new view editProvider.xhtml to edit a provider. As part of this change, we have slightly tweaked the architecture of the application and introduced a service class for provider- type objects . listing MyGourmet 13: ProviderService shows the Interface ProviderService of the service class.
+The example MyGourmet 13 integrates all the components developed in this chapter - the composite components from section [Section: composite components] as well as the classic component from section [Classical components] and their combination from section [Section: Combining composite components and classical components]. 
+In addition to the many new components, there is the new view `editProvider.xhtml` to edit a provider. 
+As part of this change, we have slightly tweaked the architecture of the application and introduced a service class for provider- type objects. 
+Listing <<.MyGourmet 13: ProviderService, MyGourmet 13: ProviderService>> shows the Interface `ProviderService` of the service class.
 
+.MyGourmet 13: ProviderService
 [source,java]
 ----
 public interface ProviderService {
@@ -1592,8 +1698,21 @@ public interface ProviderService {
   Provider findById(long id);
 }
 ----
-The reason for this optimization is explained quickly. After the managed bean ProviderBean is stored in the view scope, it is recreated for each view. This also means that the list of providers is reinitialized each time. In the last example this was not a problem, because the provider data was not changeable. With the new view editProvider.xhtml However, it is a problem because the data changed by the user when leaving the page are lost - they are only stored in the bean. With a service in the application scope, a database is virtually simulated and the problem no longer occurs. As an added benefit, an existing service class makes switching to a real database very easy. With this change, it is also possible to outsource the functionality required for the view providerList.xhtml to the managed bean ProviderListBean in the request scope. 
-The ProviderServiceImpl class implements the ProviderService interface and represents the actual service. It is available as a managed bean under the name providerService in the application scope. Listing MyGourmet 13: Implementation of the service shows the hull of the class with the annotations. The implementation is very simple and is based internally on a list which is initialized when creating the bean with three objects of type Provider .
+The reason for this optimization is explained quickly. 
+After the managed bean `ProviderBean` is stored in the view scope, it is recreated for each view. 
+This also means that the list of providers is reinitialized each time. 
+In the last example this was not a problem, because the provider data was not changeable. 
+With the new view `editProvider.xhtml` however, it is a problem because the data changed by the user when leaving the page are lost - they are only stored in the bean. 
+With a service in the application scope, a database is virtually simulated and the problem no longer occurs. 
+As an added benefit, an existing service class makes switching to a real database very easy. 
+With this change, it is also possible to outsource the functionality required for the view `providerList.xhtml` to the managed bean `ProviderListBean` in the request scope.
+
+The `ProviderServiceImpl` class implements the `ProviderService` interface and represents the actual service. 
+It is available as a managed bean under the name `providerService` in the application scope. 
+Listing <<.MyGourmet 13: Implementation of the service, MyGourmet 13: Implementation of the service>> shows the hull of the class with the annotations. 
+The implementation is very simple and is based internally on a list which is initialized when creating the bean with three objects of type `Provider`.
+
+.MyGourmet 13: Implementation of the service
 [source,java]
 ----
 @ManagedBean(name = "providerService")
@@ -1602,7 +1721,12 @@ public class ProviderServiceImpl implements ProviderService {
   ...
 }
 ----
-Much more interesting is the automatic setting of the service in the managed bean provider bean via a managed property. Listing MyGourmet 13: Setting the Service in ProviderBean shows the corresponding code snippet. You do not have to worry about the service in this case. After creating a ProviderBean managed bean , JSF automatically sets the service - and this is guaranteed before the user's first access.
+Much more interesting is the automatic setting of the service in the managed bean `ProviderBean` via a managed property. 
+Listing <<.MyGourmet 13: Setting the Service in `ProviderBean`, MyGourmet 13: Setting the Service in `ProviderBean`>> shows the corresponding code snippet. 
+You do not have to worry about the service in this case. 
+After creating a `ProviderBean` managed bean, JSF automatically sets the service - and this is guaranteed before the user's first access.
+
+.MyGourmet 13: Setting the Service in `ProviderBean`
 [source,java]
 ----
 @ManagedProperty(value = "#{providerService}")
@@ -1612,17 +1736,33 @@ public void setProviderService(
   this.providerService = providerService;
 }
 ----
-But now back to the actual topic of this chapter: Components. The list of available composite components includes mc: panelBox , mc: dataTable , mc: collapsiblePanel, and mc: inputSpinner . The prefix mc stands for the namespace http: //at.irian/mygourmet of the MyGourmet-Tag-Bibliothek. Figure MyGourmet 13: Resources of the library mygourmet displays the contents of the resource library mygourmet with all composite components , stylesheets, pictures and scripts.
- 
-Figure: MyGourmet 13: resources of the library mygourmet
-The component mg: inputSpinner , which is the classic version of our input spinner component, can be used in the same way as the composite component.
+But now back to the actual topic of this chapter: Components. 
+The list of available composite components includes `mc:panelBox`, `mc:dataTable`, `mc:collapsiblePanel`, and `mc:inputSpinner`. 
+The prefix `mc` stands for the namespace http://at.irian/mygourmet of the MyGourmet-Tag library. 
+Figure <<MyGourmet 13: Resources of the library mygourmet, MyGourmet 13: Resources of the library mygourmet>> displays the contents of the resource library `mygourmet` with all composite components, stylesheets, pictures and scripts.
+
+====
+.MyGourmet 13: Resources of the library mygourmet
+image::images/mygourmet13-resources.jpg[]
+====
+
+The component `mg:inputSpinner`, which is the classic version of our input spinner component, can be used in the same way as the composite component.
 
 === The own component library
 
-In this section, we'll show how easy it is to create your own component library with JSF 2.0. For this purpose, we pack the composite component collapsiblePanel from section [Section: Combining Composite Components and Classic Components] including all required artifacts into a jar file. After making the component itself reusable, this jar file can be used in any JSF application. 
-A first version of our component library is created quickly. All we have to do is add the mygourmet resource library directory and the CollapsiblePanel class of the custom root component to the jar file.
-Since the CollapsiblePanel component is registered with the @FacesComponent annotation in the system, we do not really need an XML configuration. But in the end we have to create an empty faces-config.xml . JSF only considers annotations in those jar files that contain a file named faces-config.xml or with the extension .faces-config.xml in the directory META-INF . Listing faces-config.xml for the component library shows the empty faces-config.xml for JSF 2.2.
+In this section, we'll show how easy it is to create your own component library with JSF 2.0. 
+For this purpose, we pack the composite component `collapsiblePanel` from section [Section: Combining Composite Components and Classic Components] including all required artifacts into a jar file. 
+After making the component itself reusable, this jar file can be used in any JSF application.
 
+A first version of our component library is created quickly. 
+All we have to do is add the mygourmet resource library and the `CollapsiblePanel` class of the custom root component to the jar file.
+
+Since the `CollapsiblePanel` component is registered with the `@FacesComponent` annotation in the system, we do not really need an XML configuration. 
+But in the end we have to create an empty `faces-config.xml`. 
+JSF only considers annotations in those jar files that contain a file named `faces-config.xml` or with the extension `.faces-config.xml` in the directory `META-INF`. 
+Listing <<.faces-config.xml for the component library, faces-config.xml for the component library>> shows the empty faces-config.xml for JSF 2.2.
+
+.faces-config.xml for the component library
 [source,XML]
 ----
 <faces-config xmlns="http://xmlns.jcp.org/xml/ns/javaee"
@@ -1632,11 +1772,26 @@ Since the CollapsiblePanel component is registered with the @FacesComponent anno
     version="2.2">
 </faces-config>
 ----
-For JSF to be able to resolve the resources of our mygourmet library from the jar files in the classpath, it must be located in the META-INF / resources directory . The component library is now ready for use and can be used in any JSF application as soon as the jar archive is available in the classpath. The use of the composite component collapsiblePanel has not changed. As before, it will be integrated via the namespace http://xmlns.jcp.org/jsf/composite/mygourmet and the tag name collapsiblePanel .
-This admittedly very simple component library lends itself as the basis for extensions. In addition to other composite components, it can also be supplemented with classic components, converters and validators. However, the tags for these artifacts must be configured in a tag library (see section Section: Creating tag libraries with facelets ). For our example we create in the directory META-INF the tag library mygourmet.taglib.xml with the namespace http: //at.irian/mygourmet .
-The tags of the composite components and the tags of the tag library are accessible via different namespaces. To avoid this, JSF allows you to import composite components into tag libraries. For this, the name of the library - in our case mygourmet - must be specified in the element composite-library-name . Although this approach works, you can only include one complete resource library per tag library. JSF 2.2: JSF 2.2 solves this problem and allows you to define tags for individual composite components from different libraries. To do this, the tag library must have a tag for a component with a resource ID in the resource-id element 
-to be added. This resource ID consists of the library name and the compound component's resource name separated by a slash ( / ). Listing The tag library configuration for the component library shows the configuration of the tag for the composite component collapsiblePanel from our tag library.
+For JSF to be able to resolve the resources of our mygourmet library from the jar files in the classpath, it must be located in the `META-INF/resources` directory. 
+The component library is now ready for use and can be used in any JSF application as soon as the jar archive is available in the classpath. 
+The use of the composite component `collapsiblePanel` has not changed. 
+As before, it will be integrated via the namespace http://xmlns.jcp.org/jsf/composite/mygourmet and the tag name `collapsiblePanel`.
 
+This admittedly very simple component library lends itself as the basis for extensions. 
+In addition to other composite components, it can also be supplemented with classic components, converters and validators. 
+However, the tags for these artifacts must be configured in a tag library (see section Section: Creating tag libraries with facelets). 
+For our example we create the tag library `mygourmet.taglib.xml` in the directory `META-INF` with the namespace http://at.irian/mygourmet.
+
+The tags of the composite components and the tags of the tag library are accessible via different namespaces. 
+To avoid this, JSF allows you to import composite components into tag libraries. 
+For this, the name of the library - in our case mygourmet - must be specified in the element `composite-library-name`. 
+Although this approach works, you can only include one complete resource library per tag library. 
+JSF 2.2: JSF 2.2 solves this problem and allows you to define tags for individual composite components from different libraries. 
+To do this, the tag library must have a tag for a component with a resource ID in the `resource-id` element to be added. 
+This resource ID consists of the library name and the compound component's resource name separated by a slash ( / ). 
+Listing <<.The tag library configuration for the component library, The tag library configuration for the component library>> shows the configuration of the tag for the composite component collapsiblePanel from our tag library.
+
+.The tag library configuration for the component library
 [source,XML]
 ----
 <facelet-taglib version="2.2"
@@ -1654,15 +1809,32 @@ to be added. This resource ID consists of the library name and the compound comp
   </tag>
 </facelet-taglib>
 ----
-JSF automatically includes tag libraries from jar files in the classpath - but only if there is a configuration file in the META-INF directory whose name ends with the extension .taglib.xml . The tag collapsiblePanel is now available in applications under the namespace http: //at.irian/mygourmet . 
-Figure structure of the own component library shows conclusively nor the structure and the contents of the jar file for our example.
- 
-Figure: Structure of the own component library
+JSF automatically includes tag libraries from jar files in the classpath - but only if there is a configuration file in the `META-INF` directory whose name ends with the extension `.taglib.xml`. 
+The tag `collapsiblePanel` is now available in applications under the namespace http://at.irian/mygourmet.
+
+Figure <<.structure of the custom component library, structure of the custom component library>> finally shows the structure and the contents of the jar file for our example.
+
+====
+.structure of the custom component library
+image::images/cc-taglib-jar.jpg[]
+====
+
 In section [Section:  MyGourmet 13 with component library] you will find again the example MyGourmet 13 - but this time with a tag library that combines all composite components, components, validators and converters into a separate jar file.
 
 === MyGourmet 13 with component library
 
-This section provides a brief description of an alternate version of MyGourmet 13 . In this version, the composite components and all components of the tag library are combined in a component library. 
-This component library includes the one in the directory META-INF / resources the Resource Library mygourmet and secondly the tag library mygourmet.taglib.xml in the directory META-INF, There are also a number of Java classes such as component and renderer classes, converters, and validators. The composite components are imported into the tag library as described in the last section. Thus, all artifacts are available under the namespace http: //at.irian/mygourmet . 
-At the source code level, the component library is implemented as a Maven module. The project description pom.xml of the example MyGourmet 13 with component library consists of two modules: mygourmet13-taglib contains all components of the component library and mygourmet13-webapp contains the rest of the application. The connection between the two modules is in mygourmet13-webapp defines a dependency on mygourmet13-taglib . 
-To start the application, you must call mvn jetty: run in the directory of the mygourmet13-webapp module . Before that, however, the module mygourmet13-taglib or the whole project mygourmet13 has to be built. The result of creating mygourmet13-taglib is a jar file containing all parts of the component library.
+This section provides a brief description of an alternate version of MyGourmet 13. 
+In this version, the composite components and all components of the tag library are combined in a component library.
+
+This component library contains the resource library mygourmet in the directory `META-INF/resources` as well as the tag library `mygourmet.taglib.xml` in the directory `META-INF`.
+There are also a number of Java classes such as component and renderer classes, converters, and validators. 
+The composite components are imported into the tag library as described in the last section. 
+Thus, all artifacts are available under the namespace http://at.irian/mygourmet.
+
+At the source code level, the component library is implemented as a Maven module. 
+The project description `pom.xml` of the example MyGourmet 13 with component library consists of two modules: `mygourmet13-taglib` contains all components of the component library and `mygourmet13-webapp` contains the rest of the application. 
+The connection between the two modules is in `mygourmet13-webapp` defines a dependency on `mygourmet13-taglib`.
+
+To start the application, you must call `mvn jetty: run` in the directory of the mygourmet13-webapp module. 
+Before that, however, the module `mygourmet13-taglib` or the whole project mygourmet13 has to be built. 
+The result of creating `mygourmet13-taglib` is a jar file containing all parts of the component library.
