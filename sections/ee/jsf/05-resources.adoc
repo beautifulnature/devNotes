@@ -219,7 +219,7 @@ The picture itself is shown to the left of the name of the image file.
 
 ====
 .Examples of resources
-image::images/resources.jpg
+image::images/jsf/resources.jpg[]
 ====
 
 Based on the directory tree shown in Figure <<.Examples of Resources, Examples of Resources>> we now want to resolve various resources and look at the result. 
@@ -283,7 +283,7 @@ Figure <<.Resource-Library-Contract, Resource-Library-Contract>> in the applicat
 
 ====
 .Resource-Library-Contract
-image::images/res-lib-contract-webapp.jpg[]
+image::images/jsf/res-lib-contract-webapp.jpg[]
 ====
 
 This resource library contract includes the template `template.xhtml`, the stylesheet `style.css`, and the `image.png` image. 
@@ -463,7 +463,7 @@ For the Contract `contract1`, which is known from the section [Section: A First 
 
 ====
 .Resource-Library-Contract in Jar file
-image::images/res-lib-contract-jar.jpg[]
+image::images/jsf/res-lib-contract-jar.jpg[]
 ====
 
 JSF only considers resource library contracts from jar files if they contain a file named `javax.faces.contract.xml`. 
@@ -485,7 +485,7 @@ Figure <<.Resource Library Contracts in MyGourmet 12, Resource Library Contracts
 
 ====
 .Resource Library Contracts in MyGourmet 12
-image::images/res-lib-contract-mg12.jpg[]
+image::images/jsf/res-lib-contract-mg12.jpg[]
 ====
 
 To make the assignment of contracts to pages easier, we moved the pages in the customer area to `/views/customer` and the pages in the provider area to `/views/provider`. 

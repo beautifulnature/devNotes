@@ -74,8 +74,8 @@ Details about themes can be found in section [Section: Themes].
 
 ====
 .`p:panel` in the browser
-image::images/primefaces-panel.jpg[]
-image::images/primefaces-standard-comps.jpg[]
+image::images/jsf/primefaces-panel.jpg[]
+image::images/jsf/primefaces-standard-comps.jpg[]
 ====
 In an application and even within a page, you can combine components and tags from PrimeFaces with those from the JSF standard. 
 In most cases, you 'll even have to do that, as there are no alternatives for tags like `h:form`, `h:outputText`, `h:head`, or `h:body`. 
@@ -117,7 +117,7 @@ Here you can clearly see the difference to standard JSF, since the components ar
 
 ====
 .rendered output for example with extended standard components
-image::images/primefaces-standard-comps.jpg[]
+image::images/jsf/primefaces-standard-comps.jpg[]
 ====
 In illustration Rendered output, for example with extended standard components, further advantages of PrimeFaces can be recognized. 
 The two components with incorrect user input are displayed in red, including the assigned labels. 
@@ -137,7 +137,7 @@ Figure <<.`p:accordionPanel` in the browser, `p:accordionPanel` in the browser>>
 
 ====
 .`p:accordionPanel` in the browser
-image::images/primefaces-accordion1.jpg[]
+image::images/jsf/primefaces-accordion1.jpg[]
 ====
 Listing <<.`p:accordionPanel`, `p:accordionPanel`>> shows the code, for example, from Figure <<.`p:accordionPanel` in the browser, `p:accordionPanel` in the browser>>. 
 Within `p:accordionPanel` each tab is defined in a `p:tab` tag with arbitrary content. 
@@ -180,7 +180,7 @@ Figure <<.`p:calendar` in the browser, `p:calendar` in the browser>> shows the r
 
 ====
 .`p:calendar` in the browser
-image::images/primefaces-calendar.jpg[]
+image::images/jsf/primefaces-calendar.jpg[]
 ====
 
 `p:calendar` has some attributes to customize the behavior and appearance of the component. 
@@ -216,7 +216,7 @@ As you can see, `p:dataTable` will also work according to the current theme.
 
 ====
 .`p:dataTable` in the browser
-image::images/primefaces-datatable.jpg[]
+image::images/jsf/primefaces-datatable.jpg[]
 ====
  
 The basic operation of `p:dataTable` is the same as that of the DataTable component of the JSF standard (as described in Section Section: DataTable Component). 
@@ -262,7 +262,7 @@ Figure <<.`p:menu` in the browser, `p:menu` in the browser>> shows the rendered 
 
 ====
 .`p:menu` in the browser
-image::images/primefaces-menu.jpg[]
+image::images/jsf/primefaces-menu.jpg[]
 ====
  
 The entries of a menu are added to a menu component in PrimeFaces with the tag `p:menuitem`. 
@@ -304,7 +304,7 @@ Figure <<.`p:panelGrid` in the browser, `p:panelGrid` in the browser>> shows the
 
 ====
 .`p:panelGrid` in the browser
-image::images/primefaces-panelgrid.jpg[]
+image::images/jsf/primefaces-panelgrid.jpg[]
 ====
 In Listing <<.`p:panelGrid`, `p:panelGrid`>>, find the XHTML fragment for the table from Figure <<.`p:panelGrid` in the browser, `p:panelGrid` in the browser>>. 
 The rows and columns of the table are explicitly defined with the tags `p:row` and `p:column` - also in the header facet of `p:panelGrid`. 
@@ -341,7 +341,7 @@ Figure <<.`p:rating` in the browser, `p:rating` in the browser>> shows the rende
 .`p:rating` in the browser
 ====
 .`p:panelGrid` in the browser
-image::images/primefaces-rating.jpg[]
+image::images/jsf/primefaces-rating.jpg[]
 ====
  
 Listing <<.examples for `p:rating`, examples for `p:rating`>> shows some examples of the `p:rating` tag. 
@@ -363,7 +363,7 @@ Figure <<.`p:slider` in the browser, `p:slider` in the browser>> shows two possi
 
 ====
 .`p:slider` in the browser
-image::images/primefaces-slider.jpg[]
+image::images/jsf/primefaces-slider.jpg[]
 ====
  
 The `id` of the connected input component is entered in the `for` attribute of p: slider. 
@@ -402,7 +402,7 @@ Figure <<.`p:spinner` in the browser, `p:spinner` in the browser>> shows the ren
 
 ====
 .`p:spinner` in the browser
-image::images/primefaces-spinner.jpg[]
+image::images/jsf/primefaces-spinner.jpg[]
 ====
 
 See Listing <<.`p:spinner`, `p:spinner`>> for an example of the `p:spinner` tag. 
@@ -424,7 +424,7 @@ Illustration <<.Selected PrimeFaces themes, Selected PrimeFaces themes>> shows a
 
 ====
 .Selected PrimeFaces themes
-image::images/primefaces-themes.jpg[]
+image::images/jsf/primefaces-themes.jpg[]
 ====
 By default, PrimeFaces uses the theme named `Aristo`. 
 All other themes are not included in the standard scope and must be integrated into the application as a jar file. 
@@ -483,7 +483,7 @@ Figure <<.JQuery ThemeRoller, JQuery ThemeRoller>> shows the ThemeRoller in acti
 
 ====
 .JQuery ThemeRoller
-image::images/primefaces-themeroller.jpg[]
+image::images/jsf/primefaces-themeroller.jpg[]
 ====
 
 ThemeRoller provides a whole range of ready-made themes in Gallery as a basis for their own designs. 

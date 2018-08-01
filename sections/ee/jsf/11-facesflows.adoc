@@ -7,86 +7,112 @@ This is exactly where the so-called flows come into play.
 Flows is a grouping of multiple pages linked together in a specific order. 
 A flow can be started from the outside via a defined entry point. 
 Once started, the pages of the flow are processed until an exit point is reached in the internally defined sequence. 
-Figure Checkout Flow shows as an example a flow for checking out a shopping cart.
- 
-Picture: Checkout Flow
-The flow consists of the pages checkout , shipping , payment and confirm . 
+Figure <<.Checkout Flow, Checkout Flow>> shows as an example a flow for checking out a shopping cart.
+
+====
+.Checkout Flow
+image::images/jsf/flows-ex-checkout.jpg[]
+====
+
+The flow consists of the pages checkout, shipping, payment and confirm. 
 The page checkout is defined as start page and forms the entry point into the flow. 
-The flow can be ended from the confirm page . 
+The flow can be ended from the confirm page. 
 Extensions such as Spring Web Flow or ADF Task Flows have been enabling the use of flows in combination with JSF for several years. 
 With version 2.2, flows have also found their way into the JSF specification under the name "Faces-Flows".
 In the remainder of the chapter, we'll focus on using Faces Flows with JSF 2.2. 
 To get started in the topic, we show in section [Section: A First Example] a first, simple example. 
 Afterwards, in section [Definition of Flows], we take a closer look at the definition of flows with XML and with Java. 
 For optimal management of data within flows, JSF also provides the appropriate scope for managed beans, as shown in section [Flow Scope]. 
-In section [Faces Flows in Jar Files] , a brief guide to packaging flows into jar files follows. 
+In section [Faces Flows in Jar Files], a brief guide to packaging flows into jar files follows. 
 Finally, section [Section: Example Faces Flows] a little more extensive example.
-11.1 A first example
+=== A first example
 A faces flow consists of several nodes, which are connected to each other via the internal navigation of the flow. 
-JSF defines different types of nodes - however, for the first example, only nodes for pages and nodes to terminate the flow are of interest. 
+JSF defines different types of nodes - however, for the first example, only nodes for pages and nodes to terminate the flow are of interest.
 
-In the first example we will create the flow with ID flow1 . 
+In the first example we will create the flow with ID `flow1`. 
 This flow consists of two pages, each containing a short text and a link to navigate to the next page. 
-From a functionality point of view, this example does not do much - but it's a great way to demonstrate the basic structure and operation of faces flows. 
+From a functionality point of view, this example does not do much - but it's a great way to demonstrate the basic structure and operation of faces flows.
 
-The definition of our flow with the ID flow1 takes place in the directory of the same name within the web application. 
-Therein we create the empty configuration file flow1-flow.xml - otherwise JSF can not resolve the flow correctly. 
+The definition of our flow with the ID `flow1` takes place in the directory of the same name within the web application. 
+Therein we create the empty configuration file `flow1-flow.xml` - otherwise JSF can not resolve the flow correctly. 
 Our example is a so-called implicit flow that builds on some of the conventions of JSF, and thus manages with an empty configuration file. 
-In section [Section: Definition of Flows] we fill the configuration with life. 
+In section [Section: Definition of Flows] we fill the configuration with life.
 
 After the skeleton stands, we can take care of the sides of the flow. 
-For this we put the files flow1.xhtml and page2.xhtml in the flow directory at. 
-By convention, for each XHTML file in the flow directory, JSF creates a page node whose ID matches the file name without the extension .xhtml . 
+For this we put the files `flow1.xhtml` and `page2.xhtml` in the flow directory. 
+By convention, for each XHTML file in the flow directory, JSF creates a page node whose ID matches the file name without the extension `.xhtml`. 
 JSF automatically defines the node with the same ID as the flow itself to the start node of the flow. 
-In addition, JSF defines a node to terminate the flow whose ID consists of the flow ID and the string -return . 
-Our flow thus consists of the nodes flow1 , page2 and flow1-return . 
+In addition, JSF defines a node to terminate the flow whose ID consists of the flow ID and the string -return. 
+Our flow thus consists of the nodes `flow1`, `page2` and `flow1-return`.
 
-Figure Structure of the flow flow1 shows the content of our flow with the name flow1 in the root directory of the web application.
- 
-Figure: Structure of Flows flow1
-JSF 2.2 seamlessly integrates Faces flows into the existing navigation system. To start a flow, it is sufficient to enter its ID in the navigation. 
-There are basically two variants. If the flow is to be started via a GET request, its ID must be entered in the attribute outcome of h: link or h: button . 
-If, on the other hand, the flow is to be started via a POST request, its ID must be specified in the action attribute of h: commandLink or h: commandButton . 
-In the second case, the flow ID can also be the return value of an action method. 
+Figure <<.Structure of the flow flow1, Structure of the flow flow1>> shows the content of our flow with the name `flow1` in the root directory of the web application.
 
-Our flow with the ID flow1 can for example be started with one of the following tags:
+====
+.Structure of the flow flow1
+image::images/jsf/flows-ex-tree.jpg[]
+====
+
+JSF 2.2 seamlessly integrates Faces flows into the existing navigation system. 
+To start a flow, it is sufficient to enter its ID in the navigation. 
+There are basically two variants. 
+If the flow is to be started via a `GET` request, its ID must be entered in the attribute `outcome` of `h:link` or `h:button`. 
+If, on the other hand, the flow is to be started via a `POST` request, its ID must be specified in the `action` attribute of `h:commandLink` or `h:commandButton`. 
+In the second case, the flow ID can also be the return value of an action method.
+
+Our flow with the ID `flow1` can for example be started with one of the following tags:
+[source,xhtml]
+----
 <h:link value="Start flow1" outcome="flow1"/>
 <h:commandLink value="Start flow1" action="flow1"/>
-JSF navigates to the flow1.xhtml page specified in the start node when starting the flow . 
-Navigating within the flow simply uses the IDs of the nodes. To exit the flow on the page2.xhtml page , the ID flow1-return of the node must be used to exit. 
+----
+JSF navigates to the `flow1.xhtml` page specified in the start node when starting the flow. 
+Navigating within the flow simply uses the IDs of the nodes. 
+To exit the flow on the `page2.xhtml` page, the ID `flow1-return` of the node must be used to exit. 
 Our flow can then be ended, for example, with one of the following tags.
+[source,xhtml]
+----
 <h:button value="Flow beenden" outcome="flow1-return"/>
 <h:commandButton value="Flow beenden" action="flow1-return"/>
-After exiting, JSF automatically navigates to the page /flow1-return.xhtml .
-11.2 Definition of flows
+----
+After exiting, JSF automatically navigates the page to `/flow1-return.xhtml`.
+== Definition of flows
 The full functional spectrum of the Faces flows can only be developed with an explicit definition of the flow. 
 In this definition, the flow is configured with its nodes. 
-An overview of all available node types can be found in section [Section: Types of Flow Nodes] . 
-The definition of flows can be done either with XML (see section [Section: Definition with XML] ) or with Java (see section [Section: Definition with Java] ). 
+An overview of all available node types can be found in section [Section: Types of Flow Nodes]. 
+The definition of flows can be done either with XML (see section [Section: Definition with XML]) or with Java (see section [Section: Definition with Java]).
 
 In this section, we focus on flows that are defined directly in the web application. 
 Faces flows can also be defined in a jar file. 
-Details on this can be found later in Section [Faces Flows in Jar Files Section] .
-11.2.1 Types of Flow Nodes
+Details on this can be found later in Section [Faces Flows in Jar Files Section].
+==== Types of Flow Nodes
 JSF 2.2 provides the following node types for faces flows:
-View Node : 
+* View Node: +
 Nodes for a facelet page within a flow
-Return node : 
+* Return node: +
 node to terminate a flow
-Flow call node : 
-node to start a flow from another flow. Here it is possible to pass parameters to the called flow.
-Method Call Node : 
+* Flow call node: +
+node to start a flow from another flow. 
+Here it is possible to pass parameters to the called flow.
+* Method Call Node: +
 Node for calling a managed bean method whose return value, if any, determines further navigation.
-Switch node : 
-dynamic navigation node based on a list of value expressions with associated navigation targets. JSF uses the first value expression with the value true for navigation.
-11.2.2 Definition with XML
-To define a flow with XML, the already known XML file is used in the flow directory. The name of this file consists of the flow ID and the extension -flow.xml . 
-Syntactically, this configuration file is a very limited faces-config.xml . The root element faces-config can only contain a single flow-definition element with the definition of the flow. 
+* Switch node: +
+dynamic navigation node based on a list of value expressions with associated navigation targets. 
+JSF uses the first value expression with the value true for navigation.
+==== Definition with XML
+To define a flow with XML, the already known XML file is used in the flow directory. 
+The name of this file consists of the flow ID and the extension `-flow.xml`. 
+Syntactically, this configuration file is a very limited `faces-config.xml`. 
+The root element faces-config can only contain a single `flow-definition` element with the definition of the flow.
 
-In the element flow-definition , the attribute id the flow ID can be specified. 
-Within this element, the nodes of the flow are defined. JSF 2.2 provides a separate XML element for each node type. 
-As a first example you will find in Listing Flow flow1 with XML a configuration for our flow flow1 from section [Section: A First Example] .
- <faces-config xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+In the element `flow-definition`, the attribute `id` the flow ID can be specified. 
+Within this element, the nodes of the flow are defined. 
+JSF 2.2 provides a separate XML element for each node type. 
+As a first example you will find in Listing <<.Flow flow1 with XML, .Flow flow1 with XML>> a configuration for our flow flow1 from section [Section: A First Example].
+
+.Flow flow1 with XML
+[source,java]
+----
+<faces-config xmlns="http://xmlns.jcp.org/xml/ns/javaee"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
       http://xmlns.jcp.org/xml/ns/javaee/web-facesconfig_2_2.xsd"
@@ -97,21 +123,25 @@ As a first example you will find in Listing Flow flow1 with XML a configuration 
     </flow-return>
   </flow-definition>
 </faces-config>
-The configuration shown defines a return node with the ID flow1-return in the flow-return element . 
-The navigation target for this node is set to the value / index in the from-outcome element . 
-When the flow exits through this node, JSF uses the value / index to resolve a page out of the flow. 
-Without explicit navigation rules , this results in the page /index.xhtml - but with a corresponding navigation rule in faces-config.xml , this value can be mapped to any page. 
-Even with an explicit configuration remain in section 
-
-[Section: A First Example] . The nodes of the flow defined by the conventions are thus preserved. 
+----
+The configuration shown defines a return node with the ID `flow1-return` in the `flow-return` element. 
+The navigation target for this node is set to the value `/index` in the `from-outcome` element. 
+When the flow exits through this node, JSF uses the value `/index` to resolve a page out of the flow. 
+Without explicit navigation rules, this results in the page `/index.xhtml` - but with a corresponding navigation rule in `faces-config.xml`, this value can be mapped to any page. 
+Even with an explicit configuration, the conventions presented in section [Section: A First Example] remain.
+The nodes of the flow defined by the conventions are thus preserved. 
 However, nodes defined in the configuration always take precedence and override conventionally defined nodes with the same ID.
 
-Tip: Be sure to use the same flow ID for the flow directory, the configuration file name, and the ID in the configuration.
+TIP: Be sure to use the same flow ID for the flow directory, the configuration file name, and the ID in the configuration.
 
-In Listing Complete definition of Flow flow1 with XML you will find the complete definition of our flow including all view nodes and the definition of the start node. 
-For the view nodes, the view ID of the page to be displayed, including the flow directory, is entered in the vdl-document element . 
-The start node of the flow is determined in the element start-node by its ID.
- <flow-definition id="flow1">
+In Listing <<.Complete definition of Flow flow1 with XML, Complete definition of Flow flow1 with XML>> you will find the complete definition of our flow including all view nodes and the definition of the start node. 
+For the view nodes, the view ID of the page to be displayed, including the flow directory, is entered in the `vdl-document` element. 
+The start node of the flow is determined in the element `start-node` by its ID.
+
+.Complete definition of Flow `flow1` with XML
+[source,xml]
+----
+<flow-definition id="flow1">
   <start-node>start</start-node>
   <view id="start">
     <vdl-document>/flow1/flow1.xhtml</vdl-document>
@@ -123,9 +153,13 @@ The start node of the flow is determined in the element start-node by its ID.
     <from-outcome>/index.xhtml</from-outcome>
   </flow-return>
 </flow-definition>
-A flow call node can be used to start a flow from another flow. It is even possible to pass parameters to the flow to be called. 
-Listing Flow Definition with Flow Call Node and Outgoing Parameter shows how to call flow flow1 out of flow flow1 with parameter param1 .
+----
+A flow call node can be used to start a flow from another flow. 
+It is even possible to pass parameters to the flow to be called. 
+Listing <<.Flow Definition with Flow Call Node and Outgoing Parameter, Flow Definition with Flow Call Node and Outgoing Parameter>> shows how to call flow `flow1` out of flow `flow1` with parameter `param1`.
  TODO remove belowskip (layout)
+[source,xml]
+----
 <flow-definition id="flow1">
   <flow-call id="flow2">
     <flow-reference>
@@ -137,33 +171,45 @@ Listing Flow Definition with Flow Call Node and Outgoing Parameter shows how to 
     </outbound-parameter>
   </flow-call>
 </flow-definition>
+----
 The parameter is only passed correctly to the called flow if it defines an incoming parameter with the same name. 
-Listing Flow definition with incoming parameter shows the definition of the incoming parameter param1 in flow flow2 .
- <flow-definition id="flow2">
+Listing <<.Flow definition with incoming parameter, Flow definition with incoming parameter>> shows the definition of the incoming parameter `param1` in flow `flow2`.
+
+[source,xml]
+----
+<flow-definition id="flow2">
   <inbound-parameter>
     <name>param1</name>
     <value>#{flow2Bean.value}</value>
   </inbound-parameter>
 </flow-definition>
+----
 JSF allows you to register methods that run when the flow starts or stops. 
-The corresponding methods must be entered in the configuration as method expression in the elements initializer or finalizer (JSF expects a method without parameters with the return value void ):
+The corresponding methods must be entered in the configuration as method expression in the elements `initializer` or `finalizer` (JSF expects a method without parameters with the return value `void`):
+[source,xml]
+----
 <initializer>#{bean.initializeFlow}</initializer>
 <finalizer>#{bean.finalizeFlow}</finalizer>
-11.2.3 Definition with Java
+----
+==== Definition with Java
 As sprawling XML configurations become increasingly less popular, JSF 2.2 adds the ability to define flows with Java. 
 JSF relies entirely on Contexts and Dependency Injection (CDI), which is also part of Java EE as of version 6, and expects the definition of flows in so-called producer methods. 
-Information on CDI can be found in chapter Section: JSF and CDI - Section sec-cdi-prod-meth Producer methods shows details of producer methods in particular. 
+Information on CDI can be found in chapter [Section: JSF and CDI - Section: Producer methods] shows details of producer methods in particular.
 
-Each flow is produced in its own producer method as an instance of type javax.faces.flow.Flow created. 
-The producer method can be defined in any serializable class and must be annotated with @Produces and the qualifier defined by JSF. 
+Each flow is produced in its own producer method as an instance of type `javax.faces.flow.Flow`. 
+The producer method can be defined in any serializable class and must be annotated with `@Produces` and the qualifier defined by JSF. 
 The name of the method can also be arbitrary. 
-The method must be a parameter of type javax.faces.flow.builder.FlowBuilder have that with the qualifier @FlowBuilderParameter is annotated. 
-This is the only way to ensure that when the method is called, CDI passes an instance ready for this type to the method. 
+The method must have a parameter of type `javax.faces.flow.builder.FlowBuilder` that with the qualifier `@FlowBuilderParameter` is annotated. 
+This is the only way to ensure that when the method is called, CDI passes an instance ready for this type to the method.
 
-Listing Complete definition of Flow flow1 with Java shows the definition of our flow1 flow with Java. 
-The resulting flow is the same as in Listing Complete definition of Flow flow1 using XML with XML defined flow.
- public class Flow1 implements Serializable {
-  @Produces @FlowDefinition
+Listing <<.Complete definition of Flow flow1 with Java, Complete definition of Flow flow1 with Java>> shows the definition of our `flow1` flow with Java. 
+The resulting flow is the same as in Listing <<.Complete definition of Flow flow1 using XML, Complete definition of Flow flow1 using XML>> with XML defined flow.
+
+.Complete definition of Flow flow1 with Java
+[source,java]
+----
+public class Flow1 implements Serializable {
+@Produces @FlowDefinition
   public Flow buildFlow(
       @FlowBuilderParameter FlowBuilder flowBuilder) {
     flowBuilder.id("", "flow1");
@@ -174,97 +220,134 @@ The resulting flow is the same as in Listing Complete definition of Flow flow1 u
     return flowBuilder.getFlow();
   }
 }
-Flow is compiled within the Producer method using the FlowBuilder supplied by CDI . 
-A call to the id method sets the ID of the flow to be created. 
+----
+Flow is compiled within the Producer method using the `FlowBuilder` supplied by CDI. 
+A call to the `id` method sets the ID of the flow to be created. 
 The method expects the ID of the defining document as the first parameter and the flow ID as the second parameter. 
-We return to this document ID in section [Faces Flows in Jar Files] - it is currently empty (note: zero is not allowed). 
+We return to this document ID in section [Faces Flows in Jar Files] - it is currently empty (note: `null` is not allowed).
 
-The nodes of our flow are also defined using methods of the FlowBuilder class . 
-The method viewNode creates a view node and expects the node ID as the first parameter and the view ID of the page to be displayed including the flow directory as the second parameter. 
-Similarly, a call to the method returnNode generates a return node with the transferred node ID. 
-The navigation target is then set directly in the generated node instance via a call to fromOutcome . 
-The method markAsStartNode can be used to set any node of the flow as the start node. 
+The nodes of our flow are also defined using methods of the `FlowBuilder` class. 
+The method `viewNode` creates a view node and expects the node ID as the first parameter and the view ID of the page to be displayed including the flow directory as the second parameter. 
+Similarly, a call to the method `returnNode` generates a return node with the transferred node ID. 
+The navigation target is then set directly in the generated node instance via a call to `fromOutcome`. 
+The method `markAsStartNode` can be used to set any node of the flow as the start node.
 
-At the very end, the flow is generated and returned with a call to getFlow () . 
+At the very end, the flow is generated and returned with a call to `getFlow()`.
 
 The definition of a flow call node with parameters in the Java configuration looks like this:
+[source,java]
+----
 flowBuilder.flowCallNode("flow2").flowReference("", "flow2")
     .outboundParameter("param1", "#{flow1Bean.value}");
+----
 An incoming parameter is defined with Java as follows:
+[source,java]
+----
 flowBuilder.inboundParameter("param1", "#{flow2Bean.value}");
+[source,java]
+----
 The Java configuration can also register methods that JSF invokes when starting or stopping the flow:
+[source,java]
+----
 flowBuilder.initializer("#{bean.initializeFlow}");
 flowBuilder.finalizer("#{bean.finalizeFlow}");
-11.3 Flow Scope
+----
+=== Flow Scope
 So far, we have not thought about the data used within a flow. 
-In section Section: Conversations with JSF , we have already dealt with this topic from the point of view of business processes and recommended the use of conversations. Of course, managed beans in conversations also work in conjunction with faces-flows. 
+In section [Section: Conversations with JSF], we have already dealt with this topic from the point of view of business processes and recommended the use of conversations. 
+Of course, managed beans in conversations also work in conjunction with faces-flows. 
 JSF 2.2, however, offers a tailor-made solution for managed beans that are used in flows with the Flow Scope.
 
 In JSF, each flow has its own flow scope, whose lifetime begins when the associated flow starts, and continues until the flow stops. 
 The flow scope is always bound to the current browser window or to the browser tab. 
 There are no problems with the application running in multiple windows or tabs. 
-The differentiation of browser windows and browser tabs is made as of version 2.2 of JSF internally via so-called client Windows Watch for the parameter jfwid in the URL .: .
-11.3.1 Managed Beans in Flow Scope
+The differentiation of browser windows and browser tabs is made as of version 2.2 of JSF internally via so-called `Client-Windows` watch for the parameter `jfwid` in the URL.
+==== Managed Beans in Flow Scope
 In JSF, a managed bean in the flow scope is always assigned to exactly one flow. 
 As a result, their lifetime depends on the execution of the flow. 
 The bean instance is created on first access after the flow starts and is removed from memory when the flow terminates. 
-JSF also relies fully on CDI for flow scope and provides the scope annotation javax.faces.flow.FlowScoped for CDI beans. 
-Since each flow has its own scope, the id of the linked flow must be specified in the value element of @FlowScoped . 
-Listing managed bean in flow scope shows a CDI bean in the flow scope of the flow1 flow .
- @Named
+JSF also relies fully on CDI for flow scope and provides the scope annotation `javax.faces.flow.FlowScoped` for CDI beans. 
+Since each flow has its own scope, the `id` of the linked flow must be specified in the `value` element of `@FlowScoped`. 
+Listing <<.managed bean in flow scope, managed bean in flow scope>> shows a CDI bean in the flow scope of the `flow1` flow.
+
+.managed bean in flow scope
+[source,java]
+----
+@Named
 @FlowScoped(value="flow1")
 public class Flow1Bean {
   ...
 }
-11.3.2 Direct access to the flow scope
+----
+==== Direct access to the flow scope
 For smaller amounts of data, you do not necessarily have to create a managed bean. 
-JSF provides direct access to the flow scope through Java and the implicit flowScope object in unified EL expressions. 
+JSF provides direct access to the flow scope through Java and the implicit `flowScope` object in unified EL expressions.
 
 On the Java side, the current flow scope is accessed via the following code:
+
+[source,java]
+----
 FacesContext ctx = FacesContext.getCurrentInstance();
 Map<Object, Object> flowScope = ctx.getApplication()
     .getFlowHandler().getCurrentFlowScope();
 flowScope.put("userName", "Michael Kurz");
-The flow scope in a value expression is accessed via the flowScope implicit object :
+----
+The flow scope in a value expression is accessed via the `flowScope` implicit object:
+
+[source,xml]
+----
 <h:outputText value="#{flowScope.userName}"/>
-11.4 Faces flows in jar files
+----
+== Faces flows in jar files
 At the latest when a Faces flow is to be used in several applications, one has to worry about its reusability. 
 JSF 2.2 provides the ability to wrap face flows into jar files, regardless of whether the flow is defined in XML or Java. 
-Defining a flow in a jar file is as simple as defining an application, given a few details. 
+Defining a flow in a jar file is as simple as defining an application, given a few details.
 
 The first difference is the location of the flow directory. 
-In jar files, JSF always expects the flow directory containing the XHTML files in the / META-INF / flows directory . 
+In jar files, JSF always expects the flow directory containing the `XHTML` files in the `/META-INF/flows` directory. 
 It should be noted here that in section [Section: A First Example] shown conventions for flows in jar files do not apply. 
-Therefore, every single node must be explicitly defined in the configuration. 
+Therefore, every single node must be explicitly defined in the configuration.
 
-This leads us to the next point: The definition of flows with XML is done in jar files centrally for all flows in the file /META-INF/faces-config.xml . 
-In this faces-config.xml , a name for the configuration can be specified in the element name . 
-JSF uses this name as an additional ID for the flow - the Defining Document ID . 
+This leads us to the next point: The definition of flows with XML is done in jar files centrally for all flows in the file `/META-INF/faces-config.xml`. 
+In this `faces-config.xml`, a name for the configuration can be specified in the element `name`. 
+JSF uses this name as an additional ID for the flow - the Defining Document ID. 
 This avoids naming conflicts with flows from other jar files. 
-Listing Definition of a Flow with Defining Document ID shows the definition of the flow with the ID flow1 and the Defining Document ID project1 .
- <faces-config ...>
+Listing <<.Definition of a Flow with Defining Document ID, Definition of a Flow with Defining Document ID>> shows the definition of the flow with the ID `flow1` and the Defining Document ID `project1`.
+
+.Definition of a Flow with Defining Document ID
+[source,java]
+----
+<faces-config ...>
   <name>project1</name>
   <flow-definition id="flow1">
     ...
   </flow-definition>
 </faces-config>
-If a flow is defined with a Defining Document ID, it must be specified when the flow starts. 
-To do this, the attribute to-flow-document-id with the Defining-Document-ID must be set as the value on the starting component with the tag f: attribute . 
-The flow from listing definition of a flow with Defining-Document-ID is started as follows:
+----
+If a flow is defined with a `Defining-Document-ID`, it must be specified when the flow starts. 
+To do this, the attribute `to-flow-document-id` with the `Defining-Document-ID` must be set as the `value` on the starting component with the tag `f:attribute`. 
+The flow from Listing <<.definition of a flow with Defining-Document-ID, definition of a flow with Defining-Document-ID>> is started as follows:
+
+.definition of a flow with Defining-Document-ID
+[source,xhtml]
+----
 <h:link value="Flow1 starten" outcome="flow1">
    <f:attribute name="to-flow-document-id" value="project1"/>
 </h:link>
-11.5 Example Faces Flows
-In addition to the already known flow flow1 in an XML and a Java variant, the example Faces Flows also contains the new Flow login for logging in a user. 
+----
+== Example Faces Flows
+In addition to the already known flow `flow1` in an XML and a Java variant, the example Faces Flows also contains the new Flow login for logging in a user. 
 Based on this login flow we want to show you how to call a flow from another flow with parameters. 
-The complete source code of the example Faces-Flow can be found together with the MyGourmet examples at http://jsfatwork.irian.at . 
-Listing Definition of Flow login with XML shows the definition of the login flow with XML. 
-This flow is directly in the application in the directory login
+The complete source code of the example Faces-Flow can be found together with the MyGourmet examples at http://jsfatwork.irian.at. 
+Listing <<.Definition of Flow login with XML, Definition of Flow login with XML>> shows the definition of the login flow with XML. 
+This flow is directly in the application in the directory login, there are pages `login.xhtml`, `success.xhtml` and `error.xhtml`, for which JSF creates a View node by convention. 
+The most interesting part of the definition is the flow call node for the flow `forgotPassword` with the `username` parameter. 
+When the second flow is called, the value of the parameter is read from the `username` property of the bean `loginBean` in the flow scope and passed to the flow.
 
-, There are the pages login.xhtml , success.xhtml and error.xhtml , for which JSF creates a View node by convention. 
-The most interesting part of the definition is the flow call node for the flow forgotPassword with the username parameter . 
-When the second flow is called, the value of the parameter is read from the username property of the bean loginBean in the flow scope and passed to the flow.
- <flow-definition id="login">
+.Definition of Flow login with XML
+[source,java]
+----
+<flow-definition id="login">
   <flow-return id="login-return">
       <from-outcome>/index</from-outcome>
   </flow-return>
@@ -285,12 +368,17 @@ When the second flow is called, the value of the parameter is read from the user
     </outbound-parameter>
   </flow-call>
 </flow-definition>
-The flow also defines a navigation rule for the outcome forgotPassword-return , which is returned when flow forgotPassword is ended. 
-In this case, the page is displayed again. 
+----
+The flow also defines a navigation rule for the outcome `forgotPassword-return`, which is returned when flow `forgotPassword` is ended. 
+In this case, the page is displayed again.
 
-Listing Definition of Flow login-java with Java shows the Java variant of the login flow.
- public class LoginJavaFlow implements Serializable {
-  @Produces @FlowDefinition
+Listing <<.Definition of Flow login-java with Java, Definition of Flow login-java with Java>> shows the Java variant of the login flow.
+
+.Definition of Flow login-java with Java
+[source,java]
+----
+public class LoginJavaFlow implements Serializable {
+@Produces @FlowDefinition
   public Flow buildFlow(
       @FlowBuilderParameter FlowBuilder flowBuilder) {
     flowBuilder.id("", "login-java");
@@ -309,16 +397,21 @@ Listing Definition of Flow login-java with Java shows the Java variant of the lo
     return flowBuilder.getFlow();
   }
 }
-After both variants have been defined in the same application, we have selected the flow ID login-java for the Java variant . 
-From the point of view of functionality, there is no difference between the two versions of the login flow. 
+----
+After both variants have been defined in the same application, we have selected the flow ID `login-java` for the Java variant. 
+From the point of view of functionality, there is no difference between the two versions of the login flow.
 
-The flow forgotPassword is located in a separate Maven module and is integrated in the application as a jar file. 
-The flow consists only of the page forgotPassword.xhtml , which is located in the directory / META-INF / flows / forgotPassword . 
-The definition of the flow is in the configuration file /META-INF/faces-config.xml . 
+The flow `forgotPassword` is located in a separate Maven module and is integrated in the application as a jar file. 
+The flow consists only of the page `forgotPassword.xhtml`, which is located in the directory `/META-INF/flows/forgotPassword`. 
+The definition of the flow is in the configuration file `/META-INF/faces-config.xml`.
 
-Listing Definition of Flow forgotPassword shows the definition of the flow with the incoming parameter. 
-The value of the passed parameter is stored in the flow scope under the key username when starting the flow .
- <flow-definition id="forgotPassword">
+Listing <<.Definition of Flow forgotPassword, Definition of Flow forgotPassword>> shows the definition of the flow with the incoming parameter. 
+The value of the passed parameter is stored in the flow scope under the key `username` when starting the flow.
+
+.Definition of Flow forgotPassword
+[source,java]
+----
+<flow-definition id="forgotPassword">
   <flow-return id="return">
     <from-outcome>forgotPassword-return</from-outcome>
   </flow-return>
@@ -327,3 +420,4 @@ The value of the passed parameter is stored in the flow scope under the key user
     <value>#{flowScope.username}</value>
   </inbound-parameter>
 </flow-definition>
+----

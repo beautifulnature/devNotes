@@ -97,7 +97,7 @@ A clear cut between model, view, and control logic is needed - this development 
 
 ====
 .The Model View Controller Principle
-image::images/mvc.jpg[]
+image::images/jsf/mvc.jpg[]
 ====
 
 *Model2 - MVC for the Web:*
@@ -106,7 +106,7 @@ Web development with Java has established a special form of this design pattern 
 
 ====
 .The Model2 principle as a specialization of the Model View Controller architecture
-image::images/mvc-model2.jpg[]
+image::images/jsf/mvc-model2.jpg[]
 ====
 
 *Components:*
@@ -154,7 +154,7 @@ In addition to the description of the project in the pom.xml file, the src direc
 
 ====
 .Structure of the Hello World project
-image::images/helloworld-struct.jpg[]
+image::images/jsf/helloworld-struct.jpg[]
 ====
 
 ==== Hello World: the first JSF project
@@ -285,7 +285,7 @@ Maven creates the subfolder target with the compiled classes and the .war archiv
 
 ====
 .Application in the local repository
-image::images/maven-install-folder.jpg[]
+image::images/jsf/maven-install-folder.jpg[]
 ====
 
 ==== Development with Eclipse
@@ -301,7 +301,7 @@ After launching Eclipse, you should be in the "Java EE" perspective as shown in 
 
 ====
 .Eclipse with Hello World project open
-image::images/eclipse-wtp-gui.jpg[]
+image::images/jsf/eclipse-wtp-gui.jpg[]
 ====
 
 As shown in Figure Eclipse with the Hello World project open, Eclipse now provides an editor and a WYSIWYG view for each JSF page. This editor makes it easy to create JSF pages yourself and to include components on these pages. The editor is started by double-clicking on a JSF file. This opens the JSF editor with a source code view and a WYSIWYG view. From the toolbar on the right, components can be dragged directly to the top or bottom, and the resulting components are automatically displayed by the WYSIWYG view.
@@ -312,7 +312,7 @@ As an example we will insert a new component in our XHTML file called hello.xhtm
 
 ====
 .Eclipse WTP Property Editor
-image::images/eclipse-wtp-props.jpg[]
+image::images/jsf/eclipse-wtp-props.jpg[]
 ====
 
 ==== Starting the application with Eclipse
@@ -423,7 +423,7 @@ Figure MyGourmet1:Components and its representation shows the appearance of the 
 
 ====
 .MyGourmet 1: Components and its representation
-image::images/mygourmet01-form-comptypes.jpg[]
+image::images/jsf/mygourmet01-form-comptypes.jpg[]
 ====
 
 Before we can navigate to the showCustomer.xhtml page (listing the showCustomer.xhtml file), we must first create it. The new page should look similar to the first page, only replace now h:outputText tags for the h:inputText elements and an additional h:outputText tag gives the message "Customer saved successfully!" out.

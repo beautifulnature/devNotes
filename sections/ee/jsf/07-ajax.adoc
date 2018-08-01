@@ -746,7 +746,7 @@ Figure <<.Firebug with updated component, Firebug with updated component>> shows
 
 ====
 .Firebug with updated component
-image::images/firebug.jpg[]
+image::images/jsf/firebug.jpg[]
 ====
 
 It is also possible to search for nodes by their `ID`, `tag name` or `attributes`, have them highlighted in the browser or change their properties. 
@@ -765,7 +765,7 @@ As seen in Figure <<.view with attributes and methods in Firebug, view with attr
 
 ====
 .view with attributes and methods in Firebug
-image::images/firebug-properties.jpg[]
+image::images/jsf/firebug-properties.jpg[]
 ====
 
 Even if you use Internet Explorer, you do not have to do without a DOM inspector. 
@@ -783,7 +783,7 @@ A practice example can be seen in Figure JavaScript Debugging in Firebug.
 
 ====
 .JavaScript Debugging in Firebug
-image::images/firebug-jsdebug.jpg[]
+image::images/jsf/firebug-jsdebug.jpg[]
 ====
 
 Here a breakpoint was set in the script inputSpinner.js. 
@@ -811,7 +811,7 @@ In version 2 it is even possible to debug HTTPS connections.
 
 ====
 .the HTTP debugger Fiddler logs the HTTP traffic
-image::images/http_debugger.jpg[]
+image::images/jsf/http_debugger.jpg[]
 ====
 
 The data displayed is the state of an Ajax request for the HTTP response. 

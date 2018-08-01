@@ -241,7 +241,7 @@ Figure <<.Rendered output of `h:dataTable`, Rendered output of `h:dataTable`>> s
 
 ====
 .Rendered output of h: dataTable
-image::images/datatable-no-styling.jpg[]
+image::images/jsf/datatable-no-styling.jpg[]
 ====
 
 *Stamping:* Although the list bound to the component has thousands of entries, only one component instance is inserted in the component tree for each column. When editing the component during its lifecycle - such as during rendering - JSF uses these instances for all rows with the current value. This procedure is called stamping and should guarantee a minimum memory consumption.
@@ -324,7 +324,7 @@ With values ​​for `styleClass` and `headerClass`, the rendered output of the
 
 ====
 .Rendered Output of `h:dataTable`
-image::images/datatable-styling.jpg[]
+image::images/jsf/datatable-styling.jpg[]
 ====
 
 === output components
@@ -361,7 +361,7 @@ The texts on the first and second `tag` are identical. The `tags` differ only by
 
 ====
 .Rendered output of `h:outputText`
-image::images/uioutputtext-screenshot.jpg[]
+image::images/jsf/uioutputtext-screenshot.jpg[]
 ====
 
 However, if you set escape to `false`, you should always keep in mind that you are dealing with a potential security vulnerability - especially if the user outputs editable data directly. Figure <<.Rendered output of `h:outputText`, Rendered output of `h:outputText`>> shows how a user executable code can smuggle into the text. This will allow cross-site scripting attacks.
@@ -928,7 +928,7 @@ These Select-Items then represent the possible options of the selection list.
 
 ====
 .Data flow at `f:selectItems` with attribute `var`
-image::images/selectitems.jpg[]
+image::images/jsf/selectitems.jpg[]
 ====
 
 Object groups: When using `h:selectItems`, individual elements of the list can also be grouped. 
@@ -1216,7 +1216,7 @@ In the browser, the page `editCustomer.xhtml` looks with the new fields as shown
 
 .MyGourmet 8: View in Browser
 ====
-image::images/mygourmet08-editcustomer.jpg[]
+image::images/jsf/mygourmet08-editcustomer.jpg[]
 ====
 
 The `showCustomer.xhtml` page displays the previously entered data. 
@@ -1287,12 +1287,12 @@ In the browser, the pages then look like in Figure <<.MyGourmet 9: `showCustomer
 
 ====
 .MyGourmet 9: `showCustomer.xhtml` in Browser
-image::images/mygourmet09-showcustomer.jpg[]
+image::images/jsf/mygourmet09-showcustomer.jpg[]
 ====
 
 ====
 .MyGourmet 9: `editAddress.xhtml` in Browser
-image::images/mygourmet09-editaddress.jpg[]
+image::images/jsf/mygourmet09-editaddress.jpg[]
 ====
 
 A section of `showPersons.xhtml` with the additional `h:commandLink` tags for navigating the detail pages and deleting an address can be found in Listing <<.MyGourmet 9: Address data in `showCustomer.xhtml`, MyGourmet 9: Address data in `showCustomer.xhtml`>>.

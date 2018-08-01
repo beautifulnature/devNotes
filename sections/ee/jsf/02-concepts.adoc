@@ -99,28 +99,28 @@ The page declaration determines the content and structure of the component tree,
 
 ====
 .MyGourmet 1: From the page declaration to the component
-image::images/mygourmet01-template2component.jpg[]
+image::images/jsf/mygourmet01-template2component.jpg[]
 ====
 
 In the same way all other tags of the page are converted into components and inserted into the tree. The finished component tree of the editCustomer.jsf view looks like MyGourmet 1: Component Tree in Figure . The names of the nodes in the figure are the names of the component classes used.
 
 ====
 .MyGourmet 1: component tree
-image::images/mygourmet01-componenttree.jpg[]
+image::images/jsf/mygourmet01-componenttree.jpg[]
 ====
 
 The ready-built component tree can now be converted from a renderer to an output language and displayed to the user. In most cases, the output will be HTML pages, but replacing the renderer will allow almost any output technology to be used. However, for the moment we want to limit ourselves to HTML. The renderer thus takes the data stored in the component instance and outputs the corresponding HTML code for the respective component. Figure MyGourmet 1: From the component to the HTML output, for example, shows how the input component for the first name is converted to HTML.
 
 ====
 .MyGourmet 1: From component to HTML output
-image::images/mygourmet01-component2html.jpg[]
+image::images/jsf/mygourmet01-component2html.jpg[]
 ====
 
 The representation of the completely rendered page in the browser can be seen in the browser in Figure MyGourmet 1: editCustomer.xhtml.
 
 ====
 .MyGourmet 1: editCustomer.xhtml in the browser
-image::images/mygourmet01-screenshot.jpg[]
+image::images/jsf/mygourmet01-screenshot.jpg[]
 ====
 
 The relationships between page declaration, component tree and rendered output should therefore be clarified. However, we have left out the concrete process of the entire process in the form of the JSF life cycle. These temporal relationships and processes are discussed in section [Section: Life Cycle of an HTTP Request in JSF]. But before we throw in section [Section: Managed beans] yet a closer look at Managed beans and Section [Section: The Unified Expression Language] on the connection between the model and view with the Unified Expression Language.
@@ -237,7 +237,7 @@ Picture comparing the life of different scopes compares the life of the scopes p
 
 ====
 .Comparison of the lifetime of different scopes
-image::images/managed-bean-scopes.jpg[]
+image::images/jsf/managed-bean-scopes.jpg[]
 ====
 
 Now that you understand how managed beans are declared, we do not want to deny you how JSF manages them. The internal process for accessing a bean is as follows:
@@ -313,7 +313,7 @@ A more elegant solution is to completely free the model class Customer from JSF 
 
 ====
 .The role of managed beans
-image::images/managed-beans-modell.jpg[]
+image::images/jsf/managed-beans-modell.jpg[]
 ====
 
 For the time being, in MyGourmet we will stick to using the class Customer as a managed bean. Only in the more extensive examples from MyGourmet 5 in section [Section:  MyGourmet 5 : Conversion] is a separate class used.
@@ -332,7 +332,7 @@ In the example of MyGourmet 1, we have already made extensive use of value expre
 
 ====
 .Value Expression in Input Component
-image::images/unified-el-value-expression.jpg[]
+image::images/jsf/unified-el-value-expression.jpg[]
 ====
 
 A value expression is only resolved when the value is actually read or set. Therefore, the value expression itself is stored in the component, not the value. A closer look at why this is necessary follows in the section [lifecycle of an HTTP request in JSF] over the lifecycle of JSF.
@@ -341,7 +341,7 @@ The data is already properly read when the page is displayed and written when th
 
 ====
 .Method Expression in Command Component
-image::images/unified-el-method-expression.jpg[]
+image::images/jsf/unified-el-method-expression.jpg[]
 ====
 
 More detailed information about the Unified EL can be found in the next section. The navigation process is described in more detail in section [Section: Navigation].
@@ -423,7 +423,7 @@ From an HTTP request, some processing must be done in JSF to restore the state o
 
 ====
 .The life cycle (lifecycle) of an HTTP request
-image::images/lifecycle-complete.jpg[]
+image::images/jsf/lifecycle-complete.jpg[]
 ====
 
 We will now take a closer look at the individual processing steps. In order to make the whole thing more exciting, we will immediately discuss the practical usability of the processes in the individual phases.
@@ -437,7 +437,7 @@ In a second pass through the component tree, the page is then rendered. An initi
 
 ====
 .Initiation of the life cycle
-image::images/lifecycle-initial.jpg[]
+image::images/jsf/lifecycle-initial.jpg[]
 ====
 
 When a request requests the same page the second time, in JSF versions prior to 2.0, the component tree is completely restored from the state previously stored on the server or client. Of course, not only the components themselves are part of the component tree, but also validators, converters and the "old" values ​​as well as all the other properties of the components.
@@ -703,7 +703,7 @@ For example, in Figure <<.Client IDs in MyGourmet 3, Client IDs in MyGourmet 3>>
 
 ====
 .Client IDs in MyGourmet 3
-image::images/client-ids-mygourmet03.jpg[]
+image::images/jsf/client-ids-mygourmet03.jpg[]
 ====
 
 Changing the page structure, adding or dropping naming containers as parents, also changes the client ID of the embedded component. 
@@ -713,7 +713,7 @@ Figure <<.Client IDs in MyGourmet 3 with prependId set to false, Client IDs in M
 
 ====
 .Client IDs in MyGourmet 3 with prependId set to false
-image::images/client-ids-mygourmet03-prependid.jpg[]
+image::images/jsf/client-ids-mygourmet03-prependid.jpg[]
 ====
 
 Of course, the client ID is also needed within the source code - for example, to render the ID of a component. 

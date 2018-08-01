@@ -49,7 +49,7 @@ For more detailed information about resources, see Chapter [Chapter: Resource Ma
 
 ====
 .Resource of the composite component `panelBox`
-image::images/panel-box-tree.jpg[]
+image::images/jsf/panel-box-tree.jpg[]
 ====
 
 As soon as `panelBox.xhtml` exists in the `mygourmet` library, the component is ready for use. 
@@ -421,7 +421,7 @@ Figure <<.Rendered output of panelBox in MyGourmet 13, Rendered output of panelB
 
 ====
 .Rendered output of panelBox in MyGourmet 13
-image::images/mygourmet13-panelbox.jpg[]
+image::images/jsf/mygourmet13-panelbox.jpg[]
 ====
 
 ==== The component `mc:dataTable`
@@ -484,7 +484,7 @@ Figure <<.Rendered output of dataTable, Rendered output of dataTable>> shows the
 
 ====
 .Rendered output of dataTable
-image::images/mygourmet13-datatable.jpg[]
+image::images/jsf/mygourmet13-datatable.jpg[]
 ====
 
 ==== The component `mc:collapsiblePanel`
@@ -555,7 +555,7 @@ Listing <<.composite component collapsiblePanel, composite component collapsible
 
 ====
 .Rendered Output of collapsiblePanel
-image::images/mygourmet13-collpanel.jpg[]
+image::images/jsf/mygourmet13-collpanel.jpg[]
 ====
 
 The composite component shown here collapsiblePanel works so well, but still has a crucial flaw. 
@@ -638,7 +638,7 @@ The component is used like any other input component.
 In <<.Rendered Output from inputSpinner, Rendered Output from inputSpinner>>, you can see the rendered output.
 ====
 .Rendered Output from inputSpinner
-image::images/mygourmet13-inputspinner.jpg[]
+image::images/jsf/mygourmet13-inputspinner.jpg[]
 ====
 
 ==== Pitfalls in practice
@@ -1743,7 +1743,7 @@ Figure <<MyGourmet 13: Resources of the library mygourmet, MyGourmet 13: Resourc
 
 ====
 .MyGourmet 13: Resources of the library mygourmet
-image::images/mygourmet13-resources.jpg[]
+image::images/jsf/mygourmet13-resources.jpg[]
 ====
 
 The component `mg:inputSpinner`, which is the classic version of our input spinner component, can be used in the same way as the composite component.
@@ -1816,7 +1816,7 @@ Figure <<.structure of the custom component library, structure of the custom com
 
 ====
 .structure of the custom component library
-image::images/cc-taglib-jar.jpg[]
+image::images/jsf/cc-taglib-jar.jpg[]
 ====
 
 In section [Section:  MyGourmet 13 with component library] you will find again the example MyGourmet 13 - but this time with a tag library that combines all composite components, components, validators and converters into a separate jar file.

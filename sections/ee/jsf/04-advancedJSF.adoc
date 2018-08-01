@@ -451,7 +451,7 @@ The framing with the names of the individual parts in the upper left corner are 
 
 .Replaceable sections of the templating
 ====
-image::images/templating-includes.jpg[]
+image::images/jsf/templating-includes.jpg[]
 ====
 
 Facelets offers a lot more templating than the basic functionality described in the last section. 
@@ -469,7 +469,7 @@ Figure <<.Templating hierarchy of MyGourmet, Templating hierarchy of MyGourmet>>
 
 .Templating hierarchy of MyGourmet
 ====
-image::images/templating-hierarchy.jpg[]
+image::images/jsf/templating-hierarchy.jpg[]
 ====
 
 Building a multi-level templating hierarchy is easy because each template client can take the role of a template - in facelets, there is no strict separation between these two roles. 
@@ -556,7 +556,7 @@ Before we go into the details of the implementation, let's briefly present what 
 
 .MyGourmet 11: Customer page in the browser
 ====
-image::images/mygourmet11-screenshot.jpg[]
+image::images/jsf/mygourmet11-screenshot.jpg[]
 ====
 
 In this example, the already briefly presented <<.Templating hierarchy of MyGourmet, Templating hierarchy of MyGourmet>> is used. 
