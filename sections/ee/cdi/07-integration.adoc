@@ -335,10 +335,11 @@ Over time, various dependency injection frameworks have emerged.
 Some even directly or indirectly inspired the CDI Expert Group in defining CDI. 
 While, for example, JBoss Seam has been replaced by CDI and Apache DeltaSpike, projects such as Google Guice and the Spring Framework continue to exist alongside CDI. 
 The functionality is similar for some of the available alternatives. 
-CDI is often used in many Java EE applications, since CDI since Java EE 6 is part of the platform and leaves nothing to be desired compared to the alternatives.
+CDI is often used in many Java EE applications, since CDI is part of Java EE 6  the platform and leaves nothing to be desired compared to the alternatives.
 
 As similar as the individual dependency injection frameworks are, so different are the associated ecosystems. 
-Especially the Spring Framework has many extensions due to its long history. How useful or necessary the individual extensions are depends very much on the field of application. 
+Especially the Spring Framework has many extensions due to its long history. 
+How useful or necessary the individual extensions are depends very much on the field of application. 
 In many cases, the Spring Framework provides adapters for other technologies to make it easier to use these technologies. 
 From the point of view of a Java EE application, it may therefore make sense to use such advantages if there is no equivalent extension for CDI. 
 However, this is not a reason to switch completely a CDI-based application to another framework like Spring. 
@@ -365,7 +366,8 @@ However, we are only interested in self-created Spring Beans, which we implement
 With the method AfterBeanDiscovery # addBean So let's just add CDI adapter beans to those spring beans whose packages do not start with org.springframework .
 Tip: Especially in older EE servers, it may happen that instance variables in extension classes, in our case springContext , can only be used per Observer method. In such cases, class variables must be used. 
 The only alternative would be a server update.
- public class SpringBridgeExtension implements Extension {
+
+public class SpringBridgeExtension implements Extension {
   private ConfigurableApplicationContext springContext;
 
   public void initContainerBridge(
@@ -403,6 +405,7 @@ The only alternative would be a server update.
     //...
   }
 }
+
 The implementation of the #createBeanAdapter method from Listing CDI bean adapters for Spring Beans demonstrates that DeltaSpike also provides helpful concepts here. 
 With AnnotatedTypeBuilder a can on the basis of any class AnnotatedType instance be generated. 
 In our example, we could also use BeanManager # createAnnotatedType for this. 
@@ -413,7 +416,8 @@ The reference to a Spring Bean published by the Spring Context will therefore co
 Since the Spring container fills the injection points of Spring Beans, we can in a further step with the method #injectionPoints Remove all injection points from the point of view of CDI. 
 Up to this point, however, we only produce one empty adapter. Only by implementing and registering a ContextualLifecycle instance can we delegate to the Spring context when the CDI bean is created. 
 In our case we call the implementation SpringAwareBeanLifecycle .
- private <T> Bean<T> createBeanAdapter(
+
+private <T> Bean<T> createBeanAdapter(
   Class<T> beanClass, String beanName,
   BeanDefinition beanDefinition,
   ConfigurableApplicationContext applicationContext, BeanManager bm) {
@@ -432,13 +436,15 @@ In our case we call the implementation SpringAwareBeanLifecycle .
       .scope(Dependent.class)
       .create();
 }
+
 SpringAwareBeanLifecycle from Listing Contextual Lifecycle for Spring Beans delegates management of bean instances to the Spring Context using the #getBean method . 
 For the CDI container, the result is a simple dependent-scoped bean. 
 Accordingly, the rules for dependent-scoped beans are implemented. 
 The equivalent jumping scope is called a prototype scope. 
 Thus, when destroying the contextual instance by the CDI container, we can only route the call to the #destroyBean method , if it is the prototype scope. 
 Otherwise, the Spring Container must manage the lifetime of the corresponding Spring Bean, depending on the scope of the bean.
- class SpringAwareBeanLifecycle implements ContextualLifecycle {
+
+class SpringAwareBeanLifecycle implements ContextualLifecycle {
   private final ConfigurableApplicationContext applicationContext;
   private final String beanName;
   private final boolean prototypeScope;
@@ -467,10 +473,10 @@ Otherwise, the Spring Container must manage the lifetime of the corresponding Sp
     }
   }
 }
+
 Our rudimentary CDI / Spring Bridge is hereby completed and we can implement our first Spring Bean, which we inject in a further step into a CDI Bean. 
 As mentioned in the beginning we will use Spring-Mail for demonstration purposes. 
 In practice, of course, it is obvious alternatives such as to evaluate Apache Commons Email, since this no additional container is required.
- 
 
 Listing Simple Spring Bean shows a simple implementation of a Spring Bean, which delegates effective sending to JavaMailSender # send from Spring-Mail. 
 Since we only implement a Spring Bean in IdeaForkLite , we do not create our own module. 
@@ -481,7 +487,8 @@ Tip: We must also consider a similar aspect from the perspective of the Spring c
 If the Spring container saw all the IdeaForkLite's CDI beans , then we would register adapter beans for Spring beans that are already CDI beans and should only be visible to the CDI container. 
 For this somewhat complicated-sounding cyclic constellation, there is a simple solution. 
 For this we need to define in IdeaForkLite , besides configurations for Spring-Mail, the base package for Spring Beans of our application in the Spring configuration file named applicationContext.xml .
- @Exclude
+
+@Exclude
 public class SpringMailSender {
   @Autowired
   private JavaMailSender mailSender;
@@ -498,7 +505,8 @@ public class SpringMailSender {
 }
 The Spring Bean from Listing Simple Spring Bean can be injected in the next step in a CDI bean called MailService . 
 Listing Injecting a Spring bean into a CDI bean makes it clear that the injection point is no different than a regular injection point for a CDI bean. The previously implemented CDI adapter bean is called at runtime if the CDI container wants to populate the injection point in MailService .
- @ApplicationScoped
+
+@ApplicationScoped
 public class MailService {
   @Inject
   private SpringMailSender mailSender;
@@ -512,11 +520,13 @@ public class MailService {
     this.mailSender.send(senderAddress, user.getEmail(), subject, text);
   }
 }
+
 Based on this preliminary work, we can add another actor in IdeaForkLite , via which asynchronous emails can be sent after a successful registration. 
 Again, we could trigger a synchronous CDI event with the @Async qualifier in the asynchronous actor thread .
 This is not necessary for our use case and therefore we delegate mails asynchronously in the listing directly to the previously implemented mail service . 
 In addition, we need an event called UserRegisteredEvent , which is shown in the same listing.
- public class UserRegisteredEvent extends EntityChangedEvent<User> {
+
+public class UserRegisteredEvent extends EntityChangedEvent<User> {
     public UserRegisteredEvent(User createdEntity) {
         super(createdEntity);
     }
@@ -540,9 +550,11 @@ public class UserRegisteredEventActor extends UntypedActor {
     }
   }
 }
+
 Via Constructor-Injection we can inject our MailService -Bean to send emails in the #onReceive method using this CDI bean and the Spring Bean behind it. In our example, we want to send a welcome message after a new user entity has been saved. 
 The registration logic is in IdeaForkLite in the UserService # registerUser method . The excerpt illustrated in Listing CDI and Akka Events shows not only the advanced method but also the new UserRegisteredEventBroadcaster , which first triggers an asynchronous actor event via Akka and then a synchronous CDI event.
- @Service
+
+@Service
 public class UserService {
   //...
 
@@ -583,12 +595,14 @@ public class UserRegisteredEventBroadcaster {
         userRegisteredEvent.fire(userRegisteredEvent);
     }
 }
+
 The implementation described so far works flawlessly, but has the disadvantage, especially in the case of unit tests, that whenever a registration is carried out an attempt is always made to send an e-mail. 
 Instead, it would be enough for us to check whether an e-mail would be sent or whether the content is correct. 
 Listing mail service for unit testing shows how we can enable the first case by creating a specialized CDI bean in the test package and overriding the #sendWelcomeMessage method . 
 Since we use this CDI bean only in the test package in productive package of IdeaForkLite always the original mail service implementation services active because it there the class Test Mail Service does not exist. 
 If we also do not want to use TestMailService for integration tests, then we could annotate the class additionally with @Exclude (ifProjectStage = ProjectStage.IntegrationTest.class) .
- @Specializes
+
+@Specializes
 public class TestMailService extends MailService {
     private AtomicInteger sentWelcomeMessageCount = new AtomicInteger();
 
@@ -605,14 +619,14 @@ public class TestMailService extends MailService {
         return result;
     }
 }
- 
 
 Finally, in our JUnit test, we can inject the TestMailService bean to verify the result after a successful registration attempt. 
 Since we always send emails through an asynchronous actor thread, we have to put in a delay. 
 There are several implementation options for this. 
 In listing test with specialized mail service this is implemented with a RetryHelper . 
 The full implementation is available in the Iditoflite git repository .
- @RunWith(CdiTestRunner.class)
+
+@RunWith(CdiTestRunner.class)
 public class IdeaForkBaseFlowTest {
   @Inject
   private RegistrationViewCtrl registrationViewCtrl;

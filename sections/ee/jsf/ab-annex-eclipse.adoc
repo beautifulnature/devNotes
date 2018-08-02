@@ -45,6 +45,29 @@ After rebooting Eclipse, Maven integration is available with the ability to dire
 
 === Eclipse and MyGourmet
 
+Eclipse provides the optimal platform to experiment with the MyGourmet examples. 
+But before you can start, you need to import the samples into Eclipse. 
+The following steps are necessary:
+
+. If you have not already done so, go to http://jsfatwork.irian.at and get the source code of the examples at http://jsfatwork.irian.at.
+
+. Unzip the archive with the examples into any directory.
+
+. Import the Maven project directly into Eclipse. 
+Call up the menu item File | Import ... and select in the window that opens the entry Maven | Existing Maven Project. 
+In the window that appears, first select the sample directory, and then list of all MyGourmet projects should be displayed in Eclipse, as shown in Figure <<.Import by MyGourmet, Import by MyGourmet>>. 
+Select all projects there and confirm the selection with `Finish`.
+
+====
+.Import by MyGourmet
+image::images/eclipse-mygourmet-import.jpg[]
+====
+ 
+If all goes well, you will now see a list of all the examples in the Eclipse Project Explorer. 
+You can now start the projects from the Run As | Run on Server item in the context menu or from the Run menu on a server such as Apache Tomcat 7. 
+To start in debug mode, you must invoke the menu item Debug As | Debug on Server instead of Run As | Run on Server. 
+If you have not yet configured a server environment, the next section provides detailed instructions for setting up Apache Tomcat 7 in Eclipse.
+
 === Setting up Apache Tomcat 7 in Eclipse
 
 If you have not previously configured a server, Eclipse will open a wizard to set up a new server the first time the web application is started. 
