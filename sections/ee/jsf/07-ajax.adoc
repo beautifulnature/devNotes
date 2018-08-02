@@ -152,7 +152,7 @@ More in section [Section: JavaScript API].
        this, event, {render: 'form:ccData'});"/>
 ----
 
-TIP: Use h: head and h: body in all page declarations . Only in this way can JSF correctly integrate the script resources required for Ajax.
+TIP: Use h: head and h: body in all page declarations. Only in this way can JSF correctly integrate the script resources required for Ajax.
 
 ==== `f:ajax` in use
 
@@ -177,7 +177,7 @@ If the attribute is set as a `value expression`, the type of the property must b
 The default value is `@this`.
 * `render`: + 
 A `space-separated list of the IDs` of those components that are to be rendered in the lifecycle when JSF handles the Ajax request. 
-Can also contain the constants `@this` , `@form` , `@all` and `@none`. 
+Can also contain the constants `@this`, `@form`, `@all` and `@none`. 
 If the attribute is set as a `value expression`, the type of the property must be `List<String>`. 
 The default value is `@none`.
 * `listener`: + 
@@ -299,7 +299,7 @@ Listing <<.`f:ajax` in action: Example 3, `f:ajax` in action: Example 3>> shows 
 ----
 Due to this small change, all components within `f:ajax` now trigger an Ajax request after a double-click. 
 The same applies to the panel grid and the button, which now has two different events with Ajax behavior. 
-The next example in Listing <<.`f:ajax` in action: Again, Example 4 , `f:ajax` in action: Again, Example 4>> is only a variant of the already known form. 
+The next example in Listing <<.`f:ajax` in action: Again, Example 4, `f:ajax` in action: Again, Example 4>> is only a variant of the already known form. 
 This time, however, there are two text boxes for outputting the name: the first is inside the form and has the ID `inside`. 
 The second text box is outside and listening for the ID `outer`. 
 The outer field should be updated whenever the value of one of the input fields changes, whereas the inner field should be updated by clicking on the button. 
@@ -417,10 +417,10 @@ In section [Partial JSF Life Cycle Section], the partial lifecycle of Ajax reque
 
 JSF defines as of version 2.0 a JavaScript library as a client-side basis for the integration of Ajax. 
 The library is stored in the resource named `jsf.js` in the library `javax.faces`. 
-If you use Ajax declaratively with the `f:ajax` tag , you do not have to worry about including this resource. 
+If you use Ajax declaratively with the `f:ajax` tag, you do not have to worry about including this resource. 
 Only when using the JavaScript API directly you do need to specify:
 
-[source,xml]
+[source,xhtml]
 ----
 <h:outputScript name="jsf.js" library="javax.faces"
     target="head"/>
@@ -446,11 +446,30 @@ This method registers a callback function to handle errors that occurred while p
 This method registers a callback function to handle Ajax events.
 
 ===== Sending Ajax Requests
-The jsf.ajax.request (source, event, options) method is the core of JSF's JavaScript API. It alone is responsible for sending asynchronous Ajax requests to the server. The tag `f:ajax` is just a simpler variant to bring the Ajax behavior into the view by declarative means. When rendering, JSF again makes a call to the jsf.ajax.request () function . 
-The source and event parameters pass the DOM and DOM events that are responsible for triggering the Ajax request. The third parameter options is an associative array that passes more options as key-value pairs to the function. These options largely correspond to the already known attributes from `f:ajax` . About execute IDs are to be executed components indicated and render IDs of components that are to be redrawn. While the use of `f:ajax` in most cases a relative ID is sufficient, when calling the JavaScript function always the complete client ID must be specified. The function operates directly at the DOM level and can not resolve relative IDs via the JSF component tree. 
-The function jsf.ajax.request () Builds the Ajax request and sends it to the server asynchronously. What JSF does exactly with this request is given in Section [Partial JSF Life Cycle Section] . As soon as the response to the request comes back from the server, if successful, the jsf.ajax.response () function is called to process the response and, if necessary, to rebuild parts of the view. 
-Listing Example 5 with Ajax via JavaScript shows again the example with the two selection lists from the last section. This time, however, the Ajax behavior is implemented directly through the JavaScript API. Just as before, changing the value in the first component triggers an Ajax request that causes the second component to redraw.
- <h:form id="form">
+
+The `jsf.ajax.request(source, event, options)` method is the core of JSF's JavaScript API. 
+It alone is responsible for sending asynchronous Ajax requests to the server. 
+The tag `f:ajax` is just a simpler variant to bring the Ajax behavior into the view by declarative means. 
+When rendering, JSF again makes a call to the `jsf.ajax.request()` function.
+
+The source and event parameters pass the DOM and DOM events that are responsible for triggering the Ajax request. 
+The third parameter options is an associative array that passes more options as key-value pairs to the function. 
+These options largely correspond to the already known attributes from `f:ajax`. 
+About execute IDs are to be executed components indicated and render IDs of components that are to be redrawn. 
+While the use of `f:ajax` in most cases a relative ID is sufficient, when calling the JavaScript function always the complete client ID must be specified. 
+The function operates directly at the DOM level and can not resolve relative IDs via the JSF component tree. 
+
+The function `jsf.ajax.request()` Builds the Ajax request and sends it to the server asynchronously. 
+What JSF does exactly with this request is given in Section [Partial JSF Life Cycle Section]. 
+As soon as the response to the request comes back from the server, if successful, the `jsf.ajax.response()` function is called to process the response and, if necessary, to rebuild parts of the view.
+
+Listing Example 5 with Ajax via JavaScript shows again the example with the two selection lists from the last section. 
+This time, however, the Ajax behavior is implemented directly through the JavaScript API. 
+Just as before, changing the value in the first component triggers an Ajax request that causes the second component to redraw.
+
+[source,xhtml]
+----
+<h:form id="form">
   <h:selectOneMenu id="country" value="#{test.country}"
       valueChangeListener="#{test.changeCountry}"
       onchange="jsf.ajax.request(
@@ -461,11 +480,20 @@ Listing Example 5 with Ajax via JavaScript shows again the example with the two 
     <f:selectItems value="#{test.stateItems}"/>
   </h:selectOneMenu>
 </h:form>
+----
 
 ===== Handling Status and Errors of Ajax Requests
 
-The jsf.ajax.addOnEvent (callback) function can register a callback function to handle the status of Ajax requests. The callback function is given an object with more detailed information about the event, whereby, in particular, the status property is interesting. It takes the values begin for the event just before the request is sent to the server, complete for the event after the response comes back from the server, and success for the event upon successful completion of the request. The callback function is therefore called three times for each Ajax request. Listing callback function for Ajax events shows a function that outputs a message for each event. In Section [Section: The Composite Component mc: ajaxStatus] , we'll show you how to use the simplest means to create a composite component to represent an Ajax status message.
- var processEvent = function processEvent(data) {
+The `jsf.ajax.addOnEvent(callback)` function can register a callback function to handle the status of Ajax requests. 
+The callback function is given an object with more detailed information about the event, whereby, in particular, the status property is interesting. 
+It takes the values begin for the event just before the request is sent to the server, complete for the event after the response comes back from the server, and success for the event upon successful completion of the request. 
+The callback function is therefore called three times for each Ajax request. 
+Listing callback function for Ajax events shows a function that outputs a message for each event. 
+In Section [Section: The Composite Component `mc:ajaxStatus`], we'll show you how to use the simplest means to create a composite component to represent an Ajax status message.
+
+[source,js]
+----
+var processEvent = function processEvent(data) {
   if (data.status == "begin") {
     alert('Begin');
   } else if (data.status == "complete") {
@@ -475,17 +503,32 @@ The jsf.ajax.addOnEvent (callback) function can register a callback function to 
   }
 }
 jsf.ajax.addOnEvent(processEvent);
-A function registered via jsf.ajax.addOnEvent () is called on every Ajax request. addOnEvent () can also be called multiple times in succession to register more than one function. If you need a callback function for a specific Ajax request, you can with the attribute onevent of `f:ajax` or when calling jsf.ajax.request () as an option with the key onevent register. 
-With the function jsf.ajax.addOnError (callback) A callback function can be registered which is called when an error occurs while an Ajax request is being processed. The callback function is also provided here with an object with detailed information. The status property can take the values httpError , serverError , malformedXML, or emptyResponse . 
-A function registered via jsf.ajax.addOnError () is called in the event of an error on every Ajax request. addon error () can also be called multiple times in succession to register more than one function. If you need a callback function for a particular Ajax request, you can register it as an option with the onerror key by using the onerror attribute of `f:ajax` or by calling jsf.ajax.request () .
+----
+
+A function registered via `jsf.ajax.addOnEvent()` is called on every Ajax request. 
+`addOnEvent()` can also be called multiple times in succession to register more than one function. 
+If you need a callback function for a specific Ajax request, you can with the attribute onevent of `f:ajax` or when calling `jsf.ajax.request()` as an option with the key onevent register.
+
+With the function `jsf.ajax.addOnError(callback)` A callback function can be registered which is called when an error occurs while an Ajax request is being processed. 
+The callback function is also provided here with an object with detailed information. 
+The status property can take the values httpError, serverError, malformedXML, or emptyResponse.
+
+A function registered via `jsf.ajax.addOnError()` is called in the event of an error on every Ajax request. 
+addon error() can also be called multiple times in succession to register more than one function. 
+If you need a callback function for a particular Ajax request, you can register it as an option with the onerror key by using the onerror attribute of `f:ajax` or by calling `jsf.ajax.request()`.
 
 ==== Partial JSF life cycle
 
-One of the key features of a reasonable Ajax integration is partial view processing and partial view rendering of the component tree. In response to an Ajax request, in the first step, the lifecycle should not be executed for the complete component tree, but only for the components specified in the request. In the second step, as a result of the request, another part of the component tree, which does not have to match the first part, is rendered. 
-Starting with version 2.0, JSF supports partial execution and rendering directly with the standard lifecycle. This is the lifecycle, as in Figure lifecycle with Ajax to recognize, divided into the two logical areas of execution and rendering .
+One of the key features of a reasonable Ajax integration is partial view processing and partial view rendering of the component tree. 
+In response to an Ajax request, in the first step, the lifecycle should not be executed for the complete component tree, but only for the components specified in the request. 
+In the second step, as a result of the request, another part of the component tree, which does not have to match the first part, is rendered. 
+Starting with version 2.0, JSF supports partial execution and rendering directly with the standard lifecycle. 
+This is the lifecycle, as in Figure lifecycle with Ajax to recognize, divided into the two logical areas of execution and rendering.
 
-Which components are used in the two areas is determined by the parameters of the Ajax request. Their values ​​correspond to the values ​​of the `f:ajax` attributes execute and render or the parameters of the same name in the associative array of the function jsf.ajax.request () . 
-Table tab: ajax-request-params shows the most important parameters of the Ajax request from the introductory example in section [Section: A first example with `f:ajax`] . JSF uses the parameter javax.faces.partial.ajax to know that this is an Ajax request and that the lifecycle must be partially executed. The parameter javax.faces.source indicates which component triggered the request, and the remaining two parameters determine which components are executed and rendered.
+Which components are used in the two areas is determined by the parameters of the Ajax request. 
+Their values ​​correspond to the values ​​of the `f:ajax` attributes execute and render or the parameters of the same name in the associative array of the function jsf.ajax.request (). 
+Table: ajax-request-params shows the most important parameters of the Ajax request from the introductory example in section [Section: A first example with `f:ajax`]. 
+JSF uses the parameter javax.faces.partial.ajax to know that this is an Ajax request and that the lifecycle must be partially executed. The parameter javax.faces.source indicates which component triggered the request, and the remaining two parameters determine which components are executed and rendered.
 parameter	value
 javax.faces.partial.ajax	true
 javax.faces.source	form: useCreditCard
@@ -495,9 +538,19 @@ However, you do not have to worry about these parameters. JSF automatically comp
 
 ==== Check Ajax queue
 
-JSF 2.2: With JSF 2.2 it is possible to influence the client-side queue of Ajax requests. The new delay attribute of `f:ajax` allows Ajax requests to be delayed by the value specified in milliseconds. If multiple Ajax requests occur during this period, only the most recent will be processed. This functionality is tailor-made for Ajax requests triggered by keyboard events. The classical application scenario for this is the automatic completion of user input. 
-The example in Listing Example for delay of `f:ajax` shows an input component that triggers an Ajax request each time the user presses the button. With the value 300 for delay Ensures that the server is not bombarded with requests when the user types quickly. If several Ajax requests occur within the specified 300 milliseconds, only the most recent one is processed.
- <h:inputText value="#{bean.product}">
+JSF 2.2: With JSF 2.2 it is possible to influence the client-side queue of Ajax requests. 
+The new delay attribute of `f:ajax` allows Ajax requests to be delayed by the value specified in milliseconds. 
+If multiple Ajax requests occur during this period, only the most recent will be processed. 
+This functionality is tailor-made for Ajax requests triggered by keyboard events. 
+The classical application scenario for this is the automatic completion of user input. 
+
+The example in Listing Example for delay of `f:ajax` shows an input component that triggers an Ajax request each time the user presses the button. 
+With the value 300 for delay Ensures that the server is not bombarded with requests when the user types quickly. 
+If several Ajax requests occur within the specified 300 milliseconds, only the most recent one is processed.
+
+[source,xhtml]
+----
+<h:inputText value="#{bean.product}">
   <f:ajax event="keyup" render="result" delay="300"/>
 </h:inputText>
 <h:panelGroup id="result">
@@ -505,12 +558,22 @@ The example in Listing Example for delay of `f:ajax` shows an input component th
     #{p}<br/>
   </ui:repeat>
 </h:panelGroup>
+----
 
 ==== Reset input fields
 
-JSF 2.2: With the new attribute resetValues of `f:ajax` , starting with JSF 2.2, a previously known problem can be elegantly solved. In some cases, during Ajax requests, JSF can update the value of input components only if explicitly previously reset. For this, the new attribute resetValues must be set to true in `f:ajax` . In this case, before the render phase, JSF resets all of the input components specified in the render attribute by calling the UIViewRoot.resetValues method . Why this can be necessary is shown in the example in Listing 
-Example of resetValues . The code looks perfect at first glance. However, a closer look reveals a potential problem.
- <h:form id="form">
+JSF 2.2: With the new attribute resetValues of `f:ajax`, starting with JSF 2.2, a previously known problem can be elegantly solved. 
+In some cases, during Ajax requests, JSF can update the value of input components only if explicitly previously reset. 
+For this, the new attribute resetValues must be set to true in `f:ajax`. 
+In this case, before the render phase, JSF resets all of the input components specified in the render attribute by calling the UIViewRoot.resetValues method. 
+Why this can be necessary is shown in the example in Listing 
+
+Example of resetValues. The code looks perfect at first glance. 
+However, a closer look reveals a potential problem.
+
+[source,xhtml]
+----
+<h:form id="form">
   <h:messages id="msgs"/>
   <h:inputText id="v1" value="#{bean.value1}"/>
   <h:commandLink value="+1" action="#{bean.incValue1}">
@@ -523,19 +586,44 @@ Example of resetValues . The code looks perfect at first glance. However, a clos
     <f:ajax execute="v1 v2" render="msgs v1 v2"/>
   </h:commandButton>
 </h:form>
-As long as the user only clicks on the "+1" link, everything works perfectly. During the Ajax request, the value1 property is first incremented by one in the action method , and then the input field is rendered with the new value. 
-The problems do not begin until the user presses the save button with an invalid value for the second input field. In this case, the validation fails for the component with ID v2 . However, after we have included the ID of h: messages as a precaution in the render attribute , the user gets an error message as expected.
-So far, everything works as expected, but now when you click on the "+1" link, the updated value is no longer displayed (although it is actually increased). The reason for this is quickly found. During the request with the invalid value for v2 , JSF set the local value for both components in the process validation phase. Because of the validation error this was never reset. Since the local value always takes precedence over the value in the model when rendering, the value of the value1 property updated only in the model is not displayed. 
-Exactly this problem can be avoided by setting resetValues . The following example shows the perfectly working variant of the "+1" link.
+----
+
+As long as the user only clicks on the "+1" link, everything works perfectly. 
+During the Ajax request, the value1 property is first incremented by one in the action method, and then the input field is rendered with the new value. 
+
+The problems do not begin until the user presses the save button with an invalid value for the second input field. 
+In this case, the validation fails for the component with ID v2. 
+However, after we have included the ID of h: messages as a precaution in the render attribute, the user gets an error message as expected.
+
+So far, everything works as expected, but now when you click on the "+1" link, the updated value is no longer displayed (although it is actually increased). 
+The reason for this is quickly found. During the request with the invalid value for v2, JSF set the local value for both components in the process validation phase. 
+Because of the validation error this was never reset. 
+Since the local value always takes precedence over the value in the model when rendering, the value of the value1 property updated only in the model is not displayed. 
+
+Exactly this problem can be avoided by setting resetValues. 
+The following example shows the perfectly working variant of the "+1" link.
+
+[source,xhtml]
+----
 <h:commandLink value="+1" action="#{bean.incValue1}">
   <f:ajax render="v1" resetValues="true"/>
 </h:commandLink>
+----
 
 === Ajax in composite components
 
-In the next example we will change the composite component collapsiblePanel created in section Section: The component mc: collapsiblePanel to Ajax. In the current version, the entire page is rebuilt each time the user clicks on the icon to fold and unfold the content - a behavior that is no longer up-to-date. Rather, when clicking on the icon only the content of the panel should be displayed or hidden. 
-Nothing easier than that. As in the last example, the Ajax support can be realized with a single line. After we want to change the rendering of the page triggered by the component h: commandButton to Ajax, we add the tag `f:ajax` there. listing Ajax in the composite component collapsiblePanel shows the implementation part of the composite component with Ajax support.
- <cc:implementation>
+In the next example we will change the composite component collapsiblePanel created in section Section: The component mc: collapsiblePanel to Ajax. 
+In the current version, the entire page is rebuilt each time the user clicks on the icon to fold and unfold the content - a behavior that is no longer up-to-date. 
+Rather, when clicking on the icon only the content of the panel should be displayed or hidden. 
+
+Nothing easier than that. 
+As in the last example, the Ajax support can be realized with a single line. 
+After we want to change the rendering of the page triggered by the component h: commandButton to Ajax, we add the tag `f:ajax` there. 
+listing Ajax in the composite component collapsiblePanel shows the implementation part of the composite component with Ajax support.
+
+[source,xhtml]
+----
+<cc:implementation>
   <h:panelGroup layout="block"
       styleClass="collapsiblePanel-header">
     <h:commandButton id="toggle"
@@ -554,15 +642,38 @@ Nothing easier than that. As in the last example, the Ajax support can be realiz
     </h:panelGroup>
   </h:panelGroup>
 </cc:implementation>
-In the render phase of the partial lifecycle, we need to re-render two components in this case. On the one hand the panel group with the content of the component and on the other hand also the button itself, because the icon changes depending on the fold-in state. The simultaneous rendering of multiple components is expected to cause no problems for JSF. The render attribute picks up any number of space-separated IDs, again with the @this constant representing the enclosing component. 
-As you may have noticed, compared to the non-Ajax version, the tag cc: insertChildren is from two h: panelGroupEnclosed in tags. It is not a mistake, but a necessary action for Ajax to work properly. The explanation is plausible: Since the panel group is re-rendered with the identifier panel-content in response to the Ajax request and replaced in the browser, it must always exist there. With only one panel group, the rendered output would disappear from the DOM after the first collapse and could not be faded in anymore. 
+----
+
+In the render phase of the partial lifecycle, we need to re-render two components in this case. On the one hand the panel group with the content of the component and on the other hand also the button itself, because the icon changes depending on the fold-in state. 
+The simultaneous rendering of multiple components is expected to cause no problems for JSF. 
+The render attribute picks up any number of space-separated IDs, again with the @this constant representing the enclosing component. 
+
+As you may have noticed, compared to the non-Ajax version, the tag cc: insertChildren is from two h: panelGroupEnclosed in tags. 
+It is not a mistake, but a necessary action for Ajax to work properly. 
+The explanation is plausible: Since the panel group is re-rendered with the identifier panel-content in response to the Ajax request and replaced in the browser, it must always exist there. 
+With only one panel group, the rendered output would disappear from the DOM after the first collapse and could not be faded in anymore. 
+
 The `f:ajax` tag in Listing Ajax in the composite component collapsiblePanel is an abbreviated form of the following tag:
+
+[source,xhtml]
+----
 <f:ajax event="action" execute="@this"
     render="@this panel-content"/>
-As in the last example, the attributes event and execute can also be omitted here in favor of the default values. Command components define action as the default event for `f:ajax` if no other value is specified. 
-But that's not all. We go one step further and also move part of the content added to the composite component to Ajax. In the viewCustomer.xhtml view , the list of addresses of a customer is contained in a composite component of the type dataTable (see section Section: The component mc: dataTable ). The table is in turn into one embedded collapsiblePanel component. In the table, there is an h: commandLink component for deleting the address for each address. Clicking on this link should trigger an Ajax request and cause the table to be redrawn. 
+----
+
+As in the last example, the attributes event and execute can also be omitted here in favor of the default values. 
+Command components define action as the default event for `f:ajax` if no other value is specified. 
+
+But that's not all. We go one step further and also move part of the content added to the composite component to Ajax. 
+In the viewCustomer.xhtml view, the list of addresses of a customer is contained in a composite component of the type dataTable (see section Section: The component mc: dataTable ). The table is in turn into one embedded collapsiblePanel component. 
+In the table, there is an h: commandLink component for deleting the address for each address. 
+Clicking on this link should trigger an Ajax request and cause the table to be redrawn. 
+
 Listing Ajax composite component collapsiblePanel The insert shows the relevant parts of the page declaration show-Customer.xhtml with the link converted to Ajax.
- <mc:collapsiblePanel id="addressPanel"
+
+[source,xhtml]
+----
+<mc:collapsiblePanel id="addressPanel"
     collapsed="#{customerBean.collapsed}">
   <f:facet name="header">
     <h3>#{msgs.title_addresses}</h3>
@@ -580,18 +691,39 @@ Listing Ajax composite component collapsiblePanel The insert shows the relevant 
     </h:column>
   </mc:dataTable>
 </mc:collapsiblePanel>
-With `f:ajax` the link component gets inoculated with the Ajax behavior. When the user activates the link in the browser, an Ajax request is sent to the server. JSF runs the life cycle for the h: commandLink component and then renders the table. Please note the shape of the ID in the render attribute : The leading colon indicates an absolute ID. This step becomes necessary when there are several naming containers between the triggering and the rendering components.
-This example shows very well how well the individual features in JSF harmonize with each other. Integrating Ajax into composite components provides an easy way to build components with outward-transparent Ajax support.
+----
+
+With `f:ajax` the link component gets inoculated with the Ajax behavior. 
+When the user activates the link in the browser, an Ajax request is sent to the server. 
+JSF runs the life cycle for the h: commandLink component and then renders the table. 
+Please note the shape of the ID in the render attribute : The leading colon indicates an absolute ID. 
+This step becomes necessary when there are several naming containers between the triggering and the rendering components.
+
+This example shows very well how well the individual features in JSF harmonize with each other. 
+Integrating Ajax into composite components provides an easy way to build components with outward-transparent Ajax support.
 
 === Custom Ajax components
 
-In this section, we'll show you how simple yet powerful the JSF Ajax integration is by using two composite components. The ajaxStatus and ajaxPoll components directly use the JavaScript API to provide advanced Ajax functionality.
+In this section, we'll show you how simple yet powerful the JSF Ajax integration is by using two composite components. 
+The ajaxStatus and ajaxPoll components directly use the JavaScript API to provide advanced Ajax functionality.
 
 ==== The composite component `mc:ajaxStatus`
 
-Increasing the use of Ajax reduces the number of requests for a complete reload. In addition to the many advantages that Ajax brings with it, there is also a small disadvantage. The browser does not display any status message while an Ajax request is being processed. With every complete page setup, the user will see a progress bar or a message telling the status of the page layout - not so with Ajax requests. And although Ajax significantly shortens the time between inquiry and response, there may be unclear situations for the user. For this reason, we create a component that displays a status message while an Ajax request is active. 
-With the information about the JavaScript API from section [Section: JavaScript-API] it is easy to create such a component. All we need is a status message and a JavaScript function, which is registered as jsf.ajax.addOnEvent () as a callback and dynamically fades in and displays the status message. We then pack this together into a composite component and the Ajax status component is finished. Listing composite component ajaxStatus shows the declaration.
- <cc:interface>
+Increasing the use of Ajax reduces the number of requests for a complete reload. 
+In addition to the many advantages that Ajax brings with it, there is also a small disadvantage. 
+The browser does not display any status message while an Ajax request is being processed. 
+With every complete page setup, the user will see a progress bar or a message telling the status of the page layout - not so with Ajax requests. 
+And although Ajax significantly shortens the time between inquiry and response, there may be unclear situations for the user. 
+For this reason, we create a component that displays a status message while an Ajax request is active. 
+
+With the information about the JavaScript API from section [Section: JavaScript-API] it is easy to create such a component. 
+All we need is a status message and a JavaScript function, which is registered as `jsf.ajax.addOnEvent()` as a callback and dynamically fades in and displays the status message. 
+We then pack this together into a composite component and the Ajax status component is finished. 
+Listing composite component ajaxStatus shows the declaration.
+
+[source,xhtml]
+----
+<cc:interface>
   <cc:attribute name="text" default="Loading"/>
   <cc:attribute name="style"/>
   <cc:attribute name="styleClass"
@@ -612,10 +744,25 @@ With the information about the JavaScript API from section [Section: JavaScript-
     #{cc.attrs.text}
   </div>
 </cc:implementation>
-The interface of the component is not very exciting. It only consists of the three attributes text for the status message and style and styleClass to adapt the appearance to your own needs. 
-In the implementation part, first required resources are loaded. These include the stylesheet components.css , the jsf.js JavaScript library, and the ajaxStatus.js script with the functionality of the component. Then, by calling the function registerAjaxStatus () defined in ajax-Status.js Registered a callback for the current component. As a parameter, this function gets the ID of the div element with the status message. Finally, this element should be turned on and off during an Ajax request. Note once more the access to # {cc.clientId} for the ID . This is the only way to ensure that the Client ID rendered by JSF is actually used. The fade in and fade out is quite simply realized via the CSS property display , whereby the element is initially hidden with display: none in the attribute style . 
+----
+
+The interface of the component is not very exciting. 
+It only consists of the three attributes text for the status message and style and styleClass to adapt the appearance to your own needs. 
+
+In the implementation part, first required resources are loaded. 
+These include the stylesheet components.css, the jsf.js JavaScript library, and the ajaxStatus.js script with the functionality of the component. 
+Then, by calling the function registerAjaxStatus () defined in ajax-Status.js Registered a callback for the current component. 
+As a parameter, this function gets the ID of the div element with the status message. 
+Finally, this element should be turned on and off during an Ajax request. 
+Note once more the access to # {cc.clientId} for the ID. 
+This is the only way to ensure that the Client ID rendered by JSF is actually used. 
+The fade in and fade out is quite simply realized via the CSS property display, whereby the element is initially hidden with display: none in the attribute style. 
+
 The really interesting aspect of the component is the one in Listing JavaScript for composite component ajaxStatus represented JavaScript code.
- function processAjaxUpdate(msgId) {
+
+[source,xhtml]
+----
+function processAjaxUpdate(msgId) {
   function processEvent(data) {
     var msg = document.getElementById(msgId);
     if (data.status == "begin") {
@@ -629,14 +776,33 @@ The really interesting aspect of the component is the one in Listing JavaScript 
 function registerAjaxStatus(msgId) {
   jsf.ajax.addOnEvent(processAjaxUpdate(msgId));
 }
-The registerAjaxStatus () function registers a callback function with a call to jsf.ajax.addOnEvent () to show or hide the element with the passed ID. However, it does not register the function processAjaxUpdate () , as it may seem at first glance, but its inner function processEvent () . By nesting functions, it is possible to pass the ID of the element from outside, whereas the inner function gets the parameter data . Because for the inner function a closure is created, the passed ID is not lost and we have an elegant way to define multiple independent Ajax update components in one view. 
-To use the component, just insert the <mc: ajaxUpdate /> tag in the declaration - assuming the prefix mc is defined accordingly.
+----
+
+The `registerAjaxStatus()` function registers a callback function with a call to jsf.ajax.addOnEvent() to show or hide the element with the passed ID. 
+However, it does not register the function processAjaxUpdate (), as it may seem at first glance, but its inner function processEvent (). 
+By nesting functions, it is possible to pass the ID of the element from outside, whereas the inner function gets the parameter data. 
+Because for the inner function a closure is created, the passed ID is not lost and we have an elegant way to define multiple independent Ajax update components in one view. 
+
+To use the component, just insert the `<mc: ajaxUpdate />` tag in the declaration - assuming the prefix mc is defined accordingly.
 
 ==== The composite component `mc:ajaxPoll`
 
-For some applications, it is necessary to update areas of a page at periodic intervals. Classic examples are pages with stock market prices, auctions or current sports results. Although JSF does not provide this functionality directly, it can be implemented in a composite component with just a few lines of JavaScript code. Again, the JavaScript API proves to be extremely useful. 
-In the implementation part, the required resources are loaded first. These include JSF's JavaScript library jsf.js and the ajaxPoll.js script with the necessary functionality for the component. Subsequently, a call is made to the function defined in ajaxPoll.jsstartAjaxPoll () started the polling. As a parameter, this function gets the id of the div element, which is filled with custom content via cc: insertChildren , and the interval. Once again , refer to the ID to access # {cc.clientId} to get the correct client ID. Listing composite component ajaxPoll shows the declaration.
- <cc:interface>
+For some applications, it is necessary to update areas of a page at periodic intervals. 
+Classic examples are pages with stock market prices, auctions or current sports results. 
+Although JSF does not provide this functionality directly, it can be implemented in a composite component with just a few lines of JavaScript code. 
+Again, the JavaScript API proves to be extremely useful. 
+
+In the implementation part, the required resources are loaded first. 
+
+These include JSF's JavaScript library jsf.js and the ajaxPoll.js script with the necessary functionality for the component. 
+Subsequently, a call is made to the function defined in ajaxPoll.jsstartAjaxPoll () started the polling. 
+As a parameter, this function gets the id of the div element, which is filled with custom content via cc: insertChildren, and the interval. 
+Once again, refer to the ID to access # {cc.clientId} to get the correct client ID. 
+Listing composite component ajaxPoll shows the declaration.
+
+[source,xhtml]
+----
+<cc:interface>
   <cc:attribute name="interval" required="true"/>
 </cc:interface>
 <cc:implementation>
@@ -651,8 +817,13 @@ In the implementation part, the required resources are loaded first. These inclu
     <cc:insertChildren/>
   </div>
 </cc:implementation>
-The entire Ajax functionality of the component is in the script resource ajaxPoll.js . The code can be seen in Listing JavaScript for composite component ajaxPoll .
- function processPollEvent(interval) {
+----
+
+The entire Ajax functionality of the component is in the script resource ajaxPoll.js. The code can be seen in Listing JavaScript for composite component ajaxPoll.
+
+[source,xhtml]
+----
+function processPollEvent(interval) {
   return function(data) {
     if (data.status == 'success') {
       startAjaxPoll(data.source.id, interval);
@@ -668,24 +839,53 @@ function poll(clientId, interval) {
 function startAjaxPoll(clientId, interval) {
   setTimeout("poll('"+clientId+"', "+interval+")", interval);
 }
-The starting point is the startAjaxPoll () function, which receives as parameters the ID of the DOM element to be updated and the interval between the Ajax requests. The Ajax request itself is issued in the poll () function , which is called in startAjaxPoll () via the JavaScript function setTimeout () after the milliseconds specified in the interval. The poll () function first looks for the DOM element for the submitted client ID, and then sends the query using jsf.ajax.request () . The trick is that via a callback function after successfully completing the request via startAjaxPoll () the entire process is started again. This creates the polling effect and ensures that no further requests are sent to the server in case of an error. 
-The component still has a small flaw. If ajaxStatus is used at the same time , the status message is displayed with every update - a behavior that is not always appropriate. But even there is a very simple solution. As you may have noticed, in poll (), the mgPoll property is dynamically set to the DOM element. This property can then be used in the callback function of ajaxStatus with data.source.mgPoll be queried. If it is set, the message is not displayed. 
+----
+The starting point is the startAjaxPoll() function, which receives as parameters the ID of the DOM element to be updated and the interval between the Ajax requests. 
+The Ajax request itself is issued in the poll () function, which is called in startAjaxPoll () via the JavaScript function setTimeout () after the milliseconds specified in the interval. 
+The poll () function first looks for the DOM element for the submitted client ID, and then sends the query using jsf.ajax.request (). 
+The trick is that via a callback function after successfully completing the request via startAjaxPoll () the entire process is started again. 
+This creates the polling effect and ensures that no further requests are sent to the server in case of an error. 
+
+The component still has a small flaw. 
+If ajaxStatus is used at the same time, the status message is displayed with every update - a behavior that is not always appropriate. But even there is a very simple solution. 
+As you may have noticed, in poll (), the mgPoll property is dynamically set to the DOM element. 
+This property can then be used in the callback function of ajaxStatus with data.source.mgPoll be queried. 
+If it is set, the message is not displayed. 
+
 To use the component, only the tag mc: ajaxPoll with the desired content must be inserted in the declaration - provided that the prefix mc is defined accordingly. Here is an example with which a kind of clock is built into the view:
+
 <mc:ajaxPoll interval="950">#{customerBean.time}</mc:ajaxPoll>
 
 === MyGourmet 14: Ajax
 
-MyGourmet 14 is identical in functionality to MyGourmet 13 . The big difference lies in the integration of Ajax, which in some places avoids a complete reload of the view. The application is thus more fluid overall. Figure MyGourmet 14 with Ajax status shows a screenshot of view showCustomer.xhtml enabled Ajax status message.
+MyGourmet 14 is identical in functionality to MyGourmet 13. 
+The big difference lies in the integration of Ajax, which in some places avoids a complete reload of the view. 
+The application is thus more fluid overall. 
+Figure MyGourmet 14 with Ajax status shows a screenshot of view `showCustomer.xhtml` enabled Ajax status message.
 
-So that users are always informed about the status of an Ajax request, we insert the composite component ajaxStatus directly in the template customerTemplate.xhtml into the header. Listing The component ajaxStatus in use shows the updated header area.
- <ui:define name="header">
+So that users are always informed about the status of an Ajax request, we insert the composite component ajaxStatus directly in the template customerTemplate.xhtml into the header. 
+Listing The component ajaxStatus in use shows the updated header area.
+
+[source,xhtml]
+----
+<ui:define name="header">
   <h:graphicImage name="images/logo.png"/>
   <h1>#{msgs.title_main}</h1>
   <mc:ajaxStatus style="float:right; width: 100px;"/>
 </ui:define>
-After the Ajax requests in MyGourmet are processed fairly quickly, the status message flashes only briefly. If you want to look at them in their full glory, you can for example use Firebug to set a breakpoint in the script. 
-The class DebugPhaseListener also got a small extension. Log messages at the beginning and at the end of each phase now tell you if the request is an Ajax request or not. To determine this, we call the isAjaxRequest () method of the partial view context, which can be reached via the faces context. Listing Extended version of the debug phase listener with Ajax support shows the source code.
- public class DebugPhaseListener implements PhaseListener {
+----
+
+After the Ajax requests in MyGourmet are processed fairly quickly, the status message flashes only briefly. 
+If you want to look at them in their full glory, you can for example use Firebug to set a breakpoint in the script. 
+
+The class DebugPhaseListener also got a small extension. 
+Log messages at the beginning and at the end of each phase now tell you if the request is an Ajax request or not. 
+To determine this, we call the isAjaxRequest() method of the partial view context, which can be reached via the faces context. 
+Listing Extended version of the debug phase listener with Ajax support shows the source code.
+
+[source,xhtml]
+----
+public class DebugPhaseListener implements PhaseListener {
   private static Log log = LogFactory.getLog(
       DebugPhaseListener.class);
 
@@ -707,8 +907,17 @@ The class DebugPhaseListener also got a small extension. Log messages at the beg
         .isAjaxRequest() ? " (Ajax)" : "";
   }
 }
-The rest of the changes include only those views of the application that have been enhanced with Ajax throughout the chapter. In addition to the dynamic display and hiding of the credit card data in editCustomer.xhtml, this also includes the collapsiblePanel with the addresses in the showCustomer.xhtml page . There is even the double Ajax functionality: in the composite component itself and in the embedded table for deleting an address. 
-In section [Section: A first example with `f:ajax`] we already have a solution for the dynamic display and hiding of credit card data using `f:ajax` shown. The implementation presented there, however, still has a small flaw: If the credit card data changed in the displayed state, hidden and displayed again, the changes are lost. A closer look at the used `f:ajax` tag shows the reason. After we do not specify the execute attribute (and thus use the default value of @this ), JSF only handles the select box when performing the partial lifecycle execution. The changed data never arrive at the server and will be overwritten by the new rendering in the browser with the old values.
+----
+
+The rest of the changes include only those views of the application that have been enhanced with Ajax throughout the chapter. 
+In addition to the dynamic display and hiding of the credit card data in editCustomer.xhtml, this also includes the collapsiblePanel with the addresses in the showCustomer.xhtml page. 
+There is even the double Ajax functionality: in the composite component itself and in the embedded table for deleting an address. 
+
+In section [Section: A first example with `f:ajax`] we already have a solution for the dynamic display and hiding of credit card data using `f:ajax` shown. 
+The implementation presented there, however, still has a small flaw: If the credit card data changed in the displayed state, hidden and displayed again, the changes are lost. 
+A closer look at the used `f:ajax` tag shows the reason. 
+After we do not specify the execute attribute (and thus use the default value of @this), JSF only handles the select box when performing the partial lifecycle execution. 
+The changed data never arrive at the server and will be overwritten by the new rendering in the browser with the old values.
 
 === Tools for the Ajax developer
 
